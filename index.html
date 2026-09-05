@@ -58,8 +58,18 @@
     overflow-y:auto;
     overflow-x:hidden;
     padding:16px 16px 60px 16px;
+    /* Firefox: theme the scrollbar itself instead of leaving the OS default,
+       which can clash badly with the light theme's white sidebar. */
+    scrollbar-width:thin;
+    scrollbar-color:var(--border) var(--bg-1);
   }
   .panel h1{ font-size:15px; margin:0 0 4px 0; letter-spacing:.3px; }
+  /* Chromium/Safari scrollbar theming (the ::-webkit-scrollbar family isn't
+     read by Firefox, which uses the scrollbar-color property above instead). */
+  .panel::-webkit-scrollbar{ width:10px; }
+  .panel::-webkit-scrollbar-track{ background:var(--bg-1); }
+  .panel::-webkit-scrollbar-thumb{ background:var(--btn-2); border-radius:6px; border:2px solid var(--bg-1); }
+  .panel::-webkit-scrollbar-thumb:hover{ background:var(--btn-2-hover); }
 
   /* ---------------- Header menu bar ---------------- */
   .menubar{ display:flex; align-items:center; gap:2px; margin:0 0 14px 0; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
@@ -128,6 +138,16 @@
     background:var(--input-bg); color:var(--text); border:1px solid var(--border);
     border-radius:5px; padding:5px 6px; font-size:12px; font-family:inherit;
   }
+  /* Same visual theme as .share-output above, but always visible -- used for
+     the Filters section's custom-SVG textarea, which (unlike the share/code
+     output box) isn't something that should be hidden until an action reveals it. */
+  textarea.filter-svg-input{
+    display:block; width:100%; margin-top:4px; resize:vertical;
+    background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+    border-radius:5px; padding:5px 6px; font-size:12px; font-family:inherit; box-sizing:border-box;
+  }
+  .filters-toggle-row{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--border); }
+  .filters-panel{ margin-top:2px; }
   /* Editable slider-value readouts: look like the plain text they replace --
      no box, just an underline hinting they're typeable -- so this has to win
      over the generic input[type="text"] styling above despite equal selector
@@ -560,8 +580,21 @@
   var layerIdCounter = 1;
   var layers = []; // index 0 = topmost layer
 
+  // Neutral (no visible effect) defaults for the CSS Filters block every
+  // layer type carries -- applied at the canvas-context level, so it works
+  // identically for every layer type, including groups (as one flattened unit).
+  function defaultFilters(){
+    return {
+      enabled:false,
+      blur:0, brightness:100, contrast:100, grayscale:0, hueRotate:0,
+      invert:0, opacity:100, saturate:100, sepia:0,
+      dropShadow:{ enabled:false, x:4, y:4, blur:6, color:makeColor(0,0,0,0.6) },
+      customSvg:'', customSvgId:''
+    };
+  }
+
   function newLayer(type){
-    var base = { id:'L'+(layerIdCounter++), type:type, name:TYPE_LABELS[type], visible:true, opacity:100, blend:'source-over', expanded:true, isMask:false };
+    var base = { id:'L'+(layerIdCounter++), type:type, name:TYPE_LABELS[type], visible:true, opacity:100, blend:'source-over', expanded:true, isMask:false, filters:defaultFilters() };
     switch(type){
       case 'solid':
         base.color = makeColor(60,60,60,1);
@@ -808,6 +841,55 @@
     );
   }
 
+  // A second color-alpha swatch control, functionally identical to
+  // colorAlphaControlHTML but with its own distinct data-role names so it can
+  // coexist in the same layer card as a type's main color control (e.g. Solid
+  // fill color + the Filters drop-shadow color) without the two colliding
+  // when wired up separately.
+  function dropShadowColorHTML(color){
+    return (
+      '<div class="color-alpha">' +
+        '<span class="swatch-checker"><span class="swatch-fill" data-role="fDsAlphaPreview" style="background-color:'+rgbaCss(color)+'"></span></span>' +
+        '<input type="color" data-role="fDsColorHex" value="'+hexFromRgb(color)+'" title="Color" />' +
+        '<div class="slidewrap"><input type="range" min="0" max="100" value="'+Math.round(color.a*100)+'" data-role="fDsColorAlpha" />'+valInputHTML('fDsColorAlphaVal', Math.round(color.a*100), '%')+'</div>' +
+      '</div>'
+    );
+  }
+
+  // CSS Filters section, appended to every layer card's body regardless of
+  // layer type (including groups, which apply it to their flattened bitmap
+  // as one unit -- see drawLayer/buildFilterString).
+  function filterControlsHTML(layer){
+    var f = layer.filters;
+    var h = '';
+    h += '<div class="layer-controls-row filters-toggle-row"><label><input type="checkbox" data-role="filtersEnabled"'+(f.enabled?' checked':'')+' /> <strong>CSS Filters</strong></label></div>';
+    h += '<div class="filters-panel" data-role="filtersPanel"'+(f.enabled?'':' style="display:none"')+'>';
+    h += '<div class="layer-controls-row"><label>Blur</label><div class="slidewrap"><input type="range" min="0" max="50" value="'+f.blur+'" data-role="fBlur" />'+valInputHTML('fBlurVal', f.blur, 'px')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Brightness</label><div class="slidewrap"><input type="range" min="0" max="200" value="'+f.brightness+'" data-role="fBrightness" />'+valInputHTML('fBrightnessVal', f.brightness, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Contrast</label><div class="slidewrap"><input type="range" min="0" max="200" value="'+f.contrast+'" data-role="fContrast" />'+valInputHTML('fContrastVal', f.contrast, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Grayscale</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+f.grayscale+'" data-role="fGrayscale" />'+valInputHTML('fGrayscaleVal', f.grayscale, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Hue rotate</label><div class="slidewrap"><input type="range" min="0" max="360" value="'+f.hueRotate+'" data-role="fHueRotate" />'+valInputHTML('fHueRotateVal', f.hueRotate, '&deg;')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Invert</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+f.invert+'" data-role="fInvert" />'+valInputHTML('fInvertVal', f.invert, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Filter opacity</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+f.opacity+'" data-role="fOpacity" />'+valInputHTML('fOpacityVal', f.opacity, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Saturate</label><div class="slidewrap"><input type="range" min="0" max="200" value="'+f.saturate+'" data-role="fSaturate" />'+valInputHTML('fSaturateVal', f.saturate, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label>Sepia</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+f.sepia+'" data-role="fSepia" />'+valInputHTML('fSepiaVal', f.sepia, '%')+'</div></div>';
+
+    var ds = f.dropShadow;
+    h += '<div class="layer-controls-row"><label class="mask-toggle"><input type="checkbox" data-role="fDropShadowEnabled"'+(ds.enabled?' checked':'')+' /> Drop shadow</label></div>';
+    if(ds.enabled){
+      h += '<div class="layer-controls-row"><label>Shadow X</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+ds.x+'" data-role="fDsX" />'+valInputHTML('fDsXVal', ds.x, 'px')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>Shadow Y</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+ds.y+'" data-role="fDsY" />'+valInputHTML('fDsYVal', ds.y, 'px')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>Shadow blur</label><div class="slidewrap"><input type="range" min="0" max="50" value="'+ds.blur+'" data-role="fDsBlur" />'+valInputHTML('fDsBlurVal', ds.blur, 'px')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>Shadow color</label>'+dropShadowColorHTML(ds.color)+'</div>';
+    }
+
+    h += '<div class="layer-controls-row"><label>Custom SVG filter</label></div>';
+    h += '<textarea class="filter-svg-input" data-role="fCustomSvg" rows="3" placeholder="Paste an SVG &lt;filter&gt; element, e.g. &lt;filter id=&quot;x&quot;&gt;...&lt;/filter&gt;">'+escAttr(f.customSvg||'')+'</textarea>';
+    h += '<small class="hint">Pastes an inline SVG &lt;filter&gt; and applies it via url(#id) &mdash; canvas can&rsquo;t load a filter from a genuinely external file when this page is opened with file://, so the SVG markup is stored right here in the design instead.</small>';
+    h += '</div>';
+    return h;
+  }
+
   function stopsListHTML(stops){
     return stops.map(function(s){
       return (
@@ -936,6 +1018,7 @@
                : '<div class="layers-empty">Empty group &mdash; check layers below and click &ldquo;Group Selected&rdquo; to move them in.</div>') +
            '</div>';
     }
+    h += filterControlsHTML(layer);
     return h;
   }
 
@@ -1297,6 +1380,89 @@
     } else if(layer.type === 'group'){
       cardEl.querySelector('[data-role="ungroup"]').addEventListener('click', function(){ ungroupLayer(layer.id); });
     }
+
+    wireFilterControls(cardEl, layer);
+  }
+
+  // Wires the CSS Filters section that filterControlsHTML() appends to every
+  // layer card, regardless of layer type.
+  function wireFilterControls(cardEl, layer){
+    var f = layer.filters;
+    var enabledInput = cardEl.querySelector('[data-role="filtersEnabled"]');
+    var panel = cardEl.querySelector('[data-role="filtersPanel"]');
+    enabledInput.addEventListener('change', function(e){
+      f.enabled = e.target.checked;
+      panel.style.display = f.enabled ? 'block' : 'none';
+      scheduleRender();
+    });
+
+    [
+      ['fBlur','blur','px'], ['fBrightness','brightness','%'], ['fContrast','contrast','%'],
+      ['fGrayscale','grayscale','%'], ['fHueRotate','hueRotate','°'], ['fInvert','invert','%'],
+      ['fOpacity','opacity','%'], ['fSaturate','saturate','%'], ['fSepia','sepia','%']
+    ].forEach(function(spec){
+      var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
+      var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+      if(!input) return;
+      input.addEventListener('input', function(){
+        f[spec[1]] = +input.value;
+        if(valEl) valEl.value = input.value + spec[2];
+        scheduleRender();
+      });
+      if(valEl) wireEditableValue(valEl, input);
+    });
+
+    var dsEnabledInput = cardEl.querySelector('[data-role="fDropShadowEnabled"]');
+    if(dsEnabledInput){
+      dsEnabledInput.addEventListener('change', function(e){
+        f.dropShadow.enabled = e.target.checked;
+        renderLayersList(); // structural: reveals/hides the x/y/blur/color rows
+        scheduleRender();
+      });
+    }
+
+    if(f.dropShadow.enabled){
+      [['fDsX','x','px'], ['fDsY','y','px'], ['fDsBlur','blur','px']].forEach(function(spec){
+        var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
+        var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+        if(!input) return;
+        input.addEventListener('input', function(){
+          f.dropShadow[spec[1]] = +input.value;
+          if(valEl) valEl.value = input.value + spec[2];
+          scheduleRender();
+        });
+        if(valEl) wireEditableValue(valEl, input);
+      });
+
+      var dsHex = cardEl.querySelector('[data-role="fDsColorHex"]');
+      var dsAlpha = cardEl.querySelector('[data-role="fDsColorAlpha"]');
+      var dsAlphaVal = cardEl.querySelector('[data-role="fDsColorAlphaVal"]');
+      var dsPreview = cardEl.querySelector('[data-role="fDsAlphaPreview"]');
+      if(dsHex){
+        dsHex.addEventListener('input', function(){
+          var rgb = rgbFromHex(dsHex.value, f.dropShadow.color.a);
+          f.dropShadow.color.r = rgb.r; f.dropShadow.color.g = rgb.g; f.dropShadow.color.b = rgb.b;
+          dsPreview.style.backgroundColor = rgbaCss(f.dropShadow.color);
+          scheduleRender();
+        });
+        dsAlpha.addEventListener('input', function(){
+          f.dropShadow.color.a = (+dsAlpha.value)/100;
+          dsAlphaVal.value = dsAlpha.value + '%';
+          dsPreview.style.backgroundColor = rgbaCss(f.dropShadow.color);
+          scheduleRender();
+        });
+        wireEditableValue(dsAlphaVal, dsAlpha);
+      }
+    }
+
+    var customSvgInput = cardEl.querySelector('[data-role="fCustomSvg"]');
+    if(customSvgInput){
+      customSvgInput.addEventListener('change', function(){
+        f.customSvg = customSvgInput.value.trim();
+        f.customSvgId = ''; // force re-injection with fresh markup next render
+        scheduleRender();
+      });
+    }
   }
 
   /* ---------- undo / redo history ---------- */
@@ -1601,6 +1767,18 @@
     });
     return best;
   }
+  // Fills in any filter fields missing from an older saved/shared design
+  // (from before CSS Filters existed) with neutral defaults, rather than
+  // leaving them undefined for bodyHTML()/buildFilterString() to trip over.
+  function normalizeLayerFilters(l){
+    var d = defaultFilters();
+    if(!l.filters || typeof l.filters !== 'object') l.filters = d;
+    else {
+      for(var k in d){ if(l.filters[k] === undefined) l.filters[k] = d[k]; }
+      if(!l.filters.dropShadow || typeof l.filters.dropShadow !== 'object') l.filters.dropShadow = d.dropShadow;
+      else for(var dk in d.dropShadow){ if(l.filters.dropShadow[dk] === undefined) l.filters.dropShadow[dk] = d.dropShadow[dk]; }
+    }
+  }
   // Defensive against a hand-edited or corrupted hash: drop anything that
   // doesn't even look like a layer rather than letting a malformed object
   // reach the renderer and throw partway through drawing the stack.
@@ -1608,6 +1786,7 @@
     if(!Array.isArray(list)) return [];
     return list.filter(function(l){ return l && typeof l === 'object' && typeof l.id === 'string' && typeof l.type === 'string'; })
       .map(function(l){
+        normalizeLayerFilters(l);
         if(l.type === 'group') l.children = sanitizeLoadedLayers(l.children);
         return l;
       });
@@ -2151,12 +2330,130 @@
     targetCtx.restore();
   }
 
+  // Persistent hidden <svg><defs> host for pasted custom filters, so a
+  // canvas filter: url(#id) has something in the document to point at.
+  // Self-healing: re-created if it's ever missing from the DOM, so it
+  // works no matter how the current design got here (typed fresh, restored
+  // from a share code / JSON file, or an undo/redo snapshot).
+  var CUSTOM_FILTER_DEFS_ID = 'bggenCustomFilterDefs';
+  function ensureCustomFilterDefsContainer(){
+    var svg = document.getElementById(CUSTOM_FILTER_DEFS_ID);
+    if(svg) return svg;
+    svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('id', CUSTOM_FILTER_DEFS_ID);
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
+    svg.style.position = 'absolute';
+    svg.style.width = '0';
+    svg.style.height = '0';
+    svg.style.pointerEvents = 'none';
+    svg.appendChild(document.createElementNS('http://www.w3.org/2000/svg', 'defs'));
+    document.body.appendChild(svg);
+    return svg;
+  }
+
+  // Parses pasted SVG <filter>...</filter> markup and injects a copy of it
+  // (assigned `preferredId`, or a fresh random id) into the persistent defs
+  // container above, returning the id used on success or '' on failure
+  // (malformed markup, or no <filter> element found). Canvas can't load a
+  // filter from a genuinely external SVG file when this page is opened via
+  // file://, so "external SVG file" support here means inline-pasted SVG
+  // <filter> markup that lives in the design itself instead.
+  function injectCustomFilter(markup, preferredId){
+    if(!markup) return '';
+    var svg = ensureCustomFilterDefsContainer();
+    var defs = svg.querySelector('defs');
+    try{
+      var doc = new DOMParser().parseFromString(
+        '<svg xmlns="http://www.w3.org/2000/svg">' + markup + '</svg>',
+        'image/svg+xml'
+      );
+      if(doc.querySelector('parsererror')) return '';
+      var filterEl = doc.querySelector('filter');
+      if(!filterEl) return '';
+      var id = preferredId || ('customFilter_' + Math.random().toString(36).slice(2,9));
+      filterEl.setAttribute('id', id);
+      var existing = document.getElementById(id);
+      if(existing && existing.parentNode) existing.parentNode.removeChild(existing);
+      defs.appendChild(document.importNode(filterEl, true));
+      return id;
+    } catch(err){
+      return '';
+    }
+  }
+
+  // Builds the canvas 2D `filter` string for a layer from its filters model.
+  // Canvas's `filter` property accepts the exact same syntax as CSS `filter`,
+  // so each enabled effect just becomes its usual CSS filter-function text;
+  // this is set on targetCtx inside drawLayer's own save()/restore() wrapper,
+  // so it self-contains per layer (and per masked pair / flattened group,
+  // since those each render through their own drawLayer call) with no need
+  // to manually reset it afterward.
+  function buildFilterString(layer){
+    var f = layer.filters;
+    if(!f || !f.enabled) return 'none';
+    var parts = [];
+    if(f.blur > 0) parts.push('blur(' + f.blur + 'px)');
+    if(f.brightness !== 100) parts.push('brightness(' + f.brightness + '%)');
+    if(f.contrast !== 100) parts.push('contrast(' + f.contrast + '%)');
+    if(f.grayscale > 0) parts.push('grayscale(' + f.grayscale + '%)');
+    if(f.hueRotate !== 0) parts.push('hue-rotate(' + f.hueRotate + 'deg)');
+    if(f.invert > 0) parts.push('invert(' + f.invert + '%)');
+    if(f.opacity !== 100) parts.push('opacity(' + f.opacity + '%)');
+    if(f.saturate !== 100) parts.push('saturate(' + f.saturate + '%)');
+    if(f.sepia > 0) parts.push('sepia(' + f.sepia + '%)');
+    if(f.dropShadow && f.dropShadow.enabled){
+      parts.push('drop-shadow(' + f.dropShadow.x + 'px ' + f.dropShadow.y + 'px ' + f.dropShadow.blur + 'px ' + rgbaCss(f.dropShadow.color) + ')');
+    }
+    if(f.customSvg){
+      if(!f.customSvgId || !document.getElementById(f.customSvgId)){
+        f.customSvgId = injectCustomFilter(f.customSvg, f.customSvgId || ('customFilter_' + Math.random().toString(36).slice(2,9)));
+      }
+      if(f.customSvgId) parts.push('url(#' + f.customSvgId + ')');
+    }
+    return parts.length ? parts.join(' ') : 'none';
+  }
+
+  // Reused scratch canvas for the filtered-layer path below -- avoids
+  // allocating a new offscreen bitmap for every filtered layer on every frame.
+  var filterBufCanvas = document.createElement('canvas');
+  var filterBufCtx = filterBufCanvas.getContext('2d');
+
   function drawLayer(layer, w, h, targetCtx){
     targetCtx = targetCtx || ctx;
     if(!layer.visible) return;
+    var filterStr = buildFilterString(layer);
+    if(filterStr === 'none'){
+      targetCtx.save();
+      targetCtx.globalAlpha = layer.opacity/100;
+      targetCtx.globalCompositeOperation = layer.blend;
+      drawLayerContent(layer, w, h, targetCtx);
+      targetCtx.restore();
+      return;
+    }
+    // Filtered layers draw their own raw content onto a fresh, unfiltered
+    // scratch canvas first, then that ONE finished bitmap is composited onto
+    // targetCtx with the filter (and this layer's opacity/blend) applied just
+    // once. Setting ctx.filter directly on targetCtx before drawing would
+    // instead apply it separately to every individual fill/stroke call a
+    // multi-draw layer type issues internally -- a pattern layer can draw
+    // thousands of tiles, noise thousands of pixels -- which is both far too
+    // slow to be usable and not what "blur/drop-shadow this layer" should
+    // mean (the effect should read as applied to the layer's whole finished
+    // shape, not smeared onto each little piece of it separately).
+    filterBufCanvas.width = w;
+    filterBufCanvas.height = h;
+    filterBufCtx.clearRect(0, 0, w, h);
+    drawLayerContent(layer, w, h, filterBufCtx);
     targetCtx.save();
     targetCtx.globalAlpha = layer.opacity/100;
     targetCtx.globalCompositeOperation = layer.blend;
+    targetCtx.filter = filterStr;
+    targetCtx.drawImage(filterBufCanvas, 0, 0);
+    targetCtx.restore();
+  }
+
+  function drawLayerContent(layer, w, h, targetCtx){
     switch(layer.type){
       case 'solid':
         targetCtx.fillStyle = rgbaCss(layer.color);
@@ -2185,7 +2482,6 @@
         drawGroupLayer(layer, w, h, targetCtx);
         break;
     }
-    targetCtx.restore();
   }
 
   // A group renders its children onto their own fully-flattened offscreen
@@ -2365,13 +2661,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.14';
+  var APP_VERSION = '0.0.15';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -2456,7 +2752,7 @@
 
   var savedSettings = loadSettings();
   var currentTheme = savedSettings.theme === 'light' ? 'light' : 'dark';
-  var performanceModeEnabled = !!savedSettings.performanceMode;
+  var performanceModeEnabled = savedSettings.performanceMode !== false; // on by default
   var autoSaveEnabled = savedSettings.autoSave !== false; // on by default
   var activePalette = savedSettings.palette || '';
   var viewFitToScreen = true;
