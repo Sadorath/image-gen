@@ -198,6 +198,20 @@
   canvas{ display:block; max-width:80vw; max-height:78vh; width:auto; height:auto; }
   .stage-footer{ margin-top:14px; color:var(--text-dim); font-size:11.5px; display:flex; gap:16px; align-items:center; }
   .dot{color:var(--accent);}
+
+  /* ---------------- Kiosk / live-background mode ---------------- */
+  /* Applied when the page was opened from a #state= share link: no editor
+     chrome at all, just the generated image filling the whole window, so the
+     page itself can be pointed to by a "live wallpaper" viewer. */
+  html.kiosk-mode, html.kiosk-mode body{ overflow:hidden; }
+  .kiosk-mode .panel{ display:none; }
+  .kiosk-mode .stage{ padding:0; background:#000; }
+  .kiosk-mode .stage-footer{ display:none; }
+  .kiosk-mode .canvas-wrap{
+    max-width:none; max-height:none; width:100vw; height:100vh;
+    box-shadow:none; border-radius:0; border:none;
+  }
+  .kiosk-mode canvas{ max-width:none; max-height:none; width:100vw; height:100vh; }
 </style>
 </head>
 <body>
@@ -240,9 +254,22 @@
         <input type="text" id="filename" value="background" />
       </div>
       <button class="btn-primary" id="exportBtn">Export PNG</button>
-      <button class="btn-secondary" id="shareLinkBtn" style="width:100%;margin-top:8px;">&#128279; Copy Share Link</button>
+      <div class="btn-row" style="margin-top:8px;">
+        <button class="btn-secondary" id="shareLinkBtn" title="A full link that opens this exact design">&#128279; Copy Link</button>
+        <button class="btn-secondary" id="copyCodeBtn" title="Just the design data, to paste anywhere -- no link, no file path">&#128203; Copy Code</button>
+      </div>
       <textarea id="shareLinkOutput" readonly rows="3" style="display:none;width:100%;margin-top:8px;font-size:10px;font-family:monospace;resize:vertical;background:#12151a;color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px;"></textarea>
       <small class="hint" id="shareLinkHint" style="display:none;"></small>
+
+      <button class="btn-secondary" id="importToggleBtn" style="width:100%;margin-top:8px;">&#11015; Import a Link or Code&hellip;</button>
+      <div id="importPanel" style="display:none;margin-top:8px;">
+        <textarea id="importInput" rows="3" placeholder="Paste a share link or design code here" style="width:100%;font-size:10px;font-family:monospace;resize:vertical;background:#12151a;color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px;"></textarea>
+        <div class="btn-row" style="margin-top:6px;">
+          <button class="btn-primary" id="importApplyBtn">Load Design</button>
+          <button class="btn-secondary" id="importCancelBtn">Cancel</button>
+        </div>
+        <small class="hint" id="importHint" style="display:none;"></small>
+      </div>
     </fieldset>
 
     <!-- LAYERS -->
@@ -360,7 +387,7 @@
         break;
       case 'checker':
         base.color = makeColor(10,10,10,1); base.angle = 45; base.size = 35; base.fill = 50;
-        base.blend = 'overlay'; base.opacity = 55;
+        base.opacity = 55;
         break;
       case 'stripes':
         base.color = makeColor(10,10,10,1); base.angle = 45; base.size = 35; base.fill = 50;
@@ -370,14 +397,14 @@
         break;
       case 'hex':
         base.color = makeColor(0,255,220,1); base.angle = 0; base.size = 44; base.fill = 18;
-        base.blend = 'screen'; base.opacity = 80;
+        base.opacity = 80;
         break;
       case 'hud':
         base.color = makeColor(0,255,220,1); base.angle = 0; base.size = 70; base.fill = 15;
-        base.blend = 'screen'; base.opacity = 80;
+        base.opacity = 80;
         break;
       case 'noise':
-        base.intensity = 18; base.mono = true; base.blend = 'overlay';
+        base.intensity = 18; base.mono = true;
         base.noiseType = 'static';
         base.perlin = {
           style:'clouds', scale:180, octaves:5, roughness:0.5,
@@ -1198,6 +1225,20 @@
     for(var i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
     return new TextDecoder().decode(bytes);
   }
+  // "URL-safe" base64 (RFC 4648 sec.5: - and _ instead of + and /, no padding).
+  // This is the actual code/link text people see and paste around, so it
+  // matters that it survives that badly: a raw + can turn into a space when
+  // something treats it as form-encoded, and a raw / can look like a path
+  // separator to an auto-linker. Decoding also accepts plain base64, so a
+  // stray + or / typed back in by hand still works.
+  function toUrlSafeB64(str){
+    return utf8ToBase64(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  }
+  function fromUrlSafeB64(code){
+    var b64 = String(code).replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length % 4) b64 += '=';
+    return base64ToUtf8(b64);
+  }
   function formatBytes(n){
     if(n < 1024) return n + ' B';
     if(n < 1024*1024) return Math.round(n/1024) + ' KB';
@@ -1226,7 +1267,7 @@
       });
   }
 
-  function buildShareURL(){
+  function buildShareState(){
     var payload = {
       v: 1,
       layers: layers,
@@ -1235,60 +1276,126 @@
       customH: $('customH').value,
       filename: val('filename')
     };
-    var b64 = utf8ToBase64(JSON.stringify(payload));
-    return {
-      url: location.origin + location.pathname + location.search + '#state=' + b64,
-      bytes: b64.length
-    };
+    var code = toUrlSafeB64(JSON.stringify(payload));
+    return { code: code, bytes: code.length };
+  }
+  function buildShareURL(){
+    var state = buildShareState();
+    return { url: location.origin + location.pathname + location.search + '#state=' + state.code, bytes: state.bytes };
+  }
+
+  // Shared by both the initial "opened a link with #state=..." path and the
+  // "pasted a code into the Import box" path, so the two stay in sync.
+  function applyStatePayload(payload){
+    var loaded = sanitizeLoadedLayers(payload && payload.layers);
+    if(loaded.length === 0) return false;
+    layers = loaded;
+    layerIdCounter = highestLayerIdNum(layers) + 1;
+    if(payload.preset) $('preset').value = payload.preset;
+    if(payload.customW) $('customW').value = payload.customW;
+    if(payload.customH) $('customH').value = payload.customH;
+    if(payload.filename) $('filename').value = payload.filename;
+    return true;
   }
 
   function tryLoadStateFromHash(){
-    var m = /state=([^&]+)/.exec(location.hash || '');
+    var m = /state=([^&\s]+)/.exec(location.hash || '');
     if(!m) return false;
     try {
-      var payload = JSON.parse(base64ToUtf8(decodeURIComponent(m[1])));
-      var loaded = sanitizeLoadedLayers(payload && payload.layers);
-      if(loaded.length === 0) return false;
-      layers = loaded;
-      layerIdCounter = highestLayerIdNum(layers) + 1;
-      if(payload.preset) $('preset').value = payload.preset;
-      if(payload.customW) $('customW').value = payload.customW;
-      if(payload.customH) $('customH').value = payload.customH;
-      if(payload.filename) $('filename').value = payload.filename;
-      return true;
+      var code = m[1];
+      try { code = decodeURIComponent(code); } catch(e){ /* already decoded */ }
+      return applyStatePayload(JSON.parse(fromUrlSafeB64(code)));
     } catch(e){
       console.warn('Could not load the design from this link:', e);
       return false;
     }
   }
 
-  $('shareLinkBtn').addEventListener('click', function(){
-    var result = buildShareURL();
+  // Accepts either a bare design code or a whole share link (this session's
+  // own, or a copy-pasted one where whitespace crept in from wrapping) and
+  // pulls out just the code part.
+  function extractCodeFromPastedText(text){
+    text = String(text || '').trim();
+    if(!text) return '';
+    var m = /state=([^&\s]+)/.exec(text);
+    if(m){
+      var code = m[1];
+      try { return decodeURIComponent(code); } catch(e){ return code; }
+    }
+    return text.replace(/\s+/g, '');
+  }
+
+  // Copies `text` to the clipboard (falling back to a selected, manually
+  // copyable textarea when the Clipboard API is unavailable -- common when a
+  // page is opened straight from a file:// path) and reports what happened.
+  function publishToClipboard(text, bytes, copiedLabel){
     var output = $('shareLinkOutput');
     var hint = $('shareLinkHint');
-    output.value = result.url;
+    output.value = text;
     output.style.display = 'block';
     output.focus();
     output.select();
-    history.replaceState(null, '', result.url); // also makes reloading this tab keep the current design
 
-    var sizeNote = result.bytes > 500000
-      ? ' This link is ' + formatBytes(result.bytes) + ' because of embedded images -- some chat apps or browsers may not handle such a long link well.'
+    var sizeNote = bytes > 500000
+      ? ' This is ' + formatBytes(bytes) + ' because of embedded images -- some chat apps or browsers may not handle something this long well.'
       : '';
-
     function announce(copied){
       hint.style.display = 'block';
-      hint.textContent = (copied
-        ? 'Link copied to your clipboard.'
-        : 'Could not auto-copy -- the link above is selected, press Ctrl/Cmd+C to copy it.') + sizeNote;
+      hint.textContent = (copied ? copiedLabel : 'Could not auto-copy -- the text above is selected, press Ctrl/Cmd+C to copy it.') + sizeNote;
     }
-
     if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(result.url).then(function(){ announce(true); }).catch(function(){
+      navigator.clipboard.writeText(text).then(function(){ announce(true); }).catch(function(){
         try { announce(document.execCommand('copy')); } catch(e){ announce(false); }
       });
     } else {
       try { announce(document.execCommand('copy')); } catch(e){ announce(false); }
+    }
+  }
+
+  $('shareLinkBtn').addEventListener('click', function(){
+    var result = buildShareURL();
+    history.replaceState(null, '', result.url); // also makes reloading this tab keep the current design
+    publishToClipboard(result.url, result.bytes, 'Link copied to your clipboard.');
+  });
+
+  $('copyCodeBtn').addEventListener('click', function(){
+    var state = buildShareState();
+    publishToClipboard(state.code, state.bytes, 'Design code copied to your clipboard.');
+  });
+
+  $('importToggleBtn').addEventListener('click', function(){
+    var panel = $('importPanel');
+    var opening = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = opening ? 'block' : 'none';
+    if(opening){
+      $('importInput').value = '';
+      $('importHint').style.display = 'none';
+      $('importInput').focus();
+    }
+  });
+  $('importCancelBtn').addEventListener('click', function(){
+    $('importPanel').style.display = 'none';
+  });
+  $('importApplyBtn').addEventListener('click', function(){
+    var importHint = $('importHint');
+    importHint.style.display = 'block';
+    var code = extractCodeFromPastedText($('importInput').value);
+    if(!code){
+      importHint.textContent = 'Paste a design code or share link first.';
+      return;
+    }
+    try {
+      var payload = JSON.parse(fromUrlSafeB64(code));
+      if(!applyStatePayload(payload)) throw new Error('no layers found in that code');
+      selectedLayerIds = {};
+      handlePresetChange();
+      renderLayersList(); // structural: also becomes a fresh undo point, so an accidental import can be undone
+      resizeCanvasToTarget();
+      scheduleRender();
+      importHint.textContent = 'Design loaded.';
+      setTimeout(function(){ $('importPanel').style.display = 'none'; }, 900);
+    } catch(e){
+      importHint.textContent = "That code doesn't look right -- double-check you copied the whole thing.";
     }
   });
 
@@ -1889,7 +1996,11 @@
   });
 
   /* ---------- init ---------- */
-  if(!tryLoadStateFromHash()){
+  if(tryLoadStateFromHash()){
+    // Opened via a share link: act as a plain live background, not the editor --
+    // hide the sidebar entirely and let the generated image fill the window.
+    document.documentElement.classList.add('kiosk-mode');
+  } else {
     layers = defaultLayers();
   }
   renderLayersList();
