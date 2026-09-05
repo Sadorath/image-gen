@@ -4,6 +4,16 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.26 — 2026-09-05
+
+- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself — modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.
+
+## v0.0.25 — 2026-09-05
+
+- Dropped the question mark from the "Use as Mask" label, matching the rest of the sidebar's controls.
+- Added hover tooltips to nearly every control in the sidebar — sliders, dropdowns, checkboxes, and buttons — each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.
+- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.
+
 ## v0.0.24 — 2026-09-05
 
 - Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized — small joining words like "with," "as," and "to" stay lowercase), for a more consistent, polished look throughout.
