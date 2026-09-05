@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.20 — 2026-09-05
+
+- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only — fills, gradient and noise stops, the noise monochrome toggle — leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).
+
 ## v0.0.19 — 2026-09-05
 
 - Cycles has always needed to be a whole number — it's what guarantees a loop closes perfectly with no jump — but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live "Repeats every Xs" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.
