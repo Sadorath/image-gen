@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.19 — 2026-09-05
+
+- Cycles has always needed to be a whole number — it's what guarantees a loop closes perfectly with no jump — but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live "Repeats every Xs" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.
+- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.
+
+## v0.0.18 — 2026-09-05
+
+- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.
+- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups — not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.
+- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or — with no `%` stops — one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.
+- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.
+
 ## v0.0.17 — 2026-09-05
 
 - Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in — a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.

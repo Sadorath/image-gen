@@ -467,11 +467,12 @@
       <legend>Animation</legend>
       <div class="row">
         <label for="animLoopSec">Loop length</label>
-        <div class="slidewrap" style="max-width:120px;">
-          <input type="number" id="animLoopSec" min="1" max="60" step="1" value="6" style="width:56px;" />
+        <div class="slidewrap" style="max-width:130px;">
+          <input type="number" id="animLoopSec" min="1" max="600" step="1" value="6" style="width:60px;" />
           <span style="color:var(--text-dim);font-size:11px;white-space:nowrap;">seconds</span>
         </div>
       </div>
+      <small class="hint">This is the master speed control, shared by every layer -- each layer's own Cycles setting is how many times ITS motion repeats within this length, so raising it slows everything down at once.</small>
       <div class="btn-row">
         <button class="btn-secondary" id="animPlayPauseBtn" type="button">&#9208; Pause</button>
         <button class="btn-secondary" id="animRecordBtn" type="button">Record .webm</button>
@@ -630,7 +631,13 @@
   // visible seam -- a fractional cycle count would make position match at
   // the loop boundary but velocity/direction reverse, which reads as a jump.
   function defaultAnimate(){
-    return { enabled:false, cycles:1, amplitude:100 };
+    // style 'scroll' is the historical default and the only style the tile-pattern
+    // and Perlin drift code paths know how to honor internally (see animCycleFrac
+    // and drawPerlinNoiseLayer) -- normalizeAnimate() backfills exactly this value
+    // for any older saved design, which is what keeps their look unchanged. Every
+    // other style is applied generically to ANY layer type via a whole-layer
+    // transform in drawLayer() instead (see computeAnimTransform).
+    return { enabled:false, cycles:1, amplitude:100, style:'scroll', custom:'' };
   }
 
   function newLayer(type){
@@ -983,28 +990,95 @@
     );
   }
 
-  // Eligible for the Animate section: the tile-pattern layer types (they
-  // scroll seamlessly, since a tile grid already repeats on its own) and
-  // Perlin/fBm noise (it drifts in a small seamless loop) -- static grain has
-  // no coherent structure to animate, same reasoning as why its other
-  // Perlin-only controls stay hidden until Noise type is switched to Perlin.
+  // Every layer type can Animate now: Pulse/Spin/Orbit/Custom are all applied
+  // generically to the layer's whole finished bitmap in drawLayer() (see
+  // computeAnimTransform), so nothing about a specific layer type disqualifies
+  // it. Only "Scroll / Pan" is special -- it's handled internally by the
+  // tile-pattern and Perlin-noise draw code, which is the one thing a plain
+  // solid/gradient/image layer has no equivalent of.
   function animateEligible(layer){
+    return true;
+  }
+  function animateCanScroll(layer){
     return GEOM_TYPES.indexOf(layer.type) !== -1 || (layer.type === 'noise' && layer.noiseType === 'perlin');
   }
-  // Animate section, appended only for eligible layer types (see above).
-  // Reuses the same collapsible-toggle look as the Filters section below it.
+  var ANIM_STYLE_LABELS = {
+    scroll: 'Scroll / Pan',
+    pulse: 'Pulse (scale + opacity)',
+    spin: 'Spin (rotate)',
+    orbit: 'Orbit (drift)',
+    custom: 'Custom (keyframes / calc)'
+  };
+  // Cycles is deliberately whole numbers only (see animRawFrac): a fractional
+  // cycle count makes POSITION match at the loop boundary but VELOCITY reverse,
+  // which is exactly the visible jump the seamless-loop guarantee exists to
+  // prevent. So the actual speed control is the shared Loop length above the
+  // layer list, not Cycles -- this live readout is what makes that connection
+  // obvious instead of something you have to infer from the hint text.
+  function formatAnimSeconds(secs){
+    if(secs >= 60) return (Math.round(secs/60 * 10)/10) + 'm';
+    return (Math.round(secs * 10)/10) + 's';
+  }
+  function cycleHintText(cycles){
+    var c = Math.max(1, Math.round(cycles || 1));
+    return 'Repeats every ' + formatAnimSeconds(animationLoopLengthSec / c) + '. To slow this down, raise the shared Loop length above -- Cycles has to stay a whole number, or the loop wouldn’t close perfectly.';
+  }
+  // Recomputes every card's live "Repeats every..." readout -- needed because
+  // changing the shared Loop length affects ALL layers' effective speed at
+  // once, without any of their own Cycles values changing (so nothing else
+  // would otherwise tell their cards to refresh). Cheap: a handful of DOM
+  // lookups, not a re-render.
+  function refreshAnimateCycleHints(){
+    // Each hint and its Cycles slider always share the same immediate Animate
+    // panel (one per layer, however deeply nested), so closest() finds the
+    // right pairing without accidentally matching a parent group's or a
+    // sibling child's controls.
+    document.querySelectorAll('[data-role="animateCyclesHint"]').forEach(function(hintEl){
+      var panel = hintEl.closest('[data-role="animatePanel"]');
+      var cyclesInput = panel ? panel.querySelector('[data-role="animateCycles"]') : null;
+      if(cyclesInput) hintEl.textContent = cycleHintText(+cyclesInput.value);
+    });
+  }
+  // Animate section, appended to every layer card's body. Reuses the same
+  // collapsible-toggle look as the Filters section below it.
   function animateControlsHTML(layer){
     var a = layer.animate;
     var isNoise = layer.type === 'noise';
+    var canScroll = animateCanScroll(layer);
+    // A style value of 'scroll' saved against a layer type that can't actually
+    // scroll (e.g. an older design's flag surviving a type change, or just the
+    // shared default) has nothing to fall back to visually -- computeAnimTransform
+    // already treats that combination as Pulse, so the dropdown shows the same
+    // thing it'll actually do rather than a style it can't offer.
+    var effStyle = (a.style === 'scroll' && !canScroll) ? 'pulse' : (a.style || 'scroll');
+    var styleOrder = canScroll ? ['scroll','pulse','spin','orbit','custom'] : ['pulse','spin','orbit','custom'];
     var h = '';
     h += '<div class="layer-controls-row filters-toggle-row"><label><input type="checkbox" data-role="animateEnabled"'+(a.enabled?' checked':'')+' /> <strong>Animate</strong></label></div>';
     h += '<div class="filters-panel" data-role="animatePanel"'+(a.enabled?'':' style="display:none"')+'>';
-    h += '<div class="layer-controls-row"><label>Cycles</label><div class="slidewrap"><input type="range" min="1" max="10" step="1" value="'+a.cycles+'" data-role="animateCycles" />'+valInputHTML('animateCyclesVal', a.cycles, '')+'</div></div>';
-    if(isNoise){
-      h += '<div class="layer-controls-row"><label>Drift</label><div class="slidewrap"><input type="range" min="10" max="200" value="'+a.amplitude+'" data-role="animateAmplitude" />'+valInputHTML('animateAmplitudeVal', a.amplitude, '%')+'</div></div>';
-      h += '<small class="hint">Drifts the noise field in a small seamless loop. Cycles is how many times it repeats within the Loop length set in the Animation panel above the layer list.</small>';
+    h += '<div class="layer-controls-row"><label>Motion style</label><select data-role="animateStyle" style="width:170px">' +
+           styleOrder.map(function(s){ return '<option value="'+s+'"'+(s===effStyle?' selected':'')+'>'+ANIM_STYLE_LABELS[s]+'</option>'; }).join('') +
+         '</select></div>';
+    h += '<div class="layer-controls-row"><label>Cycles</label><div class="slidewrap"><input type="range" min="1" max="200" step="1" value="'+a.cycles+'" data-role="animateCycles" />'+valInputHTML('animateCyclesVal', a.cycles, '')+'</div></div>';
+    h += '<small class="hint" data-role="animateCyclesHint" style="display:block;margin-top:-4px;">'+cycleHintText(a.cycles)+'</small>';
+
+    var showAmplitude = effStyle === 'pulse' || effStyle === 'orbit' || (effStyle === 'scroll' && isNoise);
+    if(showAmplitude){
+      var ampLabel = effStyle === 'pulse' ? 'Intensity' : (effStyle === 'orbit' ? 'Radius' : 'Drift');
+      h += '<div class="layer-controls-row"><label>'+ampLabel+'</label><div class="slidewrap"><input type="range" min="10" max="200" value="'+a.amplitude+'" data-role="animateAmplitude" />'+valInputHTML('animateAmplitudeVal', a.amplitude, '%')+'</div></div>';
+    }
+    if(effStyle === 'custom'){
+      h += '<textarea class="filter-svg-input" data-role="animateCustom" rows="3" placeholder="0% { opacity: 100; scale: 100; }&#10;50% { opacity: 60; scale: 130; }&#10;100% { opacity: 100; scale: 100; }">'+escAttr(a.custom||'')+'</textarea>';
+      h += '<small class="hint">Keyframes: percent stops with <code>opacity</code>, <code>scale</code>, <code>rotate</code>, <code>x</code>, <code>y</code> (numbers only) -- match your 0% and 100% values for a seamless loop. Or, with no <code>%</code> stops, one <code>property: expression;</code> per line using <code>t</code> (0-1 progress through one cycle), e.g. <code>rotate: t*360; scale: 100+20*sin(t*6.283);</code>.</small>';
     } else {
-      h += '<small class="hint">Scrolls the tile pattern in a seamless loop. Cycles is how many times it repeats within the Loop length set in the Animation panel above the layer list.</small>';
+      var hints = {
+        scroll: isNoise
+          ? 'Drifts the noise field in a small seamless loop.'
+          : 'Scrolls the tile pattern in a seamless loop.',
+        pulse: 'Breathes the whole layer’s scale and opacity in and out.',
+        spin: 'Rotates the whole layer a full turn per cycle.',
+        orbit: 'Drifts the whole layer’s position in a small circle.'
+      };
+      h += '<small class="hint">'+hints[effStyle]+'</small>';
     }
     h += '</div>';
     return h;
@@ -1541,9 +1615,10 @@
     wireFilterControls(cardEl, layer);
   }
 
-  // Wires the Animate section that animateControlsHTML() appends for
-  // eligible layer types only -- cardEl simply won't have these elements for
-  // an ineligible type, so every lookup here is defensive.
+  // Wires the Animate section that animateControlsHTML() appends to every
+  // layer card. Every lookup here is still defensive: which of the optional
+  // rows (Style, Amplitude, Custom) actually exist in the DOM depends on the
+  // layer's current style, per animateControlsHTML().
   function wireAnimateControls(cardEl, layer){
     var enabledInput = cardEl.querySelector('[data-role="animateEnabled"]');
     if(!enabledInput) return;
@@ -1555,11 +1630,23 @@
       syncAnimationLoopState();
       scheduleRender();
     });
+    var styleSelect = cardEl.querySelector('[data-role="animateStyle"]');
+    if(styleSelect){
+      styleSelect.addEventListener('change', function(){
+        a.style = styleSelect.value;
+        // Structural: which of the Amplitude row / Custom textarea / hint text
+        // show up depends on the chosen style, same reasoning as isMask above.
+        renderLayersList();
+        scheduleRender();
+      });
+    }
     var cyclesInput = cardEl.querySelector('[data-role="animateCycles"]');
     var cyclesVal = cardEl.querySelector('[data-role="animateCyclesVal"]');
+    var cyclesHintEl = cardEl.querySelector('[data-role="animateCyclesHint"]');
     cyclesInput.addEventListener('input', function(){
       a.cycles = Math.max(1, Math.round(+cyclesInput.value));
       cyclesVal.value = String(a.cycles);
+      if(cyclesHintEl) cyclesHintEl.textContent = cycleHintText(a.cycles);
       scheduleRender();
     });
     wireEditableValue(cyclesVal, cyclesInput);
@@ -1572,6 +1659,13 @@
         scheduleRender();
       });
       wireEditableValue(ampVal, ampInput);
+    }
+    var customInput = cardEl.querySelector('[data-role="animateCustom"]');
+    if(customInput){
+      customInput.addEventListener('change', function(){
+        a.custom = customInput.value;
+        scheduleRender();
+      });
     }
   }
 
@@ -1891,9 +1985,10 @@
   $('customH').addEventListener('input', onCustomSizeInput);
 
   $('animLoopSec').addEventListener('input', function(){
-    var v = Math.max(1, Math.min(60, Math.round(+$('animLoopSec').value) || 6));
+    var v = Math.max(1, Math.min(600, Math.round(+$('animLoopSec').value) || 6));
     animationLoopLengthSec = v;
     if(animationState.timeSec > v) animationState.timeSec = 0;
+    refreshAnimateCycleHints();
   });
   $('animPlayPauseBtn').addEventListener('click', function(){
     animationState.paused = !animationState.paused;
@@ -2190,7 +2285,7 @@
     if(payload.customH) $('customH').value = payload.customH;
     if(payload.filename) $('filename').value = payload.filename;
     if(payload.animLoopSec){
-      animationLoopLengthSec = Math.max(1, Math.min(60, Math.round(payload.animLoopSec)));
+      animationLoopLengthSec = Math.max(1, Math.min(600, Math.round(payload.animLoopSec)));
       $('animLoopSec').value = animationLoopLengthSec;
     }
     animationState.timeSec = 0;
@@ -2361,13 +2456,28 @@
   // zero extra bookkeeping. Cycles is a whole number specifically so this
   // fraction (and therefore the on-screen position) is guaranteed to land
   // back on exactly 0 at animationLoopLengthSec -- see defaultAnimate().
-  function animCycleFrac(layer){
+  // The raw per-cycle progress (0..1) through the current loop, independent of
+  // which motion style is in use -- shared by the internal tile-pattern/Perlin
+  // scroll math below AND by computeAnimTransform()'s Pulse/Spin/Orbit/Custom
+  // styles, so every style is built from the exact same seamless-loop guarantee
+  // (an integer Cycles count, never fractional).
+  function animRawFrac(layer){
     var a = layer.animate;
     if(!a || !a.enabled) return 0;
     var cycles = Math.max(1, Math.round(a.cycles || 1));
     var t = (animationLoopLengthSec > 0) ? (animationState.timeSec / animationLoopLengthSec) : 0;
     var frac = (t * cycles) % 1;
     return frac < 0 ? frac + 1 : frac;
+  }
+  // Used only by drawGeomPattern/drawPerlinNoiseLayer's OWN internal scroll/drift
+  // math -- returns 0 whenever a non-scroll style is selected, so a layer set to
+  // Pulse/Spin/Orbit/Custom doesn't ALSO silently scroll internally on top of its
+  // whole-layer transform.
+  function animCycleFrac(layer){
+    var a = layer.animate;
+    if(!a || !a.enabled) return 0;
+    if(a.style && a.style !== 'scroll') return 0;
+    return animRawFrac(layer);
   }
 
   function drawGeomPattern(layer, w, h, targetCtx, colorOverride){
@@ -2674,7 +2784,7 @@
     // its starting look (position AND direction of travel) once per whole
     // cycle, which is what makes a recorded clip of this loop seamlessly.
     var animOffsetX = 0, animOffsetY = 0;
-    if(layer.animate && layer.animate.enabled){
+    if(layer.animate && layer.animate.enabled && (!layer.animate.style || layer.animate.style === 'scroll')){
       var animCycles = Math.max(1, Math.round(layer.animate.cycles || 1));
       var driftAngle = (animationLoopLengthSec > 0) ? (2*Math.PI*animCycles*(animationState.timeSec/animationLoopLengthSec)) : 0;
       var driftAmp = (layer.animate.amplitude || 100) / 20;
@@ -2864,6 +2974,161 @@
     return parts.length ? parts.join(' ') : 'none';
   }
 
+  // ---------- whole-layer Animate transform (Pulse / Spin / Orbit / Custom) ----------
+  // Scroll/Pan is handled entirely inside drawGeomPattern/drawPerlinNoiseLayer
+  // (it shifts sample coordinates, since a tile grid or noise field has no
+  // single "position" to move). Every other style instead produces one small
+  // {opacity, scale, rotate, x, y} transform that drawLayer() applies around
+  // the layer's normal draw call -- which is why it works uniformly for every
+  // layer type, including a whole group's flattened bitmap.
+  var ANIM_IDENTITY = { opacity:100, scale:100, rotate:0, x:0, y:0 };
+  var ANIM_PROP_LIST = ['opacity','scale','rotate','x','y'];
+
+  function clampNum(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+  function computePulseTransform(a, frac){
+    var amp = (a.amplitude !== undefined ? a.amplitude : 100) / 100;
+    var wave = Math.sin(2*Math.PI*frac); // 0 at frac 0 and 1 -- seamless
+    var breathe = (1 - Math.cos(2*Math.PI*frac)) / 2; // 0 at frac 0 and 1, peaks mid-cycle
+    return {
+      opacity: clampNum(100 - breathe*amp*30, 15, 100),
+      scale: clampNum(100 + wave*amp*35, 10, 400),
+      rotate: 0, x: 0, y: 0
+    };
+  }
+  function computeSpinTransform(a, frac){
+    return { opacity:100, scale:100, rotate: frac*360, x:0, y:0 };
+  }
+  function computeOrbitTransform(a, frac){
+    var r = (a.amplitude !== undefined ? a.amplitude : 100) * 0.6;
+    var ang = 2*Math.PI*frac;
+    // Starts (and, after one full cycle, returns) at (0,0) -- no jump when
+    // Animate is first switched on, and no seam at the loop boundary.
+    return { opacity:100, scale:100, rotate:0, x: r*(Math.cos(ang)-1), y: r*Math.sin(ang) };
+  }
+
+  // Parsed/compiled Custom text, memoized per layer object (never on the layer
+  // itself, so it can't leak into cloneLayers()'s snapshots or the exported
+  // JSON/share code) -- same WeakMap pattern as the gradient LUT cache. Keyed
+  // off the source string too, so an edit to the textarea is picked up as soon
+  // as the string it was built from no longer matches.
+  var animCustomParseCache = new WeakMap();
+  function parseAnimCustom(layer){
+    var src = (layer.animate && layer.animate.custom) || '';
+    var cached = animCustomParseCache.get(layer);
+    if(cached && cached.src === src) return cached;
+    var result = { src: src, mode: 'none', timelines: null, exprs: null };
+    var stops = [];
+    var kfRe = /(-?\d+(?:\.\d+)?)\s*%\s*\{([^}]*)\}/g, m;
+    while((m = kfRe.exec(src))){
+      var pct = parseFloat(m[1]);
+      if(isNaN(pct)) continue;
+      var props = {};
+      m[2].split(';').forEach(function(pair){
+        var mm = /^\s*([a-zA-Z]+)\s*:\s*(.+?)\s*$/.exec(pair);
+        if(!mm) return;
+        var name = mm[1].toLowerCase();
+        var val = parseFloat(mm[2]);
+        if(!isNaN(val) && ANIM_PROP_LIST.indexOf(name) !== -1) props[name] = val;
+      });
+      stops.push({ t: clampNum(pct, 0, 100)/100, props: props });
+    }
+    if(stops.length){
+      stops.sort(function(x,y){ return x.t - y.t; });
+      var timelines = {};
+      ANIM_PROP_LIST.forEach(function(prop){
+        var pts = stops.filter(function(s){ return s.props[prop] !== undefined; })
+                        .map(function(s){ return { t: s.t, v: s.props[prop] }; });
+        if(pts.length) timelines[prop] = pts;
+      });
+      result.mode = 'keyframes';
+      result.timelines = timelines;
+    } else {
+      var exprs = {};
+      src.split(/[\n;]/).forEach(function(line){
+        var mm = /^\s*([a-zA-Z]+)\s*:\s*(.+?)\s*$/.exec(line);
+        if(!mm) return;
+        var name = mm[1].toLowerCase();
+        if(ANIM_PROP_LIST.indexOf(name) === -1) return;
+        try {
+          // eslint-disable-next-line no-new-func -- a tiny user-authored math
+          // formula for their OWN local design, same trust level this file
+          // already gives a pasted custom SVG <filter>.
+          exprs[name] = new Function('t','cycles','sin','cos','tan','abs','min','max','sqrt','pow','PI','floor','ceil','round',
+            'return (' + mm[2] + ');');
+        } catch(e){ /* malformed expression -- that property just won't animate */ }
+      });
+      if(Object.keys(exprs).length){ result.mode = 'expr'; result.exprs = exprs; }
+    }
+    animCustomParseCache.set(layer, result);
+    return result;
+  }
+  function interpolateAnimTimeline(pts, frac){
+    if(pts.length === 1) return pts[0].v;
+    if(frac <= pts[0].t) return pts[0].v;
+    var last = pts[pts.length-1];
+    if(frac >= last.t) return last.v;
+    for(var i=0; i<pts.length-1; i++){
+      var p0 = pts[i], p1 = pts[i+1];
+      if(frac >= p0.t && frac <= p1.t){
+        var span = p1.t - p0.t;
+        var lt = span > 0 ? (frac - p0.t)/span : 0;
+        return p0.v + (p1.v - p0.v)*lt;
+      }
+    }
+    return last.v;
+  }
+  function computeCustomTransform(layer, frac){
+    var out = { opacity:100, scale:100, rotate:0, x:0, y:0 };
+    var parsed = parseAnimCustom(layer);
+    var cycles = Math.max(1, Math.round((layer.animate && layer.animate.cycles) || 1));
+    if(parsed.mode === 'keyframes'){
+      ANIM_PROP_LIST.forEach(function(prop){
+        var pts = parsed.timelines[prop];
+        if(pts && pts.length) out[prop] = interpolateAnimTimeline(pts, frac);
+      });
+    } else if(parsed.mode === 'expr'){
+      ANIM_PROP_LIST.forEach(function(prop){
+        var fn = parsed.exprs[prop];
+        if(!fn) return;
+        try {
+          var v = fn(frac, cycles, Math.sin, Math.cos, Math.tan, Math.abs, Math.min, Math.max, Math.sqrt, Math.pow, Math.PI, Math.floor, Math.ceil, Math.round);
+          if(typeof v === 'number' && isFinite(v)) out[prop] = v;
+        } catch(e){ /* runtime error -- leave this property at its identity value */ }
+      });
+    }
+    return out;
+  }
+  function computeAnimTransform(layer){
+    var a = layer.animate;
+    if(!a || !a.enabled) return ANIM_IDENTITY;
+    var style = a.style || 'scroll';
+    if(style === 'scroll'){
+      if(animateCanScroll(layer)) return ANIM_IDENTITY; // handled internally by the draw function itself
+      style = 'pulse'; // no scroll behavior exists for this layer type -- fall back sensibly
+    }
+    var frac = animRawFrac(layer);
+    switch(style){
+      case 'pulse': return computePulseTransform(a, frac);
+      case 'spin': return computeSpinTransform(a, frac);
+      case 'orbit': return computeOrbitTransform(a, frac);
+      case 'custom': return computeCustomTransform(layer, frac);
+      default: return ANIM_IDENTITY;
+    }
+  }
+  // Applies an Animate transform around the (0,0,w,h) content a layer is
+  // about to draw -- must be called between ctx.save() and the drawLayerContent()
+  // call, with ctx.restore() afterward to keep it from leaking into later layers.
+  function applyAnimTransform(targetCtx, t, w, h){
+    if(t.scale === 100 && t.rotate === 0 && t.x === 0 && t.y === 0) return;
+    var cx = w/2, cy = h/2;
+    targetCtx.translate(cx + t.x, cy + t.y);
+    if(t.rotate) targetCtx.rotate(t.rotate * Math.PI/180);
+    var s = t.scale/100;
+    if(s !== 1) targetCtx.scale(s, s);
+    targetCtx.translate(-cx, -cy);
+  }
+
   // Reused scratch canvas for the filtered-layer path below -- avoids
   // allocating a new offscreen bitmap for every filtered layer on every frame.
   var filterBufCanvas = document.createElement('canvas');
@@ -2872,11 +3137,13 @@
   function drawLayer(layer, w, h, targetCtx){
     targetCtx = targetCtx || ctx;
     if(!layer.visible) return;
+    var animT = computeAnimTransform(layer);
     var filterStr = buildFilterString(layer);
     if(filterStr === 'none'){
       targetCtx.save();
-      targetCtx.globalAlpha = layer.opacity/100;
+      targetCtx.globalAlpha = (layer.opacity/100) * (animT.opacity/100);
       targetCtx.globalCompositeOperation = layer.blend;
+      applyAnimTransform(targetCtx, animT, w, h);
       drawLayerContent(layer, w, h, targetCtx);
       targetCtx.restore();
       return;
@@ -2894,9 +3161,12 @@
     filterBufCanvas.width = w;
     filterBufCanvas.height = h;
     filterBufCtx.clearRect(0, 0, w, h);
+    filterBufCtx.save();
+    applyAnimTransform(filterBufCtx, animT, w, h);
     drawLayerContent(layer, w, h, filterBufCtx);
+    filterBufCtx.restore();
     targetCtx.save();
-    targetCtx.globalAlpha = layer.opacity/100;
+    targetCtx.globalAlpha = (layer.opacity/100) * (animT.opacity/100);
     targetCtx.globalCompositeOperation = layer.blend;
     targetCtx.filter = filterStr;
     targetCtx.drawImage(filterBufCanvas, 0, 0);
@@ -3103,43 +3373,84 @@
     animationState.paused = false;
     animationState.timeSec = 0;
 
-    var stream = canvas.captureStream(30);
-    var chunks = [];
-    var recorder;
-    try {
-      recorder = new MediaRecorder(stream, { mimeType: mimeType });
-    } catch(e){
-      alert("Couldn't start recording in this browser.");
-      animationState.paused = wasPaused;
-      syncAnimationLoopState();
-      return;
-    }
-    recorder.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
-    recorder.onstop = function(){
-      var blob = new Blob(chunks, { type: 'video/webm' });
-      downloadBlob(blob, sanitizedFilename() + '.webm');
-      animationState.paused = wasPaused;
-      syncAnimationLoopState();
-      recordBtn.disabled = false;
-      recordBtn.textContent = 'Record .webm';
-    };
-
     recordBtn.disabled = true;
-    recorder.start();
-    var startTs = null;
-    function recordTick(ts){
-      if(startTs === null) startTs = ts;
-      var elapsed = (ts - startTs) / 1000;
-      animationState.timeSec = Math.min(elapsed, animationLoopLengthSec);
-      render();
-      recordBtn.textContent = 'Recording… ' + Math.max(0, Math.ceil(animationLoopLengthSec - elapsed)) + 's';
-      if(elapsed < animationLoopLengthSec){
+    recordBtn.textContent = 'Recording…';
+    // A short settle before capture actually starts: right after a layer-list
+    // rebuild (adding/toggling a layer, switching Motion Style, changing the Loop
+    // length, etc.) the browser can still be mid-reflow, and starting
+    // captureStream()/MediaRecorder in that instant has been observed (in at
+    // least one browser) to produce a truncated, near-empty recording even
+    // though playback itself looks completely normal. A brief real-time pause
+    // plus two animation frames gives any pending layout/style work time to
+    // fully finish first -- cheap (under 100ms, never noticeable) and makes
+    // Record reliable regardless of what the user just clicked right before it.
+    setTimeout(function(){
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){
+        // Manual frame-pumping: captureStream(0) starts the track with NO
+        // automatic internal frame timer, so nothing is ever delivered to the
+        // recorder except when we explicitly call track.requestFrame() --
+        // right after each render(). This is the documented way to keep an
+        // on-demand canvas render in lockstep with an on-demand video capture,
+        // and it fixes a real (if occasional) truncated/near-empty recording
+        // that could happen with automatic captureStream(fps): that mode
+        // decides for itself when the canvas is "dirty" and can occasionally
+        // miss the window if a render lands awkwardly relative to its own
+        // internal timer, especially right after a layer-list rebuild. Older
+        // browsers without track.requestFrame() fall back to the previous
+        // automatic-capture behavior.
+        var stream = canvas.captureStream(0);
+        var videoTrack = stream.getVideoTracks()[0];
+        var manualPump = !!(videoTrack && typeof videoTrack.requestFrame === 'function');
+        if(!manualPump){
+          stream = canvas.captureStream(30);
+          videoTrack = null;
+        }
+        var chunks = [];
+        var recorder;
+        try {
+          recorder = new MediaRecorder(stream, { mimeType: mimeType });
+        } catch(e){
+          alert("Couldn't start recording in this browser.");
+          animationState.paused = wasPaused;
+          syncAnimationLoopState();
+          recordBtn.disabled = false;
+          recordBtn.textContent = 'Record .webm';
+          return;
+        }
+        recorder.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+        recorder.onstop = function(){
+          var blob = new Blob(chunks, { type: 'video/webm' });
+          downloadBlob(blob, sanitizedFilename() + '.webm');
+          animationState.paused = wasPaused;
+          syncAnimationLoopState();
+          recordBtn.disabled = false;
+          recordBtn.textContent = 'Record .webm';
+        };
+        // Push the very first frame (the canvas as it already is, at timeSec=0)
+        // into the track before the recorder even starts, so there's never a
+        // gap between recorder.start() and the first requestFrame() call.
+        if(manualPump) videoTrack.requestFrame();
+        recorder.start();
+        if(manualPump) videoTrack.requestFrame();
+        var startTs = null;
+        function recordTick(ts){
+          if(startTs === null) startTs = ts;
+          var elapsed = (ts - startTs) / 1000;
+          animationState.timeSec = Math.min(elapsed, animationLoopLengthSec);
+          render();
+          if(manualPump) videoTrack.requestFrame();
+          recordBtn.textContent = 'Recording… ' + Math.max(0, Math.ceil(animationLoopLengthSec - elapsed)) + 's';
+          if(elapsed < animationLoopLengthSec){
+            requestAnimationFrame(recordTick);
+          } else {
+            recorder.stop();
+          }
+        }
         requestAnimationFrame(recordTick);
-      } else {
-        recorder.stop();
-      }
-    }
-    requestAnimationFrame(recordTick);
+      });
+    });
+    }, 60);
   }
 
   /* ---------- randomize / reset ---------- */
@@ -3237,13 +3548,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.17';
+  var APP_VERSION = '0.0.19';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
