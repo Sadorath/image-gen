@@ -23,11 +23,28 @@
       --input-bg:#ffffff;
     }
   }
+  /* Live theme sync with main.html (this page is normally loaded in an
+     iframe from there -- see the script at the bottom of this file): once
+     main.html tells us which theme it's in, a data-theme attribute here
+     wins over the OS-level prefers-color-scheme guess above, since an
+     attribute selector on :root is more specific than a plain :root rule
+     inside a media query. Opened standalone (no parent to ask), this page
+     just keeps using the OS-level guess -- these two rules never apply. */
+  :root[data-theme="light"]{
+    --bg-0:#eef0f2; --bg-1:#ffffff; --bg-2:#f6f7f8; --border:#c9d0d5;
+    --text:#1c2024; --text-dim:#5b6570; --accent:#1f8a72; --accent-dim:#166b58;
+    --input-bg:#ffffff;
+  }
+  :root[data-theme="dark"]{
+    --bg-0:#14171a; --bg-1:#1c2024; --bg-2:#23282d; --border:#333a40;
+    --text:#e7ebee; --text-dim:#9aa5ac; --accent:#5DC1AD; --accent-dim:#3a8c7b;
+    --input-bg:#12151a;
+  }
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; background:var(--bg-0); color:var(--text);
     font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif; font-size:13px;
     /* Firefox: theme every scrollbar in the page via inheritance, matching
-       index.html. Chromium/Safari use the ::-webkit-scrollbar rules below. */
+       main.html. Chromium/Safari use the ::-webkit-scrollbar rules below. */
     scrollbar-width:thin;
     scrollbar-color:var(--border) var(--bg-1);
   }
@@ -184,5 +201,27 @@
     </section>
   </main>
 </div>
+<script>
+(function(){
+  "use strict";
+  // Synced with main.html's Light/Dark theme (see broadcastThemeToHints and
+  // its message listener there) instead of only ever going by the OS-level
+  // prefers-color-scheme guess the CSS above falls back to. Works whichever
+  // page finishes loading first: main.html pushes its theme on every toggle
+  // and on opening the Hints & Tips modal, and this page also asks for it
+  // once up front in case that push already happened before this listener
+  // was attached.
+  function applyTheme(theme){
+    document.documentElement.setAttribute('data-theme', theme === 'light' ? 'light' : 'dark');
+  }
+  window.addEventListener('message', function(e){
+    if(e.data && e.data.type === 'bgGeneratorTheme') applyTheme(e.data.theme);
+  });
+  if(window.parent && window.parent !== window){
+    try { window.parent.postMessage({ type:'bgGeneratorThemeRequest' }, '*'); }
+    catch(e){ /* cross-origin under some file:// setups -- just keep the OS-level guess */ }
+  }
+})();
+</script>
 </body>
 </html>

@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.27 — 2026-09-05
+
+- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches "index.html" specifically can't hold back an update — every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.
+- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting — it updates instantly if you switch themes while the guide is open.
+
 ## v0.0.26 — 2026-09-05
 
 - The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself — modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.
