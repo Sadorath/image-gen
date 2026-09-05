@@ -1,0 +1,1903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Background Image Generator</title>
+<style>
+  :root{
+    --bg-0:#14171a;
+    --bg-1:#1c2024;
+    --bg-2:#23282d;
+    --bg-3:#1a1e22;
+    --bg-4:#20252a;
+    --border:#333a40;
+    --text:#e7ebee;
+    --text-dim:#9aa5ac;
+    --accent:#5DC1AD;
+    --accent-dim:#3a8c7b;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;height:100%;
+    background:var(--bg-0);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+    font-size:13px;
+  }
+  .app{ display:flex; height:100vh; width:100%; }
+
+  /* ---------------- Sidebar ---------------- */
+  .panel{
+    width:400px;
+    min-width:400px;
+    background:var(--bg-1);
+    border-right:1px solid var(--border);
+    overflow-y:auto;
+    overflow-x:hidden;
+    padding:16px 16px 60px 16px;
+  }
+  .panel h1{ font-size:15px; margin:0 0 4px 0; letter-spacing:.3px; }
+  .panel .sub{ color:var(--text-dim); font-size:11px; margin:0 0 18px 0; line-height:1.5; }
+  fieldset{
+    border:1px solid var(--border);
+    border-radius:8px;
+    margin:0 0 14px 0;
+    padding:10px 12px 12px 12px;
+    background:var(--bg-2);
+    min-width:0; /* fieldset defaults to a content-based min-width, which lets a crowded
+                    layer-card header force it (and the whole sidebar) wider than intended */
+  }
+  legend{
+    font-size:11px; font-weight:600; text-transform:uppercase;
+    letter-spacing:.6px; color:var(--accent); padding:0 6px;
+  }
+  .row{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin:8px 0; }
+  .row.col{ flex-direction:column; align-items:stretch; }
+  label{ color:var(--text-dim); font-size:11.5px; display:flex; align-items:center; gap:6px; min-width:0; }
+  .val{ color:var(--text); font-variant-numeric:tabular-nums; font-size:11px; min-width:34px; text-align:right; }
+  select, input[type="number"], input[type="text"]{
+    background:#12151a; color:var(--text); border:1px solid var(--border);
+    border-radius:5px; padding:5px 6px; font-size:12px; width:100%;
+  }
+  /* Editable slider-value readouts: look like the plain text they replace --
+     no box, just an underline hinting they're typeable -- so this has to win
+     over the generic input[type="text"] styling above despite equal selector
+     specificity, hence appearing after it in the cascade. */
+  input.val{
+    background:none; border:none; border-bottom:1px dashed var(--text-dim);
+    border-radius:0; padding:0 1px 1px 1px; width:40px; cursor:text;
+  }
+  input.val:hover{ border-bottom-color:var(--accent); }
+  input.val:focus{ outline:none; border-bottom:1px solid var(--accent); color:var(--accent); }
+  input[type="range"]{
+    -webkit-appearance:none; width:100%; height:4px; border-radius:2px;
+    background:#12151a; outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:13px;height:13px;border-radius:50%;
+    background:var(--accent); cursor:pointer; border:2px solid #0b0d10;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width:13px;height:13px;border-radius:50%; background:var(--accent);
+    cursor:pointer; border:2px solid #0b0d10;
+  }
+  input[type="color"]{
+    -webkit-appearance:none; width:26px;height:22px;
+    border:1px solid var(--border); border-radius:5px; padding:0;
+    background:none; cursor:pointer; flex:0 0 auto;
+  }
+  input[type="color"]::-webkit-color-swatch-wrapper{padding:0;}
+  input[type="color"]::-webkit-color-swatch{border:none;border-radius:4px;}
+  input[type="checkbox"]{ width:15px;height:15px; accent-color:var(--accent); flex:0 0 auto; }
+  .slidewrap{flex:1;display:flex;align-items:center;gap:8px;min-width:0;}
+  .two-col{display:flex;gap:8px;}
+  .two-col > div{flex:1;}
+  button{
+    font-family:inherit; font-size:12px; border:none; border-radius:6px;
+    padding:9px 10px; cursor:pointer; font-weight:600; letter-spacing:.2px;
+  }
+  .btn-primary{ background:var(--accent); color:#0b1a16; width:100%; }
+  .btn-primary:hover{background:#6fd2bd;}
+  .btn-row{display:flex;gap:8px;margin-top:4px;}
+  .btn-secondary{ background:#2b3238; color:var(--text); flex:1; }
+  .btn-secondary:hover{background:#353d44;}
+  .btn-secondary:disabled{ opacity:.35; cursor:not-allowed; }
+  .btn-secondary:disabled:hover{ background:#2b3238; }
+  small.hint{ display:block; color:var(--text-dim); font-size:10.5px; margin-top:2px; line-height:1.4; }
+
+  /* ---------------- Layers ---------------- */
+  .add-layer-wrap{ position:relative; margin-bottom:10px; }
+  .add-menu{
+    position:absolute; top:calc(100% + 4px); left:0; right:0;
+    background:var(--bg-4); border:1px solid var(--border); border-radius:7px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5); z-index:30; overflow:hidden; display:none;
+  }
+  .add-menu.open{display:block;}
+  .add-menu button{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    color:var(--text); padding:9px 12px; font-size:12px; font-weight:500;
+    cursor:pointer; border-radius:0;
+  }
+  .add-menu button:hover{ background:#2b3238; color:var(--accent); }
+  .add-menu button + button{ border-top:1px solid var(--border); }
+  .add-menu button.add-group-btn{ color:#e0bd6b; font-weight:600; }
+  .add-menu button.add-group-btn:hover{ background:#2b3238; color:#f0cd7d; }
+  .layers-empty{ color:var(--text-dim); font-size:11.5px; text-align:center; padding:16px 6px; border:1px dashed var(--border); border-radius:8px; }
+
+  .layer-card{ background:var(--bg-3); border:1px solid var(--border); border-radius:7px; margin-bottom:8px; overflow:hidden; }
+  .layer-card.hidden-layer{ opacity:.45; }
+  .layer-card.is-mask-layer{ border-color:#8a6ad8; border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0; }
+  .layer-card.is-mask-layer .layer-header{ background:#2a2440; }
+  .layer-card.is-masked-target{ border-top-left-radius:0; border-top-right-radius:0; border-top:1px dashed #8a6ad8; margin-top:0; }
+  .layer-card.is-group-layer{ border-color:#6b5626; }
+  .layer-card.is-group-layer > .layer-header{ background:#332a18; }
+  .mask-badge{
+    font-size:9px; color:#c9b6ff; background:#3a2f66; border-radius:4px; padding:2px 5px;
+    letter-spacing:.4px; white-space:nowrap; flex:0 0 auto; display:inline-flex; align-items:center; gap:3px;
+  }
+  .group-icon{ flex:0 0 auto; font-size:12px; }
+  .select-checkbox{ margin-right:1px; }
+  .layer-children{ margin:8px 0 2px 6px; padding-left:10px; border-left:2px solid #6b5626; }
+  .layer-children .layers-empty{ padding:10px 6px; font-size:11px; }
+  .mask-toggle{ display:flex; align-items:center; gap:7px; color:var(--text); font-size:11.5px; cursor:pointer; }
+  .layer-header{ display:flex; align-items:center; gap:5px; padding:6px 7px; background:var(--bg-4); }
+  .header-main{ flex:1; display:flex; align-items:center; gap:6px; cursor:pointer; min-width:0; }
+  .chevron{ transition:transform .15s; display:inline-block; color:var(--text-dim); font-size:9px; flex:0 0 auto; }
+  .chevron.open{ transform:rotate(90deg); }
+  .name-input{
+    flex:1; min-width:0; background:transparent; border:none; color:var(--text);
+    font-size:12px; font-weight:600; padding:3px 4px; border-radius:4px;
+  }
+  .name-input:focus{ background:#12151a; outline:1px solid var(--accent-dim); }
+  .layer-type-tag{
+    font-size:9px; color:var(--text-dim); background:#12151a; border-radius:4px;
+    padding:2px 5px; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; flex:0 0 auto;
+  }
+  .icon-btn{
+    background:#2b3238; border:none; color:var(--text-dim); border-radius:5px;
+    width:22px;height:22px; font-size:12px; line-height:1; cursor:pointer;
+    display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
+  }
+  .icon-btn:hover{ background:#353d44; color:var(--text); }
+  .icon-btn:disabled{ opacity:.25; cursor:not-allowed; }
+  .icon-btn.danger:hover{ background:#5a2a2a; color:#ff9d9d; }
+  .layer-body{ padding:10px 10px 12px 10px; border-top:1px solid var(--border); display:none; }
+  .layer-body.open{ display:block; }
+  .layer-controls-row{ display:flex; align-items:center; gap:8px; margin:7px 0; }
+  .layer-controls-row label{ min-width:60px; flex:0 0 auto; }
+  .stops-list{ margin-top:2px; }
+  .stop-row{ display:flex; align-items:center; gap:7px; margin:6px 0; padding:6px; background:#12151a; border-radius:6px; }
+  .add-stop-btn{ background:#2b3238; color:var(--text-dim); width:100%; padding:6px 10px; font-size:11.5px; margin-top:2px; }
+  .add-stop-btn:hover{ background:#353d44; color:var(--text); }
+
+  .color-alpha{ display:flex; align-items:center; gap:7px; flex:1; min-width:0; }
+  .swatch-checker{
+    width:24px;height:24px;border-radius:6px;overflow:hidden;position:relative;
+    display:inline-block;flex:0 0 auto;border:1px solid var(--border);
+    background-image: conic-gradient(#3a4046 90deg, transparent 90deg 180deg, #3a4046 180deg 270deg, transparent 270deg);
+    background-size:8px 8px; background-color:#24282c;
+  }
+  .swatch-fill{ position:absolute; inset:0; }
+
+  /* ---------------- Stage ---------------- */
+  .stage{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px; overflow:auto;
+    background:
+      linear-gradient(45deg, #1a1d21 25%, transparent 25%) -10px 0/20px 20px,
+      linear-gradient(-45deg, #1a1d21 25%, transparent 25%) -10px 0/20px 20px,
+      linear-gradient(45deg, transparent 75%, #1a1d21 75%) -10px 0/20px 20px,
+      linear-gradient(-45deg, transparent 75%, #1a1d21 75%) -10px 0/20px 20px,
+      #16191c;
+  }
+  .canvas-wrap{
+    max-width:100%; max-height:80vh; box-shadow:0 10px 40px rgba(0,0,0,.55);
+    border-radius:6px; overflow:hidden; border:1px solid #000; line-height:0;
+  }
+  canvas{ display:block; max-width:80vw; max-height:78vh; width:auto; height:auto; }
+  .stage-footer{ margin-top:14px; color:var(--text-dim); font-size:11.5px; display:flex; gap:16px; align-items:center; }
+  .dot{color:var(--accent);}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="panel">
+    <h1>Background Image Generator</h1>
+    <p class="sub">Stack as many layers as you like, reorder them, blend them, and export the result as a PNG at any resolution. Everything renders live &mdash; nothing leaves this page.</p>
+
+    <!-- CANVAS / EXPORT -->
+    <fieldset>
+      <legend>Canvas &amp; Export</legend>
+      <div class="row">
+        <label for="preset">Resolution</label>
+        <select id="preset" style="width:170px">
+          <option value="1920x1080">1920 &times; 1080 (Full HD)</option>
+          <option value="2560x1440" selected>2560 &times; 1440 (QHD)</option>
+          <option value="3840x2160">3840 &times; 2160 (4K UHD)</option>
+          <option value="3440x1440">3440 &times; 1440 (Ultrawide)</option>
+          <option value="2560x1600">2560 &times; 1600 (16:10)</option>
+          <option value="1366x768">1366 &times; 768</option>
+          <option value="1080x1920">1080 &times; 1920 (Mobile)</option>
+          <option value="custom">Custom&hellip;</option>
+        </select>
+      </div>
+      <div class="row col" id="customSizeRow" style="display:none">
+        <div class="two-col">
+          <div>
+            <label for="customW">Width</label>
+            <input type="number" id="customW" min="16" max="8000" value="1920" />
+          </div>
+          <div>
+            <label for="customH">Height</label>
+            <input type="number" id="customH" min="16" max="8000" value="1080" />
+          </div>
+        </div>
+      </div>
+      <div class="row col">
+        <label for="filename">File name</label>
+        <input type="text" id="filename" value="background" />
+      </div>
+      <button class="btn-primary" id="exportBtn">Export PNG</button>
+      <button class="btn-secondary" id="shareLinkBtn" style="width:100%;margin-top:8px;">&#128279; Copy Share Link</button>
+      <textarea id="shareLinkOutput" readonly rows="3" style="display:none;width:100%;margin-top:8px;font-size:10px;font-family:monospace;resize:vertical;background:#12151a;color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px;"></textarea>
+      <small class="hint" id="shareLinkHint" style="display:none;"></small>
+    </fieldset>
+
+    <!-- LAYERS -->
+    <fieldset>
+      <legend>Layers</legend>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button class="btn-secondary" id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8630; Undo</button>
+        <button class="btn-secondary" id="redoBtn" title="Redo (Ctrl+Shift+Z)" disabled>&#8631; Redo</button>
+      </div>
+      <div class="add-layer-wrap">
+        <button class="btn-secondary" id="addLayerBtn" style="width:100%">+ Add Layer</button>
+        <div class="add-menu" id="addMenu">
+          <button data-type="group" class="add-group-btn">&#128193; New Group</button>
+          <button data-type="solid">Solid Fill</button>
+          <button data-type="linear">Linear Gradient</button>
+          <button data-type="radial">Radial Gradient</button>
+          <button data-type="checker">Diagonal Checker</button>
+          <button data-type="stripes">Stripes</button>
+          <button data-type="dots">Dots</button>
+          <button data-type="hex">Hex Grid</button>
+          <button data-type="hud">Sci-Fi HUD Grid</button>
+          <button data-type="noise">Grain / Noise</button>
+          <button data-type="image">Image Overlay&hellip;</button>
+        </div>
+      </div>
+      <button class="btn-secondary" id="groupSelectedBtn" style="width:100%;margin-bottom:10px;" disabled title="Check layers below, then group them into a folder">Group Selected</button>
+      <div id="layersList"></div>
+      <small class="hint">Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as mask" toggle to clip the layer directly beneath it to this layer's shape instead. Check the box on any layers to group them into a folder with its own shared opacity and blend.</small>
+    </fieldset>
+
+    <div class="btn-row">
+      <button class="btn-secondary" id="randomizeBtn">Randomize</button>
+      <button class="btn-secondary" id="resetBtn">Reset</button>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="canvas-wrap">
+      <canvas id="canvas" width="2560" height="1440"></canvas>
+    </div>
+    <div class="stage-footer">
+      <span id="resReadout">2560 &times; 1440 px</span>
+      <span class="dot">&bull;</span>
+      <span>Renders live &mdash; export any time to capture the current design</span>
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var canvas = document.getElementById('canvas');
+  var ctx = canvas.getContext('2d');
+
+  function $(id){ return document.getElementById(id); }
+  function val(id){ return $(id).value; }
+  function num(id){ return parseFloat($(id).value); }
+
+  var BLEND_MODES = [
+    ['source-over','Normal'], ['overlay','Overlay'], ['multiply','Multiply'],
+    ['screen','Screen'], ['difference','Difference'], ['color-dodge','Color dodge'],
+    ['color-burn','Color burn'], ['hard-light','Hard light'], ['soft-light','Soft light'],
+    ['exclusion','Exclusion']
+  ];
+
+  var TYPE_LABELS = {
+    solid:'Solid Fill', linear:'Linear Gradient', radial:'Radial Gradient',
+    checker:'Diagonal Checker', stripes:'Stripes', dots:'Dots',
+    hex:'Hex Grid', hud:'Sci-Fi HUD Grid', noise:'Grain / Noise',
+    image:'Image Overlay', group:'Group'
+  };
+  var GEOM_TYPES = ['checker','stripes','dots','hex','hud'];
+
+  /* ---------- color helpers (rgba with alpha) ---------- */
+  function makeColor(r,g,b,a){ return { r:r, g:g, b:b, a:(a===undefined?1:a) }; }
+  function rgbaCss(c){ return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + c.a + ')'; }
+  function hexFromRgb(c){
+    return '#' + [c.r,c.g,c.b].map(function(v){ return Math.max(0,Math.min(255,v)).toString(16).padStart(2,'0'); }).join('');
+  }
+  function rgbFromHex(hex, a){
+    var n = parseInt(hex.replace('#',''),16);
+    return { r:(n>>16)&255, g:(n>>8)&255, b:n&255, a:a };
+  }
+  function randomColor(){
+    return makeColor(Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.round((0.5+Math.random()*0.5)*100)/100);
+  }
+  function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+  /* ---------- layer model ---------- */
+  var layerIdCounter = 1;
+  var layers = []; // index 0 = topmost layer
+
+  function newLayer(type){
+    var base = { id:'L'+(layerIdCounter++), type:type, name:TYPE_LABELS[type], visible:true, opacity:100, blend:'source-over', expanded:true, isMask:false };
+    switch(type){
+      case 'solid':
+        base.color = makeColor(60,60,60,1);
+        break;
+      case 'linear':
+        base.angle = 180;
+        base.stops = [
+          { pos:0,  color: makeColor(117,200,156,1) },
+          { pos:70, color: makeColor(45,125,116,1) },
+          { pos:100,color: makeColor(18,64,61,1) }
+        ];
+        break;
+      case 'radial':
+        base.cx = 50; base.cy = 50;
+        base.stops = [
+          { pos:0,   color: makeColor(255,255,255,1) },
+          { pos:100, color: makeColor(0,0,0,1) }
+        ];
+        break;
+      case 'checker':
+        base.color = makeColor(10,10,10,1); base.angle = 45; base.size = 35; base.fill = 50;
+        base.blend = 'overlay'; base.opacity = 55;
+        break;
+      case 'stripes':
+        base.color = makeColor(10,10,10,1); base.angle = 45; base.size = 35; base.fill = 50;
+        break;
+      case 'dots':
+        base.color = makeColor(10,10,10,1); base.angle = 0; base.size = 35; base.fill = 45;
+        break;
+      case 'hex':
+        base.color = makeColor(0,255,220,1); base.angle = 0; base.size = 44; base.fill = 18;
+        base.blend = 'screen'; base.opacity = 80;
+        break;
+      case 'hud':
+        base.color = makeColor(0,255,220,1); base.angle = 0; base.size = 70; base.fill = 15;
+        base.blend = 'screen'; base.opacity = 80;
+        break;
+      case 'noise':
+        base.intensity = 18; base.mono = true; base.blend = 'overlay';
+        base.noiseType = 'static';
+        base.perlin = {
+          style:'clouds', scale:180, octaves:5, roughness:0.5,
+          veinFreq:6, power:8, contrast:50, seed: Math.floor(Math.random()*1000000000)
+        };
+        base.noiseGradient = {
+          stops:[ { pos:0, color: makeColor(255,255,255,0) }, { pos:100, color: makeColor(255,255,255,1) } ]
+        };
+        break;
+      case 'image':
+        base.imgSrc = null; base.imgName = '';
+        base.fit = 'contain'; base.scale = 100; base.offsetX = 0; base.offsetY = 0;
+        base.flipH = false; base.flipV = false;
+        break;
+      case 'group':
+        base.name = 'Group';
+        base.children = [];
+        break;
+    }
+    if(GEOM_TYPES.indexOf(type) !== -1){
+      base.fillMode = 'solid';
+      base.patternGradient = {
+        kind:'linear', angle:180, cx:50, cy:50,
+        stops:[ { pos:0, color: makeColor(0,255,220,1) }, { pos:100, color: makeColor(255,0,200,1) } ]
+      };
+    }
+    return base;
+  }
+
+  function defaultLayers(){
+    var checker = newLayer('checker'); checker.expanded = true;
+    var gradient = newLayer('linear'); gradient.expanded = false;
+    return [checker, gradient];
+  }
+
+  /* ---------- structural ops ---------- */
+  // Layers can now live nested inside a group's `children` array instead of
+  // only the top-level `layers` array, so any op addressed by id (move,
+  // delete, duplicate) has to search the whole tree for whichever array
+  // actually holds that id, rather than assuming `layers` itself.
+  function findContainer(id, list){
+    list = list || layers;
+    for(var i=0; i<list.length; i++){
+      if(list[i].id === id) return { list:list, index:i };
+      if(list[i].type === 'group'){
+        var found = findContainer(id, list[i].children);
+        if(found) return found;
+      }
+    }
+    return null;
+  }
+  function regenerateIds(layer){
+    layer.id = 'L' + (layerIdCounter++);
+    if(layer.type === 'group' && layer.children){
+      layer.children.forEach(regenerateIds);
+    }
+  }
+
+  var selectedLayerIds = {}; // ephemeral UI state for "Group Selected" -- not part of the document, never saved to undo history
+
+  function addLayer(type){
+    var l = newLayer(type);
+    layers.unshift(l);
+    renderLayersList();
+    scheduleRender();
+    closeAddMenu();
+  }
+  function moveLayer(id, delta){
+    var loc = findContainer(id);
+    if(!loc) return;
+    var newIdx = loc.index + delta;
+    if(newIdx < 0 || newIdx >= loc.list.length) return;
+    var tmp = loc.list[loc.index]; loc.list[loc.index] = loc.list[newIdx]; loc.list[newIdx] = tmp;
+    renderLayersList();
+    scheduleRender();
+  }
+  function deleteLayer(id){
+    var loc = findContainer(id);
+    if(!loc) return;
+    loc.list.splice(loc.index, 1);
+    delete selectedLayerIds[id];
+    renderLayersList();
+    scheduleRender();
+  }
+  function duplicateLayer(id){
+    var loc = findContainer(id);
+    if(!loc) return;
+    var original = loc.list[loc.index];
+    var clone = cloneValue(original);
+    regenerateIds(clone); // fresh ids through the whole subtree, including a duplicated group's children
+    clone.name = original.name + ' copy';
+    clone.expanded = true;
+    loc.list.splice(loc.index, 0, clone);
+    renderLayersList();
+    scheduleRender();
+  }
+
+  // Wraps every currently-checked layer into a new group at the position of
+  // the topmost one, in their existing top-to-bottom order. Layers checked
+  // across different parents (e.g. one at top level, one already inside
+  // another group) can't share a group, so only the selection that shares
+  // the first checked layer's parent list is used.
+  function groupSelected(){
+    var ids = Object.keys(selectedLayerIds).filter(function(id){ return selectedLayerIds[id]; });
+    if(ids.length === 0) return;
+    var locs = ids.map(function(id){ return findContainer(id); }).filter(Boolean);
+    if(locs.length === 0) return;
+    var targetList = locs[0].list;
+    locs = locs.filter(function(loc){ return loc.list === targetList; });
+    var indices = locs.map(function(loc){ return loc.index; }).sort(function(a,b){ return a-b; });
+    var topIndex = indices[0];
+    var children = indices.map(function(idx){ return targetList[idx]; });
+    for(var i=indices.length-1; i>=0; i--){ targetList.splice(indices[i], 1); }
+    var group = newLayer('group');
+    group.children = children;
+    targetList.splice(topIndex, 0, group);
+    selectedLayerIds = {};
+    renderLayersList();
+    scheduleRender();
+  }
+
+  function ungroupLayer(id){
+    var loc = findContainer(id);
+    if(!loc) return;
+    var group = loc.list[loc.index];
+    if(group.type !== 'group') return;
+    var args = [loc.index, 1].concat(group.children || []);
+    loc.list.splice.apply(loc.list, args);
+    renderLayersList();
+    scheduleRender();
+  }
+
+  function updateGroupButtonState(){
+    var btn = $('groupSelectedBtn');
+    if(!btn) return;
+    var count = Object.keys(selectedLayerIds).filter(function(id){ return selectedLayerIds[id]; }).length;
+    btn.disabled = count === 0;
+    btn.textContent = count > 0 ? 'Group Selected (' + count + ')' : 'Group Selected';
+  }
+
+  /* ---------- HTML builders ---------- */
+  function blendOptionsHTML(selected){
+    return BLEND_MODES.map(function(b){
+      return '<option value="'+b[0]+'"'+(b[0]===selected?' selected':'')+'>'+b[1]+'</option>';
+    }).join('');
+  }
+
+  // Editable value field that sits next to a range slider: looks like the plain
+  // text readout it replaces (no box, just an underline hinting it's typeable),
+  // but is a real <input> so the user can type an exact number straight in.
+  function valInputHTML(role, value, unit){
+    return '<input type="text" inputmode="decimal" autocomplete="off" spellcheck="false" class="val" data-role="'+role+'" value="'+value+(unit||'')+'" />';
+  }
+
+  function colorAlphaControlHTML(color){
+    return (
+      '<div class="color-alpha" data-color-control>' +
+        '<span class="swatch-checker"><span class="swatch-fill" data-role="alphaPreview" style="background-color:'+rgbaCss(color)+'"></span></span>' +
+        '<input type="color" data-role="colorHex" value="'+hexFromRgb(color)+'" title="Color" />' +
+        '<div class="slidewrap"><input type="range" min="0" max="100" value="'+Math.round(color.a*100)+'" data-role="colorAlpha" />'+valInputHTML('colorAlphaVal', Math.round(color.a*100), '%')+'</div>' +
+      '</div>'
+    );
+  }
+
+  function stopsListHTML(stops){
+    return stops.map(function(s){
+      return (
+        '<div class="stop-row">' +
+          colorAlphaControlHTML(s.color) +
+          '<div class="slidewrap" style="max-width:90px"><input type="range" min="0" max="100" value="'+s.pos+'" data-role="stopPos" />'+valInputHTML('stopPosVal', s.pos, '%')+'</div>' +
+          (stops.length > 2 ? '<button class="icon-btn danger" data-role="removeStop" title="Remove stop">&times;</button>' : '') +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function bodyHTML(layer){
+    var h = '';
+    h += '<div class="layer-controls-row"><label>Opacity</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+layer.opacity+'" data-role="opacity" />'+valInputHTML('opacityVal', layer.opacity, '%')+'</div></div>';
+    h += '<div class="layer-controls-row"><label class="mask-toggle"><input type="checkbox" data-role="isMask"'+(layer.isMask?' checked':'')+' /> Use as mask for layer below</label></div>';
+    if(layer.isMask){
+      h += '<small class="hint">This layer won&rsquo;t be drawn itself &mdash; its shape and opacity clip the layer directly beneath it in the list instead. Must sit immediately above the layer it masks; blend mode doesn&rsquo;t apply to a mask.</small>';
+    } else {
+      h += '<div class="layer-controls-row"><label>Blend</label><select data-role="blend" style="width:160px">'+blendOptionsHTML(layer.blend)+'</select></div>';
+    }
+
+    if(layer.type === 'solid'){
+      h += '<div class="layer-controls-row"><label>Color</label>'+colorAlphaControlHTML(layer.color)+'</div>';
+    } else if(layer.type === 'linear' || layer.type === 'radial'){
+      if(layer.type === 'linear'){
+        h += '<div class="layer-controls-row"><label>Angle</label><div class="slidewrap"><input type="range" min="0" max="360" value="'+layer.angle+'" data-role="angle" />'+valInputHTML('angleVal', layer.angle, '&deg;')+'</div></div>';
+      } else {
+        h += '<div class="layer-controls-row"><label>Center X</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+layer.cx+'" data-role="cx" />'+valInputHTML('cxVal', layer.cx, '%')+'</div></div>';
+        h += '<div class="layer-controls-row"><label>Center Y</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+layer.cy+'" data-role="cy" />'+valInputHTML('cyVal', layer.cy, '%')+'</div></div>';
+      }
+      h += '<div class="stops-list" data-role="stopsList">'+stopsListHTML(layer.stops)+'</div>';
+      h += '<button class="add-stop-btn" data-role="addStop"'+(layer.stops.length>=6?' disabled':'')+'>+ Add color stop</button>';
+    } else if(GEOM_TYPES.indexOf(layer.type) !== -1){
+      var isWireframe = (layer.type === 'hex' || layer.type === 'hud');
+      var fillLabel = isWireframe ? 'Line width' : 'Fill';
+
+      h += '<div class="layer-controls-row"><label>Fill with</label><select data-role="fillMode" style="width:150px">' +
+             '<option value="solid"'+(layer.fillMode!=='gradient'?' selected':'')+'>Solid color</option>' +
+             '<option value="gradient"'+(layer.fillMode==='gradient'?' selected':'')+'>Gradient</option>' +
+           '</select></div>';
+
+      if(layer.fillMode === 'gradient'){
+        var g = layer.patternGradient;
+        h += '<div class="layer-controls-row"><label>Gradient</label><select data-role="gradKind" style="width:150px">' +
+               '<option value="linear"'+(g.kind!=='radial'?' selected':'')+'>Linear</option>' +
+               '<option value="radial"'+(g.kind==='radial'?' selected':'')+'>Radial</option>' +
+             '</select></div>';
+        if(g.kind === 'radial'){
+          h += '<div class="layer-controls-row"><label>Center X</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+g.cx+'" data-role="gradCx" />'+valInputHTML('gradCxVal', g.cx, '%')+'</div></div>';
+          h += '<div class="layer-controls-row"><label>Center Y</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+g.cy+'" data-role="gradCy" />'+valInputHTML('gradCyVal', g.cy, '%')+'</div></div>';
+        } else {
+          h += '<div class="layer-controls-row"><label>Grad. angle</label><div class="slidewrap"><input type="range" min="0" max="360" value="'+g.angle+'" data-role="gradAngle" />'+valInputHTML('gradAngleVal', g.angle, '&deg;')+'</div></div>';
+        }
+        h += '<div class="stops-list" data-role="patternStopsList">'+stopsListHTML(g.stops)+'</div>';
+        h += '<button class="add-stop-btn" data-role="addPatternStop"'+(g.stops.length>=6?' disabled':'')+'>+ Add color stop</button>';
+        h += '<small class="hint">The gradient sweeps across the whole canvas and shows through only where the pattern shapes are &mdash; it stays screen-aligned no matter how the tile angle below is rotated.</small>';
+      } else {
+        h += '<div class="layer-controls-row"><label>Color</label>'+colorAlphaControlHTML(layer.color)+'</div>';
+      }
+
+      h += '<div class="layer-controls-row"><label>Tile angle</label><div class="slidewrap"><input type="range" min="0" max="360" value="'+layer.angle+'" data-role="angle" />'+valInputHTML('angleVal', layer.angle, '&deg;')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>Tile size</label><div class="slidewrap"><input type="range" min="4" max="200" value="'+layer.size+'" data-role="size" />'+valInputHTML('sizeVal', layer.size, 'px')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>'+fillLabel+'</label><div class="slidewrap"><input type="range" min="5" max="95" value="'+layer.fill+'" data-role="fill" />'+valInputHTML('fillVal', layer.fill, '%')+'</div></div>';
+    } else if(layer.type === 'noise'){
+      h += '<div class="layer-controls-row"><label>Noise type</label><select data-role="noiseType" style="width:150px">' +
+             '<option value="static"'+(layer.noiseType!=='perlin'?' selected':'')+'>Static (grain)</option>' +
+             '<option value="perlin"'+(layer.noiseType==='perlin'?' selected':'')+'>Perlin (smooth)</option>' +
+           '</select></div>';
+
+      if(layer.noiseType === 'perlin'){
+        var pl = layer.perlin;
+        h += '<div class="layer-controls-row"><label>Style</label><select data-role="perlinStyle" style="width:150px">' +
+               '<option value="clouds"'+(pl.style==='clouds'?' selected':'')+'>Clouds</option>' +
+               '<option value="turbulence"'+(pl.style==='turbulence'?' selected':'')+'>Turbulence / smoke</option>' +
+               '<option value="marble"'+(pl.style==='marble'?' selected':'')+'>Marble</option>' +
+             '</select></div>';
+        h += '<div class="layer-controls-row"><label>Scale</label><div class="slidewrap"><input type="range" min="20" max="500" value="'+pl.scale+'" data-role="perlinScale" />'+valInputHTML('perlinScaleVal', pl.scale, 'px')+'</div></div>';
+        h += '<div class="layer-controls-row"><label>Octaves</label><div class="slidewrap"><input type="range" min="1" max="7" value="'+pl.octaves+'" data-role="perlinOctaves" />'+valInputHTML('perlinOctavesVal', pl.octaves, '')+'</div></div>';
+        h += '<div class="layer-controls-row"><label>Roughness</label><div class="slidewrap"><input type="range" min="10" max="90" value="'+Math.round(pl.roughness*100)+'" data-role="perlinRoughness" />'+valInputHTML('perlinRoughnessVal', Math.round(pl.roughness*100), '%')+'</div></div>';
+        h += '<div class="layer-controls-row"><label>Contrast</label><div class="slidewrap"><input type="range" min="0" max="100" value="'+pl.contrast+'" data-role="perlinContrast" />'+valInputHTML('perlinContrastVal', pl.contrast, '%')+'</div></div>';
+        if(pl.style === 'marble'){
+          h += '<div class="layer-controls-row"><label>Vein count</label><div class="slidewrap"><input type="range" min="1" max="24" value="'+pl.veinFreq+'" data-role="perlinVeinFreq" />'+valInputHTML('perlinVeinFreqVal', pl.veinFreq, '')+'</div></div>';
+          h += '<div class="layer-controls-row"><label>Distortion</label><div class="slidewrap"><input type="range" min="0" max="30" value="'+pl.power+'" data-role="perlinPower" />'+valInputHTML('perlinPowerVal', pl.power, '')+'</div></div>';
+        }
+        h += '<div class="layer-controls-row"><label>Seed</label><div class="slidewrap"><input type="number" data-role="perlinSeed" value="'+pl.seed+'" style="width:100%" /></div><button class="icon-btn" data-role="perlinReseed" title="New random seed">&#127922;</button></div>';
+        h += '<div class="stops-list" data-role="noiseStopsList">'+stopsListHTML(layer.noiseGradient.stops)+'</div>';
+        h += '<button class="add-stop-btn" data-role="addNoiseStop"'+(layer.noiseGradient.stops.length>=6?' disabled':'')+'>+ Add color stop</button>';
+        h += '<small class="hint">The noise value at each point looks up a color along this gradient &mdash; try transparent-to-white for soft clouds, or two stone tones for marble veins.</small>';
+      } else {
+        h += '<div class="layer-controls-row"><label>Grain</label><div class="slidewrap"><input type="range" min="1" max="100" value="'+layer.intensity+'" data-role="intensity" />'+valInputHTML('intensityVal', layer.intensity, '%')+'</div></div>';
+        h += '<div class="layer-controls-row"><label><input type="checkbox" data-role="mono"'+(layer.mono?' checked':'')+' /> Monochrome</label></div>';
+      }
+    } else if(layer.type === 'image'){
+      h += '<div class="layer-controls-row">' +
+             '<label>Image</label>' +
+             '<button class="btn-secondary" data-role="imgPick" type="button" style="padding:6px 10px;">'+(layer.imgSrc?'Replace image&hellip;':'Choose image&hellip;')+'</button>' +
+             '<input type="file" accept="image/*" data-role="imgFile" style="display:none" />' +
+           '</div>';
+      if(layer.imgSrc){
+        h += '<div class="layer-controls-row">' +
+               '<span class="swatch-checker" style="width:40px;height:40px;border-radius:6px;">' +
+                 '<img src="'+layer.imgSrc+'" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" />' +
+               '</span>' +
+               '<small class="hint" style="flex:1;margin-top:0;word-break:break-all;">'+escAttr(layer.imgName||'image')+'</small>' +
+             '</div>';
+      } else {
+        h += '<small class="hint">Pick an image from your computer &mdash; it stays local to this page and is baked into the exported PNG.</small>';
+      }
+      h += '<div class="layer-controls-row"><label>Fit</label><select data-role="imgFit" style="width:170px">' +
+             ['cover','contain','stretch','center','tile'].map(function(f){
+               var labels = { cover:'Cover (fill &amp; crop)', contain:'Contain (fit inside)', stretch:'Stretch to fill', center:'Center (actual size)', tile:'Tile / repeat' };
+               return '<option value="'+f+'"'+(layer.fit===f?' selected':'')+'>'+labels[f]+'</option>';
+             }).join('') +
+           '</select></div>';
+      h += '<div class="layer-controls-row"><label>Scale</label><div class="slidewrap"><input type="range" min="10" max="400" value="'+layer.scale+'" data-role="imgScale" />'+valInputHTML('imgScaleVal', layer.scale, '%')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>Offset X</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+layer.offsetX+'" data-role="imgOffsetX" />'+valInputHTML('imgOffsetXVal', layer.offsetX, '%')+'</div></div>';
+      h += '<div class="layer-controls-row"><label>Offset Y</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+layer.offsetY+'" data-role="imgOffsetY" />'+valInputHTML('imgOffsetYVal', layer.offsetY, '%')+'</div></div>';
+      h += '<div class="layer-controls-row"><label><input type="checkbox" data-role="imgFlipH"'+(layer.flipH?' checked':'')+' /> Flip H</label><label><input type="checkbox" data-role="imgFlipV"'+(layer.flipV?' checked':'')+' /> Flip V</label></div>';
+    } else if(layer.type === 'group'){
+      h += '<div class="layer-controls-row"><button class="btn-secondary" data-role="ungroup" type="button" style="flex:1;">Ungroup</button></div>';
+      h += '<small class="hint">Opacity and blend here apply to the whole folder as one flattened unit, on top of however the layers inside it already blend with each other.</small>';
+      h += '<div class="layer-children" data-role="childrenList">' +
+             (layer.children.length
+               ? layer.children.map(function(child, cidx){ return cardHTML(child, cidx, layer.children); }).join('')
+               : '<div class="layers-empty">Empty group &mdash; check layers below and click &ldquo;Group Selected&rdquo; to move them in.</div>') +
+           '</div>';
+    }
+    return h;
+  }
+
+  function cardHTML(layer, idx, list){
+    list = list || layers;
+    var isMaskedTarget = idx > 0 && list[idx-1].isMask;
+    var isGroup = layer.type === 'group';
+    var classes = 'layer-card' + (layer.visible?'':' hidden-layer') + (layer.isMask?' is-mask-layer':'') + (isMaskedTarget?' is-masked-target':'') + (isGroup?' is-group-layer':'');
+    var typeTag = TYPE_LABELS[layer.type] + (isGroup ? ' (' + layer.children.length + ')' : '');
+    return (
+      '<div class="'+classes+'" data-layer-id="'+layer.id+'">' +
+        '<div class="layer-header">' +
+          '<input type="checkbox" class="select-checkbox" data-role="select" title="Select for grouping"'+(selectedLayerIds[layer.id]?' checked':'')+' />' +
+          '<button class="icon-btn" data-role="moveUp" title="Move up"'+(idx===0?' disabled':'')+'>&uarr;</button>' +
+          '<button class="icon-btn" data-role="moveDown" title="Move down"'+(idx===list.length-1?' disabled':'')+'>&darr;</button>' +
+          '<input type="checkbox" data-role="visible" title="Show / hide layer"'+(layer.visible?' checked':'')+' />' +
+          '<div class="header-main" data-role="toggleExpand">' +
+            '<span class="chevron'+(layer.expanded?' open':'')+'" data-role="chevron">&#9656;</span>' +
+            (isGroup ? '<span class="group-icon" title="Group">&#128193;</span>' : '') +
+            '<input type="text" class="name-input" data-role="name" value="'+escAttr(layer.name)+'" onclick="event.stopPropagation()" />' +
+            '<span class="layer-type-tag">'+typeTag+'</span>' +
+            (layer.isMask ? '<span class="mask-badge" title="Masks the layer below">&#9670; MASK</span>' : '') +
+          '</div>' +
+          '<button class="icon-btn" data-role="duplicate" title="Duplicate layer">&#10697;</button>' +
+          '<button class="icon-btn danger" data-role="delete" title="Delete layer">&times;</button>' +
+        '</div>' +
+        '<div class="layer-body'+(layer.expanded?' open':'')+'" data-role="body">' + bodyHTML(layer) + '</div>' +
+      '</div>'
+    );
+  }
+
+  /* ---------- wiring ---------- */
+  // Lets the little value readout next to a slider (now a real <input>, see
+  // valInputHTML) be typed into directly. On commit it pulls the first number
+  // out of whatever was typed, clamps it to the slider's own min/max, writes
+  // that onto the slider, then re-dispatches the slider's 'input' event -- so
+  // the slider's own existing handler (which already updates the model, the
+  // display text, and calls scheduleRender()) does all the real work, and an
+  // invalid/empty edit just snaps back to the slider's last valid value.
+  function wireEditableValue(valInput, rangeInput){
+    function commit(){
+      var m = valInput.value.match(/-?\d+(\.\d+)?/);
+      if(m){
+        var n = parseFloat(m[0]);
+        var min = parseFloat(rangeInput.min), max = parseFloat(rangeInput.max);
+        if(!isNaN(min)) n = Math.max(min, n);
+        if(!isNaN(max)) n = Math.min(max, n);
+        rangeInput.value = Math.round(n);
+      }
+      rangeInput.dispatchEvent(new Event('input', { bubbles:true }));
+    }
+    valInput.addEventListener('keydown', function(e){
+      if(e.key === 'Enter'){ e.preventDefault(); valInput.blur(); }
+      else if(e.key === 'Escape'){ e.preventDefault(); rangeInput.dispatchEvent(new Event('input', { bubbles:true })); valInput.blur(); }
+    });
+    valInput.addEventListener('blur', commit);
+    valInput.addEventListener('click', function(e){ e.stopPropagation(); });
+  }
+
+  function wireColorAlphaControl(scopeEl, colorObj, onChange){
+    var hexInput = scopeEl.querySelector('[data-role="colorHex"]');
+    var alphaInput = scopeEl.querySelector('[data-role="colorAlpha"]');
+    var alphaVal = scopeEl.querySelector('[data-role="colorAlphaVal"]');
+    var preview = scopeEl.querySelector('[data-role="alphaPreview"]');
+    hexInput.addEventListener('input', function(){
+      var rgb = rgbFromHex(hexInput.value, colorObj.a);
+      colorObj.r = rgb.r; colorObj.g = rgb.g; colorObj.b = rgb.b;
+      preview.style.backgroundColor = rgbaCss(colorObj);
+      onChange();
+    });
+    alphaInput.addEventListener('input', function(){
+      colorObj.a = (+alphaInput.value)/100;
+      alphaVal.value = alphaInput.value + '%';
+      preview.style.backgroundColor = rgbaCss(colorObj);
+      onChange();
+    });
+    wireEditableValue(alphaVal, alphaInput);
+  }
+
+  function wireStopsRows(cardEl, stopsArr, listSelector){
+    var rows = cardEl.querySelectorAll(listSelector + ' .stop-row');
+    rows.forEach(function(row, idx){
+      var stop = stopsArr[idx];
+      wireColorAlphaControl(row, stop.color, scheduleRender);
+      var posInput = row.querySelector('[data-role="stopPos"]');
+      var posVal = row.querySelector('[data-role="stopPosVal"]');
+      posInput.addEventListener('input', function(){
+        stop.pos = +posInput.value;
+        posVal.value = posInput.value + '%';
+        scheduleRender();
+      });
+      wireEditableValue(posVal, posInput);
+      var removeBtn = row.querySelector('[data-role="removeStop"]');
+      if(removeBtn){
+        removeBtn.addEventListener('click', function(){
+          stopsArr.splice(idx,1);
+          renderLayersList();
+          scheduleRender();
+        });
+      }
+    });
+  }
+
+  function wireLayerCard(cardEl, layer){
+    cardEl.querySelector('[data-role="moveUp"]').addEventListener('click', function(){ moveLayer(layer.id, -1); });
+    cardEl.querySelector('[data-role="moveDown"]').addEventListener('click', function(){ moveLayer(layer.id, 1); });
+    cardEl.querySelector('[data-role="visible"]').addEventListener('change', function(e){
+      layer.visible = e.target.checked;
+      cardEl.classList.toggle('hidden-layer', !layer.visible);
+      scheduleRender();
+    });
+    cardEl.querySelector('[data-role="toggleExpand"]').addEventListener('click', function(){
+      layer.expanded = !layer.expanded;
+      cardEl.querySelector('[data-role="body"]').classList.toggle('open', layer.expanded);
+      cardEl.querySelector('[data-role="chevron"]').classList.toggle('open', layer.expanded);
+    });
+    cardEl.querySelector('[data-role="name"]').addEventListener('input', function(e){ layer.name = e.target.value; });
+    cardEl.querySelector('[data-role="duplicate"]').addEventListener('click', function(){ duplicateLayer(layer.id); });
+    cardEl.querySelector('[data-role="delete"]').addEventListener('click', function(){ deleteLayer(layer.id); });
+
+    cardEl.querySelector('[data-role="select"]').addEventListener('change', function(e){
+      if(e.target.checked) selectedLayerIds[layer.id] = true; else delete selectedLayerIds[layer.id];
+      updateGroupButtonState();
+    });
+
+    var opacityInput = cardEl.querySelector('[data-role="opacity"]');
+    var opacityVal = cardEl.querySelector('[data-role="opacityVal"]');
+    opacityInput.addEventListener('input', function(){
+      layer.opacity = +opacityInput.value;
+      opacityVal.value = opacityInput.value + '%';
+      scheduleRender();
+    });
+    wireEditableValue(opacityVal, opacityInput);
+
+    cardEl.querySelector('[data-role="isMask"]').addEventListener('change', function(e){
+      layer.isMask = e.target.checked;
+      renderLayersList(); // structural: reveals/hides Blend row, restyles neighboring cards
+      scheduleRender();
+    });
+
+    var blendSelect = cardEl.querySelector('[data-role="blend"]');
+    if(blendSelect){
+      blendSelect.addEventListener('change', function(){ layer.blend = blendSelect.value; scheduleRender(); });
+    }
+
+    if(layer.type === 'solid'){
+      wireColorAlphaControl(cardEl.querySelector('[data-color-control]'), layer.color, scheduleRender);
+    } else if(layer.type === 'linear' || layer.type === 'radial'){
+      if(layer.type === 'linear'){
+        var angleInput = cardEl.querySelector('[data-role="angle"]');
+        var angleVal = cardEl.querySelector('[data-role="angleVal"]');
+        angleInput.addEventListener('input', function(){
+          layer.angle = +angleInput.value;
+          angleVal.value = angleInput.value + '°';
+          scheduleRender();
+        });
+        wireEditableValue(angleVal, angleInput);
+      } else {
+        ['cx','cy'].forEach(function(key){
+          var input = cardEl.querySelector('[data-role="'+key+'"]');
+          var valEl = cardEl.querySelector('[data-role="'+key+'Val"]');
+          input.addEventListener('input', function(){
+            layer[key] = +input.value;
+            valEl.value = input.value + '%';
+            scheduleRender();
+          });
+          wireEditableValue(valEl, input);
+        });
+      }
+      wireStopsRows(cardEl, layer.stops, '[data-role="stopsList"]');
+      var addStopBtn = cardEl.querySelector('[data-role="addStop"]');
+      if(addStopBtn){
+        addStopBtn.addEventListener('click', function(){
+          layer.stops.push({ pos:50, color: makeColor(255,255,255,1) });
+          renderLayersList();
+          scheduleRender();
+        });
+      }
+    } else if(GEOM_TYPES.indexOf(layer.type) !== -1){
+      var fillModeSelect = cardEl.querySelector('[data-role="fillMode"]');
+      fillModeSelect.addEventListener('change', function(){
+        layer.fillMode = fillModeSelect.value;
+        renderLayersList();
+        scheduleRender();
+      });
+
+      if(layer.fillMode === 'gradient'){
+        var pg = layer.patternGradient;
+        var gradKindSelect = cardEl.querySelector('[data-role="gradKind"]');
+        gradKindSelect.addEventListener('change', function(){
+          pg.kind = gradKindSelect.value;
+          renderLayersList();
+          scheduleRender();
+        });
+        if(pg.kind === 'radial'){
+          ['cx','cy'].forEach(function(key){
+            var input = cardEl.querySelector('[data-role="grad'+key.toUpperCase()[0]+key.slice(1)+'"]');
+            var valEl = cardEl.querySelector('[data-role="grad'+key.toUpperCase()[0]+key.slice(1)+'Val"]');
+            input.addEventListener('input', function(){
+              pg[key] = +input.value;
+              valEl.value = input.value + '%';
+              scheduleRender();
+            });
+            wireEditableValue(valEl, input);
+          });
+        } else {
+          var gAngleInput = cardEl.querySelector('[data-role="gradAngle"]');
+          var gAngleVal = cardEl.querySelector('[data-role="gradAngleVal"]');
+          gAngleInput.addEventListener('input', function(){
+            pg.angle = +gAngleInput.value;
+            gAngleVal.value = gAngleInput.value + '°';
+            scheduleRender();
+          });
+          wireEditableValue(gAngleVal, gAngleInput);
+        }
+        wireStopsRows(cardEl, pg.stops, '[data-role="patternStopsList"]');
+        var addPatternStopBtn = cardEl.querySelector('[data-role="addPatternStop"]');
+        if(addPatternStopBtn){
+          addPatternStopBtn.addEventListener('click', function(){
+            pg.stops.push({ pos:50, color: makeColor(255,255,255,1) });
+            renderLayersList();
+            scheduleRender();
+          });
+        }
+      } else {
+        wireColorAlphaControl(cardEl.querySelector('[data-color-control]'), layer.color, scheduleRender);
+      }
+
+      ['angle','size','fill'].forEach(function(key){
+        var input = cardEl.querySelector('[data-role="'+key+'"]');
+        var valEl = cardEl.querySelector('[data-role="'+key+'Val"]');
+        var suffix = key === 'angle' ? '°' : (key === 'size' ? 'px' : '%');
+        input.addEventListener('input', function(){
+          layer[key] = +input.value;
+          valEl.value = input.value + suffix;
+          scheduleRender();
+        });
+        wireEditableValue(valEl, input);
+      });
+    } else if(layer.type === 'noise'){
+      var noiseTypeSelect = cardEl.querySelector('[data-role="noiseType"]');
+      noiseTypeSelect.addEventListener('change', function(){
+        layer.noiseType = noiseTypeSelect.value;
+        renderLayersList();
+        scheduleRender();
+      });
+
+      if(layer.noiseType === 'perlin'){
+        var pl = layer.perlin;
+        var styleSelect = cardEl.querySelector('[data-role="perlinStyle"]');
+        styleSelect.addEventListener('change', function(){
+          pl.style = styleSelect.value;
+          renderLayersList(); // marble reveals extra controls
+          scheduleRender();
+        });
+
+        [['perlinScale','scale','px'], ['perlinOctaves','octaves',''], ['perlinContrast','contrast','%']].forEach(function(spec){
+          var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
+          var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+          input.addEventListener('input', function(){
+            pl[spec[1]] = +input.value;
+            if(valEl) valEl.value = input.value + spec[2];
+            scheduleRender();
+          });
+          if(valEl) wireEditableValue(valEl, input);
+        });
+
+        var roughnessInput = cardEl.querySelector('[data-role="perlinRoughness"]');
+        var roughnessVal = cardEl.querySelector('[data-role="perlinRoughnessVal"]');
+        roughnessInput.addEventListener('input', function(){
+          pl.roughness = (+roughnessInput.value)/100;
+          roughnessVal.value = roughnessInput.value + '%';
+          scheduleRender();
+        });
+        wireEditableValue(roughnessVal, roughnessInput);
+
+        if(pl.style === 'marble'){
+          ['perlinVeinFreq','perlinPower'].forEach(function(role){
+            var key = role === 'perlinVeinFreq' ? 'veinFreq' : 'power';
+            var input = cardEl.querySelector('[data-role="'+role+'"]');
+            var valEl = cardEl.querySelector('[data-role="'+role+'Val"]');
+            input.addEventListener('input', function(){
+              pl[key] = +input.value;
+              valEl.value = input.value;
+              scheduleRender();
+            });
+            wireEditableValue(valEl, input);
+          });
+        }
+
+        var seedInput = cardEl.querySelector('[data-role="perlinSeed"]');
+        seedInput.addEventListener('input', function(){
+          pl.seed = Math.floor(+seedInput.value) || 0;
+          scheduleRender();
+        });
+        cardEl.querySelector('[data-role="perlinReseed"]').addEventListener('click', function(){
+          pl.seed = Math.floor(Math.random()*1000000000);
+          seedInput.value = pl.seed;
+          scheduleRender();
+        });
+
+        wireStopsRows(cardEl, layer.noiseGradient.stops, '[data-role="noiseStopsList"]');
+        var addNoiseStopBtn = cardEl.querySelector('[data-role="addNoiseStop"]');
+        if(addNoiseStopBtn){
+          addNoiseStopBtn.addEventListener('click', function(){
+            layer.noiseGradient.stops.push({ pos:50, color: makeColor(255,255,255,1) });
+            renderLayersList();
+            scheduleRender();
+          });
+        }
+      } else {
+        var intensityInput = cardEl.querySelector('[data-role="intensity"]');
+        var intensityVal = cardEl.querySelector('[data-role="intensityVal"]');
+        intensityInput.addEventListener('input', function(){
+          layer.intensity = +intensityInput.value;
+          intensityVal.value = intensityInput.value + '%';
+          scheduleRender();
+        });
+        wireEditableValue(intensityVal, intensityInput);
+        cardEl.querySelector('[data-role="mono"]').addEventListener('change', function(e){
+          layer.mono = e.target.checked;
+          scheduleRender();
+        });
+      }
+    } else if(layer.type === 'image'){
+      var fileInput = cardEl.querySelector('[data-role="imgFile"]');
+      cardEl.querySelector('[data-role="imgPick"]').addEventListener('click', function(){ fileInput.click(); });
+      fileInput.addEventListener('change', function(){
+        var file = fileInput.files && fileInput.files[0];
+        if(!file) return;
+        var reader = new FileReader();
+        reader.onload = function(){
+          layer.imgSrc = reader.result;
+          layer.imgName = file.name;
+          renderLayersList(); // structural: reveals preview + "Replace" label
+          scheduleRender();
+        };
+        reader.readAsDataURL(file);
+      });
+
+      var fitSelect = cardEl.querySelector('[data-role="imgFit"]');
+      fitSelect.addEventListener('change', function(){ layer.fit = fitSelect.value; scheduleRender(); });
+
+      [['imgScale','scale','%'], ['imgOffsetX','offsetX','%'], ['imgOffsetY','offsetY','%']].forEach(function(spec){
+        var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
+        var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+        input.addEventListener('input', function(){
+          layer[spec[1]] = +input.value;
+          if(valEl) valEl.value = input.value + spec[2];
+          scheduleRender();
+        });
+        if(valEl) wireEditableValue(valEl, input);
+      });
+
+      var flipHInput = cardEl.querySelector('[data-role="imgFlipH"]');
+      var flipVInput = cardEl.querySelector('[data-role="imgFlipV"]');
+      flipHInput.addEventListener('change', function(e){ layer.flipH = e.target.checked; scheduleRender(); });
+      flipVInput.addEventListener('change', function(e){ layer.flipV = e.target.checked; scheduleRender(); });
+    } else if(layer.type === 'group'){
+      cardEl.querySelector('[data-role="ungroup"]').addEventListener('click', function(){ ungroupLayer(layer.id); });
+    }
+  }
+
+  /* ---------- undo / redo history ---------- */
+  // renderLayersList() is called after every structural change to the layer stack
+  // (add/delete/move/duplicate, randomize, reset, and any control that changes a
+  // layer's shape enough to need new markup -- fillMode, isMask, gradient kind,
+  // add/remove stop, noise type, etc.) and NEVER for a plain slider/color drag
+  // (those only call scheduleRender()). That existing boundary is exactly what
+  // "after every structural operation" means, so a single hook here is enough --
+  // no need to instrument every call site separately.
+  var historyStack = [];
+  var historyIndex = -1;
+  var isRestoringHistory = false;
+  var HISTORY_LIMIT = 50;
+
+  // Structural clone that shares (rather than re-copies) any imgSrc data-URL
+  // string: strings are immutable, so reusing the reference across many history
+  // snapshots is safe and avoids duplicating a multi-MB base64 image up to
+  // HISTORY_LIMIT times over, which a plain JSON.stringify/parse round-trip would do.
+  function cloneValue(v){
+    if(Array.isArray(v)) return v.map(cloneValue);
+    if(v && typeof v === 'object'){
+      var out = {};
+      for(var k in v){
+        if(!Object.prototype.hasOwnProperty.call(v,k)) continue;
+        out[k] = (k === 'imgSrc') ? v[k] : cloneValue(v[k]);
+      }
+      return out;
+    }
+    return v;
+  }
+  function cloneLayers(arr){ return arr.map(cloneValue); }
+
+  function updateHistoryButtons(){
+    var undoBtn = $('undoBtn'), redoBtn = $('redoBtn');
+    if(undoBtn) undoBtn.disabled = historyIndex <= 0;
+    if(redoBtn) redoBtn.disabled = historyIndex >= historyStack.length - 1;
+  }
+
+  function pushHistory(){
+    if(isRestoringHistory) return;
+    historyStack.length = historyIndex + 1; // drop any redo branch we've moved past
+    historyStack.push(cloneLayers(layers));
+    if(historyStack.length > HISTORY_LIMIT) historyStack.shift();
+    historyIndex = historyStack.length - 1;
+    updateHistoryButtons();
+  }
+
+  function restoreHistory(index){
+    if(index < 0 || index >= historyStack.length) return;
+    isRestoringHistory = true;
+    historyIndex = index;
+    layers = cloneLayers(historyStack[index]);
+    renderLayersList();
+    scheduleRender();
+    isRestoringHistory = false;
+    updateHistoryButtons();
+  }
+
+  function undo(){ if(historyIndex > 0) restoreHistory(historyIndex - 1); }
+  function redo(){ if(historyIndex < historyStack.length - 1) restoreHistory(historyIndex + 1); }
+
+  // Wires every card in the tree, descending into a group's children too --
+  // cardHTML already emitted their markup inline as part of the single
+  // innerHTML assignment below, so this just has to find and hook up each one.
+  function wireLayerTree(list, container){
+    list.forEach(function(layer){
+      var cardEl = container.querySelector('[data-layer-id="'+layer.id+'"]');
+      if(cardEl) wireLayerCard(cardEl, layer);
+      if(layer.type === 'group' && layer.children){
+        wireLayerTree(layer.children, container);
+      }
+    });
+  }
+
+  function renderLayersList(){
+    pushHistory();
+    var container = $('layersList');
+    if(layers.length === 0){
+      container.innerHTML = '<div class="layers-empty">No layers yet. Click &ldquo;+ Add Layer&rdquo; to start building your background.</div>';
+      updateGroupButtonState();
+      return;
+    }
+    container.innerHTML = layers.map(function(layer, idx){ return cardHTML(layer, idx); }).join('');
+    wireLayerTree(layers, container);
+    updateGroupButtonState();
+  }
+
+  /* ---------- add-layer menu ---------- */
+  function closeAddMenu(){ $('addMenu').classList.remove('open'); }
+  $('addLayerBtn').addEventListener('click', function(e){
+    e.stopPropagation();
+    $('addMenu').classList.toggle('open');
+  });
+  $('addMenu').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-type]');
+    if(btn) addLayer(btn.getAttribute('data-type'));
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('.add-layer-wrap')) closeAddMenu();
+  });
+
+  $('groupSelectedBtn').addEventListener('click', groupSelected);
+
+  /* ---------- resolution / export ---------- */
+  function handlePresetChange(){
+    var p = val('preset');
+    $('customSizeRow').style.display = (p === 'custom') ? 'flex' : 'none';
+  }
+  function targetSize(){
+    var p = val('preset');
+    if(p === 'custom'){
+      var w = Math.max(16, Math.min(8000, Math.round(num('customW')) || 1920));
+      var h = Math.max(16, Math.min(8000, Math.round(num('customH')) || 1080));
+      return { w:w, h:h };
+    }
+    var parts = p.split('x');
+    return { w:+parts[0], h:+parts[1] };
+  }
+  function resizeCanvasToTarget(){
+    var t = targetSize();
+    if(canvas.width !== t.w) canvas.width = t.w;
+    if(canvas.height !== t.h) canvas.height = t.h;
+    $('resReadout').textContent = t.w + ' × ' + t.h + ' px';
+  }
+  $('preset').addEventListener('change', function(){ handlePresetChange(); resizeCanvasToTarget(); scheduleRender(); });
+  $('customW').addEventListener('input', function(){ resizeCanvasToTarget(); scheduleRender(); });
+  $('customH').addEventListener('input', function(){ resizeCanvasToTarget(); scheduleRender(); });
+
+  $('exportBtn').addEventListener('click', function(){
+    render();
+    var name = (val('filename') || 'background').trim().replace(/[^a-z0-9_\-]+/gi,'_') || 'background';
+    canvas.toBlob(function(blob){
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+    }, 'image/png');
+  });
+
+  /* ---------- shareable URL state ---------- */
+  // The whole design (layers, including any embedded image data) round-trips
+  // through the URL's #state=<base64> hash -- nothing is uploaded anywhere,
+  // so "sharing" just means handing someone a URL. btoa/atob only handle
+  // Latin1 text, so a plain JSON string (layer names can contain any Unicode
+  // character) has to go through UTF-8 bytes first; the chunked loop avoids
+  // blowing the call stack that String.fromCharCode.apply hits on huge inputs
+  // (an embedded photo can easily be a few million base64 characters).
+  function utf8ToBase64(str){
+    var bytes = new TextEncoder().encode(str);
+    var binary = '';
+    var chunkSize = 0x8000;
+    for(var i=0; i<bytes.length; i+=chunkSize){
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i+chunkSize));
+    }
+    return btoa(binary);
+  }
+  function base64ToUtf8(b64){
+    var binary = atob(b64);
+    var bytes = new Uint8Array(binary.length);
+    for(var i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return new TextDecoder().decode(bytes);
+  }
+  function formatBytes(n){
+    if(n < 1024) return n + ' B';
+    if(n < 1024*1024) return Math.round(n/1024) + ' KB';
+    return (n/(1024*1024)).toFixed(1) + ' MB';
+  }
+  // A shared/reloaded design must not reuse ids already present in it, or a
+  // subsequent "Add Layer" could collide with one of the loaded layers.
+  function highestLayerIdNum(list, best){
+    best = best || 0;
+    list.forEach(function(l){
+      var m = /^L(\d+)$/.exec(l && l.id || '');
+      if(m) best = Math.max(best, parseInt(m[1], 10));
+      if(l && l.type === 'group' && Array.isArray(l.children)) best = Math.max(best, highestLayerIdNum(l.children, best));
+    });
+    return best;
+  }
+  // Defensive against a hand-edited or corrupted hash: drop anything that
+  // doesn't even look like a layer rather than letting a malformed object
+  // reach the renderer and throw partway through drawing the stack.
+  function sanitizeLoadedLayers(list){
+    if(!Array.isArray(list)) return [];
+    return list.filter(function(l){ return l && typeof l === 'object' && typeof l.id === 'string' && typeof l.type === 'string'; })
+      .map(function(l){
+        if(l.type === 'group') l.children = sanitizeLoadedLayers(l.children);
+        return l;
+      });
+  }
+
+  function buildShareURL(){
+    var payload = {
+      v: 1,
+      layers: layers,
+      preset: val('preset'),
+      customW: $('customW').value,
+      customH: $('customH').value,
+      filename: val('filename')
+    };
+    var b64 = utf8ToBase64(JSON.stringify(payload));
+    return {
+      url: location.origin + location.pathname + location.search + '#state=' + b64,
+      bytes: b64.length
+    };
+  }
+
+  function tryLoadStateFromHash(){
+    var m = /state=([^&]+)/.exec(location.hash || '');
+    if(!m) return false;
+    try {
+      var payload = JSON.parse(base64ToUtf8(decodeURIComponent(m[1])));
+      var loaded = sanitizeLoadedLayers(payload && payload.layers);
+      if(loaded.length === 0) return false;
+      layers = loaded;
+      layerIdCounter = highestLayerIdNum(layers) + 1;
+      if(payload.preset) $('preset').value = payload.preset;
+      if(payload.customW) $('customW').value = payload.customW;
+      if(payload.customH) $('customH').value = payload.customH;
+      if(payload.filename) $('filename').value = payload.filename;
+      return true;
+    } catch(e){
+      console.warn('Could not load the design from this link:', e);
+      return false;
+    }
+  }
+
+  $('shareLinkBtn').addEventListener('click', function(){
+    var result = buildShareURL();
+    var output = $('shareLinkOutput');
+    var hint = $('shareLinkHint');
+    output.value = result.url;
+    output.style.display = 'block';
+    output.focus();
+    output.select();
+    history.replaceState(null, '', result.url); // also makes reloading this tab keep the current design
+
+    var sizeNote = result.bytes > 500000
+      ? ' This link is ' + formatBytes(result.bytes) + ' because of embedded images -- some chat apps or browsers may not handle such a long link well.'
+      : '';
+
+    function announce(copied){
+      hint.style.display = 'block';
+      hint.textContent = (copied
+        ? 'Link copied to your clipboard.'
+        : 'Could not auto-copy -- the link above is selected, press Ctrl/Cmd+C to copy it.') + sizeNote;
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(result.url).then(function(){ announce(true); }).catch(function(){
+        try { announce(document.execCommand('copy')); } catch(e){ announce(false); }
+      });
+    } else {
+      try { announce(document.execCommand('copy')); } catch(e){ announce(false); }
+    }
+  });
+
+  /* ---------- drawing ---------- */
+  function gradientCoords(angleDeg, w, h){
+    // CSS-style angle: 0deg points "up", 90deg points "right", clockwise
+    var angle = ((angleDeg % 360) + 360) % 360;
+    var rad = angle * Math.PI / 180;
+    var length = Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad));
+    var half = length/2;
+    var dx = Math.sin(rad), dy = -Math.cos(rad);
+    var cx = w/2, cy = h/2;
+    return { x1: cx - dx*half, y1: cy - dy*half, x2: cx + dx*half, y2: cy + dy*half };
+  }
+
+  function buildGradient(targetCtx, spec, w, h){
+    var stops = spec.stops.map(function(s){ return { pos:s.pos, color:s.color }; }).sort(function(a,b){ return a.pos-b.pos; });
+    for(var i=1;i<stops.length;i++){
+      if(stops[i].pos <= stops[i-1].pos) stops[i].pos = Math.min(100, stops[i-1].pos + 0.1);
+    }
+    var grad;
+    if(spec.kind === 'radial'){
+      var cx = w*(spec.cx/100), cy = h*(spec.cy/100);
+      var r = Math.sqrt(w*w+h*h)/2;
+      grad = targetCtx.createRadialGradient(cx,cy,0, cx,cy,r);
+    } else {
+      var c = gradientCoords(spec.angle, w, h);
+      grad = targetCtx.createLinearGradient(c.x1,c.y1,c.x2,c.y2);
+    }
+    stops.forEach(function(s){ grad.addColorStop(Math.max(0,Math.min(1,s.pos/100)), rgbaCss(s.color)); });
+    return grad;
+  }
+
+  function drawGradientLayer(layer, w, h, targetCtx){
+    targetCtx.fillStyle = buildGradient(targetCtx, { kind:layer.type, angle:layer.angle, cx:layer.cx, cy:layer.cy, stops:layer.stops }, w, h);
+    targetCtx.fillRect(0,0,w,h);
+  }
+
+  function drawGeomPattern(layer, w, h, targetCtx, colorOverride){
+    var size = Math.max(2, layer.size);
+    var fill = Math.max(0.02, Math.min(0.98, layer.fill/100));
+    var color = colorOverride || layer.color;
+    targetCtx.fillStyle = rgbaCss(color);
+    targetCtx.strokeStyle = rgbaCss(color);
+    targetCtx.lineJoin = 'round';
+    targetCtx.lineCap = 'round';
+    targetCtx.translate(w/2, h/2);
+    targetCtx.rotate(layer.angle * Math.PI/180);
+    var diag = Math.sqrt(w*w+h*h);
+    targetCtx.translate(-diag/2, -diag/2);
+
+    if(layer.type === 'checker'){
+      var inset = size*(1-fill)/2;
+      for(var y=-size; y<diag+size; y+=size){
+        var row = Math.floor(y/size);
+        for(var x=-size; x<diag+size; x+=size){
+          var col = Math.floor(x/size);
+          if(((row+col) % 2 + 2) % 2 === 0){
+            targetCtx.fillRect(x+inset, y+inset, size-2*inset, size-2*inset);
+          }
+        }
+      }
+    } else if(layer.type === 'stripes'){
+      var bandW = size*fill;
+      for(var x2=-size; x2<diag+size; x2+=size){
+        var idx = Math.floor(x2/size);
+        if(((idx % 2)+2)%2 === 0) targetCtx.fillRect(x2, -diag, bandW, diag*2);
+      }
+    } else if(layer.type === 'dots'){
+      var r2 = (size*fill)/2;
+      for(var y2=0; y2<diag+size; y2+=size){
+        for(var x3=0; x3<diag+size; x3+=size){
+          targetCtx.beginPath();
+          targetCtx.arc(x3+size/2, y2+size/2, r2, 0, Math.PI*2);
+          targetCtx.fill();
+        }
+      }
+    } else if(layer.type === 'hex'){
+      // pointy-top honeycomb wireframe; size = hex radius (center to vertex)
+      var r3 = size;
+      targetCtx.lineWidth = Math.max(0.75, size*fill*0.14);
+      var hexW = Math.sqrt(3)*r3;
+      var vertStep = 1.5*r3;
+      var rowIdx = 0;
+      for(var hy=-vertStep; hy<diag+vertStep; hy+=vertStep){
+        var offsetX = (rowIdx % 2 !== 0) ? hexW/2 : 0;
+        for(var hx=-hexW+offsetX; hx<diag+hexW; hx+=hexW){
+          targetCtx.beginPath();
+          for(var hi=0; hi<6; hi++){
+            var hAng = Math.PI/180*(60*hi - 30);
+            var hpx = hx + r3*Math.cos(hAng);
+            var hpy = hy + r3*Math.sin(hAng);
+            if(hi===0) targetCtx.moveTo(hpx,hpy); else targetCtx.lineTo(hpx,hpy);
+          }
+          targetCtx.closePath();
+          targetCtx.stroke();
+        }
+        rowIdx++;
+      }
+    } else if(layer.type === 'hud'){
+      // sci-fi HUD grid: corner brackets + center crosshair per cell
+      targetCtx.lineWidth = Math.max(0.75, size*fill*0.1);
+      var tick = size*0.22;
+      var cross = size*0.15;
+      for(var gy=-size; gy<diag+size; gy+=size){
+        for(var gx=-size; gx<diag+size; gx+=size){
+          targetCtx.beginPath();
+          targetCtx.moveTo(gx, gy+tick);
+          targetCtx.lineTo(gx, gy);
+          targetCtx.lineTo(gx+tick, gy);
+          targetCtx.stroke();
+          var ccx = gx+size/2, ccy = gy+size/2;
+          targetCtx.beginPath();
+          targetCtx.moveTo(ccx-cross, ccy);
+          targetCtx.lineTo(ccx+cross, ccy);
+          targetCtx.moveTo(ccx, ccy-cross);
+          targetCtx.lineTo(ccx, ccy+cross);
+          targetCtx.stroke();
+        }
+      }
+    }
+  }
+
+  var silhouetteCanvas = document.createElement('canvas');
+  var silhouetteCtx = silhouetteCanvas.getContext('2d');
+  var maskCanvas = document.createElement('canvas');
+  var maskCtx = maskCanvas.getContext('2d');
+
+  function drawGeomPatternGradientMasked(layer, w, h, targetCtx){
+    // Pass 1: render every tile shape together (normal compositing) onto its own
+    // scratch canvas, building one complete opaque silhouette of the whole pattern.
+    // This has to happen on a separate canvas from the gradient, and as its own
+    // finished bitmap, because destination-in only behaves correctly when it is
+    // applied ONCE against a complete source image -- applying it per individual
+    // shape (per dot/square/hex) would repeatedly re-intersect the canvas and erase
+    // everything after the second non-overlapping shape.
+    silhouetteCanvas.width = w;
+    silhouetteCanvas.height = h;
+    drawGeomPattern(layer, w, h, silhouetteCtx, { r:0, g:0, b:0, a:1 });
+
+    // Pass 2: paint the gradient full-screen onto a second scratch canvas,
+    // screen-aligned (identity transform, right after the width/height reset).
+    maskCanvas.width = w;
+    maskCanvas.height = h;
+    maskCtx.fillStyle = buildGradient(maskCtx, layer.patternGradient, w, h);
+    maskCtx.fillRect(0,0,w,h);
+
+    // Pass 3: cut the gradient down to the silhouette in a single composite step,
+    // using the finished silhouette bitmap (not individual shapes) as the cutter.
+    maskCtx.globalCompositeOperation = 'destination-in';
+    maskCtx.drawImage(silhouetteCanvas, 0, 0);
+    maskCtx.globalCompositeOperation = 'source-over';
+
+    // Composite the finished masked-gradient pattern onto the target canvas.
+    targetCtx.drawImage(maskCanvas, 0, 0);
+  }
+
+  function buildNoiseTile(intensity, mono){
+    var tSize = 220;
+    var t = document.createElement('canvas');
+    t.width = tSize; t.height = tSize;
+    var tctx = t.getContext('2d');
+    var imgData = tctx.createImageData(tSize, tSize);
+    var d = imgData.data;
+    var maxAlpha = Math.round(255 * intensity);
+    for(var i=0;i<d.length;i+=4){
+      if(mono){
+        var gray = Math.floor(Math.random()*255);
+        d[i]=gray; d[i+1]=gray; d[i+2]=gray;
+      } else {
+        d[i]=Math.floor(Math.random()*255);
+        d[i+1]=Math.floor(Math.random()*255);
+        d[i+2]=Math.floor(Math.random()*255);
+      }
+      d[i+3] = Math.floor(Math.random()*maxAlpha);
+    }
+    tctx.putImageData(imgData,0,0);
+    return t;
+  }
+
+  function drawNoiseLayer(layer, w, h, targetCtx){
+    var tile = buildNoiseTile(layer.intensity/100, layer.mono);
+    var pattern = targetCtx.createPattern(tile, 'repeat');
+    targetCtx.fillStyle = pattern;
+    targetCtx.fillRect(0,0,w,h);
+  }
+
+  /* ---------- Perlin / fractal noise engine ---------- */
+  // Small seeded PRNG (mulberry32) so a given seed always reproduces the same field.
+  function mulberry32(seed){
+    var s = seed >>> 0;
+    return function(){
+      s = (s + 0x6D2B79F5) | 0;
+      var t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function buildPermutation(seed){
+    var rand = mulberry32(seed);
+    var p = new Uint8Array(256);
+    for(var i=0;i<256;i++) p[i] = i;
+    for(var i=255;i>0;i--){
+      var j = Math.floor(rand()*(i+1));
+      var tmp = p[i]; p[i] = p[j]; p[j] = tmp;
+    }
+    var perm = new Uint8Array(512);
+    for(var i=0;i<512;i++) perm[i] = p[i & 255];
+    return perm;
+  }
+
+  var GRAD2 = [[1,1],[-1,1],[1,-1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]];
+  function fadeCurve(t){ return t*t*t*(t*(t*6-15)+10); }
+  function lerpNum(a,b,t){ return a + t*(b-a); }
+  function grad2(hash, x, y){ var g = GRAD2[hash & 7]; return g[0]*x + g[1]*y; }
+
+  // Classic 2D Perlin noise, returns roughly [-1, 1].
+  function perlin2D(perm, x, y){
+    var X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+    var xf = x - Math.floor(x), yf = y - Math.floor(y);
+    var u = fadeCurve(xf), v = fadeCurve(yf);
+    var aa = perm[perm[X]+Y], ab = perm[perm[X]+Y+1], ba = perm[perm[X+1]+Y], bb = perm[perm[X+1]+Y+1];
+    var x1 = lerpNum(grad2(aa,xf,yf),     grad2(ba,xf-1,yf),   u);
+    var x2 = lerpNum(grad2(ab,xf,yf-1),   grad2(bb,xf-1,yf-1), u);
+    return lerpNum(x1, x2, v);
+  }
+
+  // Fractal Brownian motion: sums several octaves of Perlin noise for richer detail.
+  // turbulence=true sums abs(noise) per octave (Perlin's own technique for marble/fire),
+  // which gives sharper, more defined ridges than plain fBm's soft rolling clouds.
+  function fbm(perm, x, y, octaves, persistence, turbulence){
+    var total = 0, freq = 1, amp = 1, maxAmp = 0;
+    for(var o=0; o<octaves; o++){
+      var n = perlin2D(perm, x*freq, y*freq);
+      total += (turbulence ? Math.abs(n) : n) * amp;
+      maxAmp += amp;
+      amp *= persistence;
+      freq *= 2;
+    }
+    return total / maxAmp;
+  }
+
+  // Reads a color at position t (0-1) along a stops array -- the same {pos,color}
+  // shape used by the gradient layer/pattern-gradient stops, just sampled as a
+  // plain lookup instead of built into a CanvasGradient.
+  function sampleStopsAt(sortedStops, t){
+    var tp = t*100;
+    if(tp <= sortedStops[0].pos) return sortedStops[0].color;
+    var last = sortedStops[sortedStops.length-1];
+    if(tp >= last.pos) return last.color;
+    for(var j=1;j<sortedStops.length;j++){
+      if(tp <= sortedStops[j].pos){
+        var s0 = sortedStops[j-1], s1 = sortedStops[j];
+        var f = (tp - s0.pos) / ((s1.pos - s0.pos) || 1);
+        return {
+          r: s0.color.r + (s1.color.r - s0.color.r)*f,
+          g: s0.color.g + (s1.color.g - s0.color.g)*f,
+          b: s0.color.b + (s1.color.b - s0.color.b)*f,
+          a: s0.color.a + (s1.color.a - s0.color.a)*f
+        };
+      }
+    }
+    return last.color;
+  }
+
+  function buildGradientLUT(stops, steps){
+    var sorted = stops.map(function(s){ return { pos:s.pos, color:s.color }; }).sort(function(a,b){ return a.pos-b.pos; });
+    for(var i=1;i<sorted.length;i++){
+      if(sorted[i].pos <= sorted[i-1].pos) sorted[i].pos = Math.min(100, sorted[i-1].pos + 0.1);
+    }
+    var lut = new Array(steps);
+    for(var k=0;k<steps;k++){ lut[k] = sampleStopsAt(sorted, k/(steps-1)); }
+    return lut;
+  }
+
+  var noiseBufCanvas = document.createElement('canvas');
+  var noiseBufCtx = noiseBufCanvas.getContext('2d');
+
+  function drawPerlinNoiseLayer(layer, w, h, targetCtx){
+    var p = layer.perlin;
+    var perm = buildPermutation(p.seed);
+    var lut = buildGradientLUT(layer.noiseGradient.stops, 256);
+
+    // Compute the field at a capped internal resolution, then let the canvas
+    // upscale it smoothly -- Perlin/fBm content is inherently low-frequency, so
+    // this is visually near-identical to full-res while staying fast even at 4K.
+    var longSide = Math.max(w, h);
+    var scaleDown = Math.min(1, 900 / longSide);
+    var bw = Math.max(2, Math.round(w * scaleDown));
+    var bh = Math.max(2, Math.round(h * scaleDown));
+    var unit = Math.max(1, p.scale) * scaleDown;
+    var contrastFactor = p.contrast / 50;
+
+    noiseBufCanvas.width = bw;
+    noiseBufCanvas.height = bh;
+    var imgData = noiseBufCtx.createImageData(bw, bh);
+    var d = imgData.data;
+
+    for(var by=0; by<bh; by++){
+      var nyBase = by/unit;
+      for(var bx=0; bx<bw; bx++){
+        var nx = bx/unit;
+        var v;
+        if(p.style === 'marble'){
+          var turb = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
+          var angle = (bx/bw)*p.veinFreq*Math.PI*2 + turb*p.power;
+          v = (Math.sin(angle)+1)/2;
+        } else if(p.style === 'turbulence'){
+          v = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
+        } else {
+          v = (fbm(perm, nx, nyBase, p.octaves, p.roughness, false)+1)/2;
+        }
+        v = (v-0.5)*contrastFactor + 0.5;
+        v = v < 0 ? 0 : (v > 1 ? 1 : v);
+
+        var c = lut[Math.round(v*255)];
+        var idx = (by*bw+bx)*4;
+        d[idx] = c.r; d[idx+1] = c.g; d[idx+2] = c.b; d[idx+3] = Math.round(c.a*255);
+      }
+    }
+    noiseBufCtx.putImageData(imgData, 0, 0);
+
+    targetCtx.imageSmoothingEnabled = true;
+    targetCtx.drawImage(noiseBufCanvas, 0, 0, bw, bh, 0, 0, w, h);
+  }
+
+  /* ---------- image overlay layer ---------- */
+  // Keyed by the data-URL string itself (not by layer id), so duplicating a
+  // layer or restoring an older undo/redo snapshot with the same image content
+  // reuses the already-decoded <img> instead of re-decoding it.
+  var imageElementCache = {};
+  function getCachedImage(src){
+    if(!src) return null;
+    var entry = imageElementCache[src];
+    if(entry) return entry;
+    entry = { img: new Image(), loaded: false };
+    entry.img.onload = function(){ entry.loaded = true; scheduleRender(); };
+    entry.img.src = src;
+    imageElementCache[src] = entry;
+    return entry;
+  }
+
+  function drawImageLayer(layer, w, h, targetCtx){
+    if(!layer.imgSrc) return;
+    var entry = getCachedImage(layer.imgSrc);
+    if(!entry.loaded || !entry.img.naturalWidth) return; // decoding -- scheduleRender() fires again on load
+    var img = entry.img;
+    var iw = img.naturalWidth, ih = img.naturalHeight;
+    var scale = Math.max(0.05, layer.scale/100);
+    var offX = (layer.offsetX/100) * w;
+    var offY = (layer.offsetY/100) * h;
+    var flipX = layer.flipH ? -1 : 1;
+    var flipY = layer.flipV ? -1 : 1;
+
+    targetCtx.save();
+
+    if(layer.fit === 'tile'){
+      var tileW = Math.max(1, Math.round(iw*scale));
+      var tileH = Math.max(1, Math.round(ih*scale));
+      var tileCanvas = document.createElement('canvas');
+      tileCanvas.width = tileW; tileCanvas.height = tileH;
+      var tileCtx = tileCanvas.getContext('2d');
+      tileCtx.translate(layer.flipH?tileW:0, layer.flipV?tileH:0);
+      tileCtx.scale(flipX, flipY);
+      tileCtx.drawImage(img, 0, 0, tileW, tileH);
+      var pattern = targetCtx.createPattern(tileCanvas, 'repeat');
+      targetCtx.translate(offX, offY);
+      targetCtx.fillStyle = pattern;
+      targetCtx.fillRect(-offX, -offY, w, h);
+    } else {
+      var drawW, drawH;
+      if(layer.fit === 'stretch'){
+        drawW = w * scale; drawH = h * scale;
+      } else if(layer.fit === 'contain'){
+        var sIn = Math.min(w/iw, h/ih) * scale;
+        drawW = iw*sIn; drawH = ih*sIn;
+      } else if(layer.fit === 'cover'){
+        var sOut = Math.max(w/iw, h/ih) * scale;
+        drawW = iw*sOut; drawH = ih*sOut;
+      } else { // center: native pixel size
+        drawW = iw*scale; drawH = ih*scale;
+      }
+      var cx = w/2 + offX, cy = h/2 + offY;
+      targetCtx.translate(cx, cy);
+      targetCtx.scale(flipX, flipY);
+      targetCtx.drawImage(img, -drawW/2, -drawH/2, drawW, drawH);
+    }
+
+    targetCtx.restore();
+  }
+
+  function drawLayer(layer, w, h, targetCtx){
+    targetCtx = targetCtx || ctx;
+    if(!layer.visible) return;
+    targetCtx.save();
+    targetCtx.globalAlpha = layer.opacity/100;
+    targetCtx.globalCompositeOperation = layer.blend;
+    switch(layer.type){
+      case 'solid':
+        targetCtx.fillStyle = rgbaCss(layer.color);
+        targetCtx.fillRect(0,0,w,h);
+        break;
+      case 'linear':
+      case 'radial':
+        drawGradientLayer(layer, w, h, targetCtx);
+        break;
+      case 'checker':
+      case 'stripes':
+      case 'dots':
+      case 'hex':
+      case 'hud':
+        if(layer.fillMode === 'gradient') drawGeomPatternGradientMasked(layer, w, h, targetCtx);
+        else drawGeomPattern(layer, w, h, targetCtx);
+        break;
+      case 'noise':
+        if(layer.noiseType === 'perlin') drawPerlinNoiseLayer(layer, w, h, targetCtx);
+        else drawNoiseLayer(layer, w, h, targetCtx);
+        break;
+      case 'image':
+        drawImageLayer(layer, w, h, targetCtx);
+        break;
+      case 'group':
+        drawGroupLayer(layer, w, h, targetCtx);
+        break;
+    }
+    targetCtx.restore();
+  }
+
+  // A group renders its children onto their own fully-flattened offscreen
+  // bitmap first (children compositing against each other with their own
+  // blend/opacity/masks, same as the top-level stack), then that one finished
+  // bitmap is drawn onto targetCtx -- whose globalAlpha/globalCompositeOperation
+  // were already set by drawLayer's wrapper above from the group's OWN opacity
+  // and blend. So the group's master opacity/blend apply to the group as a
+  // single flattened unit, exactly like a folder in a typical image editor.
+  function drawGroupLayer(layer, w, h, targetCtx){
+    if(!layer.children || layer.children.length === 0) return;
+    var groupCanvas = document.createElement('canvas');
+    groupCanvas.width = w;
+    groupCanvas.height = h;
+    var groupCtx = groupCanvas.getContext('2d');
+    renderLayerList(layer.children, w, h, groupCtx);
+    targetCtx.drawImage(groupCanvas, 0, 0);
+  }
+
+  // Renders `layer` alone, then multiplies its alpha by `maskLayer`'s own alpha
+  // (rendered alone too), so the mask's shape -- whatever type it is -- clips the
+  // layer beneath it. Each side is rendered as one complete, finished bitmap first;
+  // destination-in is then applied exactly once between the two full images, which
+  // is what keeps this correct regardless of how many shapes either layer contains
+  // (see the gradient-pattern masking above for why doing it per-shape breaks).
+  var pairCanvas = document.createElement('canvas');
+  var pairCtx = pairCanvas.getContext('2d');
+  var pairMaskCanvas = document.createElement('canvas');
+  var pairMaskCtx = pairMaskCanvas.getContext('2d');
+
+  function drawMaskedPair(layer, maskLayer, w, h, targetCtx){
+    targetCtx = targetCtx || ctx;
+    pairCanvas.width = w;
+    pairCanvas.height = h;
+    drawLayer(layer, w, h, pairCtx);
+
+    pairMaskCanvas.width = w;
+    pairMaskCanvas.height = h;
+    drawLayer(maskLayer, w, h, pairMaskCtx);
+
+    pairCtx.globalCompositeOperation = 'destination-in';
+    pairCtx.drawImage(pairMaskCanvas, 0, 0);
+    pairCtx.globalCompositeOperation = 'source-over';
+
+    targetCtx.drawImage(pairCanvas, 0, 0);
+  }
+
+  // Walks one layer list top to bottom, drawing each layer onto targetCtx --
+  // pairing up mask/target layers along the way. Used both for the top-level
+  // stack and, recursively, for a group's own children (see drawGroupLayer),
+  // so masking works the same way at any nesting depth for free.
+  function renderLayerList(list, w, h, targetCtx){
+    var i = list.length - 1;
+    while(i >= 0){
+      var maskIdx = i - 1;
+      if(maskIdx >= 0 && list[maskIdx].isMask && list[maskIdx].visible && list[i].visible){
+        drawMaskedPair(list[i], list[maskIdx], w, h, targetCtx);
+        i -= 2;
+      } else if(list[i].isMask){
+        // An unpaired mask (hidden target, bottom of the stack, or stacked under
+        // another mask) has nothing to clip -- render nothing rather than show it
+        // as ordinary content.
+        i -= 1;
+      } else {
+        drawLayer(list[i], w, h, targetCtx);
+        i -= 1;
+      }
+    }
+  }
+
+  function render(){
+    var w = canvas.width, h = canvas.height;
+    ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,w,h);
+    renderLayerList(layers, w, h, ctx);
+  }
+
+  var rafPending = false;
+  function scheduleRender(){
+    if(rafPending) return;
+    rafPending = true;
+    requestAnimationFrame(function(){ rafPending = false; render(); });
+  }
+
+  /* ---------- randomize / reset ---------- */
+  function randomizeLayer(layer){
+      layer.opacity = 30 + Math.floor(Math.random()*70);
+      var blends = BLEND_MODES.map(function(b){ return b[0]; });
+      layer.blend = blends[Math.floor(Math.random()*blends.length)];
+      if(layer.type === 'group'){
+        layer.children.forEach(randomizeLayer);
+      } else if(layer.type === 'solid'){
+        layer.color = randomColor();
+      } else if(layer.type === 'linear' || layer.type === 'radial'){
+        if(layer.type === 'linear') layer.angle = Math.floor(Math.random()*360);
+        else { layer.cx = Math.floor(Math.random()*100); layer.cy = Math.floor(Math.random()*100); }
+        var n = layer.stops.length;
+        layer.stops.forEach(function(s, i){
+          s.color = randomColor();
+          s.pos = n > 1 ? Math.round(i/(n-1)*100) : 0;
+        });
+      } else if(GEOM_TYPES.indexOf(layer.type) !== -1){
+        layer.angle = Math.floor(Math.random()*360);
+        layer.size = 10 + Math.floor(Math.random()*90);
+        layer.fill = 15 + Math.floor(Math.random()*70);
+        if(layer.fillMode === 'gradient'){
+          var pg = layer.patternGradient;
+          if(pg.kind === 'radial'){ pg.cx = Math.floor(Math.random()*100); pg.cy = Math.floor(Math.random()*100); }
+          else { pg.angle = Math.floor(Math.random()*360); }
+          var pn = pg.stops.length;
+          pg.stops.forEach(function(s, i){ s.color = randomColor(); s.pos = pn > 1 ? Math.round(i/(pn-1)*100) : 0; });
+        } else {
+          layer.color = randomColor();
+        }
+      } else if(layer.type === 'image'){
+        layer.scale = 60 + Math.floor(Math.random()*180);
+        layer.offsetX = Math.floor(Math.random()*60) - 30;
+        layer.offsetY = Math.floor(Math.random()*60) - 30;
+      } else if(layer.type === 'noise'){
+        if(layer.noiseType === 'perlin'){
+          var pl = layer.perlin;
+          var styles = ['clouds','turbulence','marble'];
+          pl.style = styles[Math.floor(Math.random()*styles.length)];
+          pl.scale = 40 + Math.floor(Math.random()*400);
+          pl.octaves = 2 + Math.floor(Math.random()*5);
+          pl.roughness = 0.3 + Math.random()*0.5;
+          pl.contrast = 30 + Math.floor(Math.random()*60);
+          pl.veinFreq = 1 + Math.floor(Math.random()*20);
+          pl.power = Math.floor(Math.random()*24);
+          pl.seed = Math.floor(Math.random()*1000000000);
+          var ns = layer.noiseGradient.stops;
+          var nn = ns.length;
+          ns.forEach(function(s, i){ s.color = randomColor(); s.pos = nn > 1 ? Math.round(i/(nn-1)*100) : 0; });
+        } else {
+          layer.intensity = 5 + Math.floor(Math.random()*45);
+          layer.mono = Math.random() > 0.4;
+        }
+      }
+  }
+  $('randomizeBtn').addEventListener('click', function(){
+    layers.forEach(randomizeLayer);
+    renderLayersList();
+    scheduleRender();
+  });
+
+  $('resetBtn').addEventListener('click', function(){
+    $('preset').value = '2560x1440';
+    $('filename').value = 'background';
+    handlePresetChange();
+    layers = defaultLayers();
+    selectedLayerIds = {};
+    renderLayersList();
+    resizeCanvasToTarget();
+    scheduleRender();
+  });
+
+  /* ---------- undo / redo wiring ---------- */
+  $('undoBtn').addEventListener('click', undo);
+  $('redoBtn').addEventListener('click', redo);
+
+  document.addEventListener('keydown', function(e){
+    var key = e.key ? e.key.toLowerCase() : '';
+    if(!(e.ctrlKey || e.metaKey)) return;
+    if(key === 'z'){
+      e.preventDefault();
+      if(e.shiftKey) redo(); else undo();
+    } else if(key === 'y'){
+      e.preventDefault();
+      redo();
+    }
+  });
+
+  /* ---------- init ---------- */
+  if(!tryLoadStateFromHash()){
+    layers = defaultLayers();
+  }
+  renderLayersList();
+  handlePresetChange();
+  resizeCanvasToTarget();
+  scheduleRender();
+
+})();
+</script>
+</body>
+</html>
