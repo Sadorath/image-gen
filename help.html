@@ -167,7 +167,7 @@
         <tr><td>Orbit</td><td>Drifts the layer's position in a small circle</td></tr>
         <tr><td>Custom</td><td>Percent keyframes or your own per-frame expressions</td></tr>
       </table>
-      <p>Use <strong>Animation &gt; Play/Pause</strong> to preview the animation live, and <strong>File &gt; Record Animation (.webm)</strong> to capture exactly one loop to a video file that repeats with no visible seam.</p>
+      <p>Two small icon buttons sit right next to the <strong>Animation</strong> menu: <strong>&#9654;</strong> plays/pauses the live preview (starts paused by default &mdash; it turns into <strong>&#9208;</strong> while playing), and <strong>&#9679;</strong> records exactly one loop to a <code>.webm</code> video file that repeats with no visible seam. The record button glows bright red while a recording is in progress, and is a dim, muted dot the rest of the time.</p>
       <div class="tip"><strong>Tip:</strong> Cycles is always a whole number on purpose &mdash; a fractional cycle count would make position match at the loop boundary but velocity reverse, which shows up as a visible jump.</div>
 
       <h3>Custom animation: every numeric layer property</h3>
@@ -186,12 +186,11 @@
 
     <section id="export">
       <h2>Export &amp; Share</h2>
-      <p>Everything lives in the <strong>File</strong> menu:</p>
+      <p>Most of this lives in the <strong>File</strong> menu (the <strong>&#9679;</strong> Record button is the exception &mdash; see Animation above):</p>
       <ul>
         <li><strong>Export PNG</strong> &mdash; a static image at your chosen resolution.</li>
         <li><strong>Export CSS</strong> &mdash; bakes the design into a CSS <code>background-image</code> data URI you can drop straight into a stylesheet.</li>
         <li><strong>Export Rainmeter .ini</strong> &mdash; a Rainmeter Image meter, paired with its PNG.</li>
-        <li><strong>Record Animation (.webm)</strong> &mdash; one seamless loop as a video file.</li>
         <li><strong>Copy Share Link</strong> / <strong>Copy Code</strong> &mdash; encode the whole design (including embedded images) into a link or a short text code you can send to someone else. They can load it back in with <strong>Import a Link or Code</strong>.</li>
       </ul>
       <p>Opening a share link directly hides all editor UI and fills the window with just the generated image &mdash; handy for using it as a live wallpaper or embedding it in an <code>&lt;iframe&gt;</code>.</p>

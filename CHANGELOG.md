@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.31 — 2026-09-05
+
+- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (▶/⏸ and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.
+
 ## v0.0.30 — 2026-09-05
 
 - The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it — the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.
