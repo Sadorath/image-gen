@@ -16,6 +16,28 @@
     --text-dim:#9aa5ac;
     --accent:#5DC1AD;
     --accent-dim:#3a8c7b;
+    --input-bg:#12151a;
+    --btn-2:#2b3238;
+    --btn-2-hover:#353d44;
+  }
+  /* Settings > Light Theme swaps this whole token set. A few small
+     decorative details (the mask/group accent colors, the transparency-
+     checker swatch pattern) stay fixed in both themes rather than being
+     fully re-themed -- they read fine either way and aren't structural. */
+  html.theme-light{
+    --bg-0:#eef0f2;
+    --bg-1:#ffffff;
+    --bg-2:#f6f7f8;
+    --bg-3:#eef0f2;
+    --bg-4:#e7eaec;
+    --border:#c9d0d5;
+    --text:#1c2024;
+    --text-dim:#5b6570;
+    --accent:#1f8a72;
+    --accent-dim:#166b58;
+    --input-bg:#ffffff;
+    --btn-2:#e2e6e9;
+    --btn-2-hover:#d3d9dd;
   }
   *{box-sizing:border-box;}
   html,body{
@@ -38,6 +60,40 @@
     padding:16px 16px 60px 16px;
   }
   .panel h1{ font-size:15px; margin:0 0 4px 0; letter-spacing:.3px; }
+
+  /* ---------------- Header menu bar ---------------- */
+  .menubar{ display:flex; align-items:center; gap:2px; margin:0 0 14px 0; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
+  .menu-item-wrap{ position:relative; }
+  .menu-btn{
+    background:none; border:none; color:var(--text-dim); font-size:12px; font-weight:600;
+    padding:6px 10px; border-radius:5px; cursor:pointer; letter-spacing:.2px;
+  }
+  .menu-btn:hover, .menu-btn.open{ background:var(--btn-2); color:var(--text); }
+  .menu-btn-icon{ font-size:14px; padding:6px 9px; }
+  .menu-dropdown{
+    position:absolute; top:calc(100% + 4px); left:0; min-width:190px;
+    background:var(--bg-4); border:1px solid var(--border); border-radius:7px;
+    box-shadow:0 8px 24px rgba(0,0,0,.5); z-index:40; overflow:hidden; display:none;
+  }
+  .menu-dropdown.open{ display:block; }
+  .menu-dropdown-right{ left:auto; right:0; }
+  .menu-dropdown button{
+    display:block; width:100%; text-align:left; background:none; border:none;
+    color:var(--text); padding:8px 12px; font-size:12px; font-weight:500; cursor:pointer; white-space:nowrap;
+  }
+  .menu-dropdown button:hover{ background:var(--btn-2); color:var(--accent); }
+  .menu-dropdown button:disabled{ opacity:.35; cursor:not-allowed; }
+  .menu-dropdown button:disabled:hover{ background:none; color:var(--text); }
+  .menu-dropdown button.is-on{ color:var(--accent); }
+  .menu-dropdown button.is-on::before{ content:"\2713  "; }
+  .menu-sep{ height:1px; background:var(--border); margin:4px 0; }
+  /* Palette Presets expands in place rather than flying out to the side --
+     the sidebar clips horizontal overflow (see .panel above), so a
+     right-flying submenu would just get cut off at the panel's edge. */
+  button.has-submenu{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .submenu-inline{ display:none; background:rgba(0,0,0,.18); }
+  .submenu-inline.open{ display:block; }
+  .submenu-inline button{ padding-left:26px; font-size:11.5px; }
   .panel .sub{ color:var(--text-dim); font-size:11px; margin:0 0 18px 0; line-height:1.5; }
   fieldset{
     border:1px solid var(--border);
@@ -57,8 +113,20 @@
   label{ color:var(--text-dim); font-size:11.5px; display:flex; align-items:center; gap:6px; min-width:0; }
   .val{ color:var(--text); font-variant-numeric:tabular-nums; font-size:11px; min-width:34px; text-align:right; }
   select, input[type="number"], input[type="text"]{
-    background:#12151a; color:var(--text); border:1px solid var(--border);
+    background:var(--input-bg); color:var(--text); border:1px solid var(--border);
     border-radius:5px; padding:5px 6px; font-size:12px; width:100%;
+    font-family:inherit; /* form controls don't inherit the page font by default */
+  }
+  /* The File name field shows its placeholder ("Background") dimmed until the
+     user actually types something -- an untouched default shouldn't look the
+     same as a deliberately-typed value. */
+  #filename::placeholder{ color:var(--text-dim); opacity:1; }
+  /* Share-link/code output box: same dark theme as the text inputs above
+     (background, border, radius) rather than its own one-off look. */
+  textarea.share-output{
+    display:none; width:100%; margin-top:8px; resize:vertical;
+    background:var(--input-bg); color:var(--text); border:1px solid var(--border);
+    border-radius:5px; padding:5px 6px; font-size:12px; font-family:inherit;
   }
   /* Editable slider-value readouts: look like the plain text they replace --
      no box, just an underline hinting they're typeable -- so this has to win
@@ -72,7 +140,7 @@
   input.val:focus{ outline:none; border-bottom:1px solid var(--accent); color:var(--accent); }
   input[type="range"]{
     -webkit-appearance:none; width:100%; height:4px; border-radius:2px;
-    background:#12151a; outline:none;
+    background:var(--input-bg); outline:none;
   }
   input[type="range"]::-webkit-slider-thumb{
     -webkit-appearance:none; width:13px;height:13px;border-radius:50%;
@@ -100,10 +168,10 @@
   .btn-primary{ background:var(--accent); color:#0b1a16; width:100%; }
   .btn-primary:hover{background:#6fd2bd;}
   .btn-row{display:flex;gap:8px;margin-top:4px;}
-  .btn-secondary{ background:#2b3238; color:var(--text); flex:1; }
-  .btn-secondary:hover{background:#353d44;}
+  .btn-secondary{ background:var(--btn-2); color:var(--text); flex:1; }
+  .btn-secondary:hover{background:var(--btn-2-hover);}
   .btn-secondary:disabled{ opacity:.35; cursor:not-allowed; }
-  .btn-secondary:disabled:hover{ background:#2b3238; }
+  .btn-secondary:disabled:hover{ background:var(--btn-2); }
   small.hint{ display:block; color:var(--text-dim); font-size:10.5px; margin-top:2px; line-height:1.4; }
 
   /* ---------------- Layers ---------------- */
@@ -119,10 +187,10 @@
     color:var(--text); padding:9px 12px; font-size:12px; font-weight:500;
     cursor:pointer; border-radius:0;
   }
-  .add-menu button:hover{ background:#2b3238; color:var(--accent); }
+  .add-menu button:hover{ background:var(--btn-2); color:var(--accent); }
   .add-menu button + button{ border-top:1px solid var(--border); }
   .add-menu button.add-group-btn{ color:#e0bd6b; font-weight:600; }
-  .add-menu button.add-group-btn:hover{ background:#2b3238; color:#f0cd7d; }
+  .add-menu button.add-group-btn:hover{ background:var(--btn-2); color:#f0cd7d; }
   .layers-empty{ color:var(--text-dim); font-size:11.5px; text-align:center; padding:16px 6px; border:1px dashed var(--border); border-radius:8px; }
 
   .layer-card{ background:var(--bg-3); border:1px solid var(--border); border-radius:7px; margin-bottom:8px; overflow:hidden; }
@@ -149,17 +217,17 @@
     flex:1; min-width:0; background:transparent; border:none; color:var(--text);
     font-size:12px; font-weight:600; padding:3px 4px; border-radius:4px;
   }
-  .name-input:focus{ background:#12151a; outline:1px solid var(--accent-dim); }
+  .name-input:focus{ background:var(--input-bg); outline:1px solid var(--accent-dim); }
   .layer-type-tag{
-    font-size:9px; color:var(--text-dim); background:#12151a; border-radius:4px;
+    font-size:9px; color:var(--text-dim); background:var(--input-bg); border-radius:4px;
     padding:2px 5px; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; flex:0 0 auto;
   }
   .icon-btn{
-    background:#2b3238; border:none; color:var(--text-dim); border-radius:5px;
+    background:var(--btn-2); border:none; color:var(--text-dim); border-radius:5px;
     width:22px;height:22px; font-size:12px; line-height:1; cursor:pointer;
     display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto;
   }
-  .icon-btn:hover{ background:#353d44; color:var(--text); }
+  .icon-btn:hover{ background:var(--btn-2-hover); color:var(--text); }
   .icon-btn:disabled{ opacity:.25; cursor:not-allowed; }
   .icon-btn.danger:hover{ background:#5a2a2a; color:#ff9d9d; }
   .layer-body{ padding:10px 10px 12px 10px; border-top:1px solid var(--border); display:none; }
@@ -167,9 +235,9 @@
   .layer-controls-row{ display:flex; align-items:center; gap:8px; margin:7px 0; }
   .layer-controls-row label{ min-width:60px; flex:0 0 auto; }
   .stops-list{ margin-top:2px; }
-  .stop-row{ display:flex; align-items:center; gap:7px; margin:6px 0; padding:6px; background:#12151a; border-radius:6px; }
-  .add-stop-btn{ background:#2b3238; color:var(--text-dim); width:100%; padding:6px 10px; font-size:11.5px; margin-top:2px; }
-  .add-stop-btn:hover{ background:#353d44; color:var(--text); }
+  .stop-row{ display:flex; align-items:center; gap:7px; margin:6px 0; padding:6px; background:var(--input-bg); border-radius:6px; }
+  .add-stop-btn{ background:var(--btn-2); color:var(--text-dim); width:100%; padding:6px 10px; font-size:11.5px; margin-top:2px; }
+  .add-stop-btn:hover{ background:var(--btn-2-hover); color:var(--text); }
 
   .color-alpha{ display:flex; align-items:center; gap:7px; flex:1; min-width:0; }
   .swatch-checker{
@@ -213,16 +281,13 @@
   }
   .kiosk-mode canvas{ max-width:none; max-height:none; width:100vw; height:100vh; }
 
-  /* ---------------- Version badge + changelog modal ---------------- */
-  .version-badge{
-    position:fixed; left:10px; bottom:8px; z-index:20;
-    background:var(--bg-2); border:1px solid var(--border); border-radius:5px;
-    color:var(--text-dim); font-size:10px; font-weight:600; letter-spacing:.3px;
-    padding:3px 7px; cursor:pointer; opacity:.85; box-shadow:0 2px 8px rgba(0,0,0,.35);
-  }
-  .version-badge:hover{ opacity:1; color:var(--accent); border-color:var(--accent-dim); }
-  .kiosk-mode .version-badge{ display:none; }
+  /* View > Fit to Screen (default) vs Actual Size: when actual-size is on,
+     the canvas drops its max-width/max-height cap and the stage's own
+     overflow:auto (see .stage above) makes it scrollable at true resolution. */
+  .actual-size-mode .canvas-wrap{ max-width:none; max-height:none; }
+  .actual-size-mode canvas{ max-width:none; max-height:none; }
 
+  /* ---------------- Modals (changelog, keyboard shortcuts) ---------------- */
   .modal-overlay{
     position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100;
     display:none; align-items:center; justify-content:center; padding:24px;
@@ -242,6 +307,12 @@
   .modal-body ul{ margin:0 0 4px 0; padding-left:18px; }
   .modal-body li{ margin:3px 0; }
   .modal-body p{ margin:4px 0; }
+  .shortcut-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:7px 0; border-bottom:1px solid var(--border); }
+  .shortcut-row:last-child{ border-bottom:none; }
+  kbd{
+    background:var(--input-bg); border:1px solid var(--border); border-radius:4px;
+    padding:2px 6px; font-size:11px; font-family:monospace; color:var(--text);
+  }
 </style>
 </head>
 <body>
@@ -249,7 +320,81 @@
 
   <aside class="panel">
     <h1>Background Image Generator</h1>
-    <p class="sub">Stack as many layers as you like, reorder them, blend them, and export the result as a PNG at any resolution. Everything renders live &mdash; nothing leaves this page.</p>
+
+    <nav class="menubar" id="menubar">
+      <div class="menu-item-wrap">
+        <button class="menu-btn" type="button" data-menu="file">File</button>
+        <div class="menu-dropdown" data-menu-panel="file">
+          <button data-action="new">New Workspace</button>
+          <button data-action="save">Save&hellip;</button>
+          <button data-action="load">Load&hellip;</button>
+          <div class="menu-sep"></div>
+          <button data-action="import">Import a Link or Code&hellip;</button>
+          <button data-action="exportPng">Export PNG</button>
+          <button data-action="exportCss">Export CSS</button>
+          <button data-action="exportRainmeter">Export Rainmeter .ini</button>
+          <div class="menu-sep"></div>
+          <button data-action="copyLink" title="A full link that opens this exact design">Copy Share Link</button>
+          <button data-action="copyCode" title="Just the design data, to paste anywhere -- no link, no file path">Copy Code</button>
+        </div>
+      </div>
+      <div class="menu-item-wrap">
+        <button class="menu-btn" type="button" data-menu="edit">Edit</button>
+        <div class="menu-dropdown" data-menu-panel="edit">
+          <button data-action="undo" id="menuUndoBtn">Undo</button>
+          <button data-action="redo" id="menuRedoBtn">Redo</button>
+          <div class="menu-sep"></div>
+          <button data-action="groupSelected" id="menuGroupBtn">Group Selected</button>
+          <button data-action="ungroupSelected" id="menuUngroupBtn">Ungroup Selected</button>
+          <div class="menu-sep"></div>
+          <button data-action="selectAll">Select All</button>
+          <button data-action="deselectAll">Deselect All</button>
+          <div class="menu-sep"></div>
+          <button data-action="purgeHistory">Purge History</button>
+        </div>
+      </div>
+      <div class="menu-item-wrap">
+        <button class="menu-btn" type="button" data-menu="view">View</button>
+        <div class="menu-dropdown" data-menu-panel="view">
+          <button data-action="toggleKiosk">Toggle Kiosk Mode</button>
+          <button data-action="toggleFit" id="menuFitBtn">Fit to Screen</button>
+          <div class="menu-sep"></div>
+          <button type="button" class="has-submenu" id="paletteToggleBtn">Palette Presets &#9662;</button>
+          <div class="submenu-inline" id="paletteSubmenu">
+            <button data-palette="" id="paletteOptRandom">Random (default)</button>
+            <button data-palette="spectrum-hud" id="paletteOptSpectrum-hud">Spectrum HUD</button>
+            <button data-palette="industrial" id="paletteOptIndustrial">Industrial Automation</button>
+            <button data-palette="neon" id="paletteOptNeon">Neon</button>
+          </div>
+        </div>
+      </div>
+      <div class="menu-item-wrap" style="margin-left:auto;">
+        <button class="menu-btn menu-btn-icon" type="button" data-menu="settings" title="Settings">&#9881;</button>
+        <div class="menu-dropdown menu-dropdown-right" data-menu-panel="settings">
+          <button data-action="toggleTheme" id="menuThemeBtn">Light Theme</button>
+          <button data-action="togglePerf" id="menuPerfBtn">Performance Mode</button>
+          <button data-action="toggleAutosave" id="menuAutosaveBtn">Auto-Save</button>
+        </div>
+      </div>
+      <div class="menu-item-wrap">
+        <button class="menu-btn" type="button" data-menu="help">Help</button>
+        <div class="menu-dropdown menu-dropdown-right" data-menu-panel="help">
+          <button data-action="shortcuts">Keyboard Shortcuts</button>
+          <button data-action="whatsNew" id="menuWhatsNewBtn">What&rsquo;s New</button>
+        </div>
+      </div>
+    </nav>
+
+    <textarea id="shareLinkOutput" class="share-output" readonly rows="3"></textarea>
+    <small class="hint" id="shareLinkHint" style="display:none;"></small>
+    <div id="importPanel" style="display:none;margin-bottom:10px;">
+      <textarea id="importInput" rows="3" placeholder="Paste a share link or design code here" style="width:100%;font-size:10px;font-family:monospace;resize:vertical;background:var(--input-bg);color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px;"></textarea>
+      <div class="btn-row" style="margin-top:6px;">
+        <button class="btn-primary" id="importApplyBtn">Load Design</button>
+        <button class="btn-secondary" id="importCancelBtn">Cancel</button>
+      </div>
+      <small class="hint" id="importHint" style="display:none;"></small>
+    </div>
 
     <!-- CANVAS / EXPORT -->
     <fieldset>
@@ -281,25 +426,9 @@
       </div>
       <div class="row col">
         <label for="filename">File name</label>
-        <input type="text" id="filename" value="background" />
+        <input type="text" id="filename" placeholder="Background" />
       </div>
-      <button class="btn-primary" id="exportBtn">Export PNG</button>
-      <div class="btn-row" style="margin-top:8px;">
-        <button class="btn-secondary" id="shareLinkBtn" title="A full link that opens this exact design">&#128279; Copy Link</button>
-        <button class="btn-secondary" id="copyCodeBtn" title="Just the design data, to paste anywhere -- no link, no file path">&#128203; Copy Code</button>
-      </div>
-      <textarea id="shareLinkOutput" readonly rows="3" style="display:none;width:100%;margin-top:8px;font-size:10px;font-family:monospace;resize:vertical;background:#12151a;color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px;"></textarea>
-      <small class="hint" id="shareLinkHint" style="display:none;"></small>
-
-      <button class="btn-secondary" id="importToggleBtn" style="width:100%;margin-top:8px;">&#11015; Import a Link or Code&hellip;</button>
-      <div id="importPanel" style="display:none;margin-top:8px;">
-        <textarea id="importInput" rows="3" placeholder="Paste a share link or design code here" style="width:100%;font-size:10px;font-family:monospace;resize:vertical;background:#12151a;color:var(--text);border:1px solid var(--border);border-radius:5px;padding:6px;"></textarea>
-        <div class="btn-row" style="margin-top:6px;">
-          <button class="btn-primary" id="importApplyBtn">Load Design</button>
-          <button class="btn-secondary" id="importCancelBtn">Cancel</button>
-        </div>
-        <small class="hint" id="importHint" style="display:none;"></small>
-      </div>
+      <small class="hint">Export, Save/Load, and sharing all moved to the File menu above.</small>
     </fieldset>
 
     <!-- LAYERS -->
@@ -330,10 +459,7 @@
       <small class="hint">Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as mask" toggle to clip the layer directly beneath it to this layer's shape instead. Check the box on any layers to group them into a folder with its own shared opacity and blend.</small>
     </fieldset>
 
-    <div class="btn-row">
-      <button class="btn-secondary" id="randomizeBtn">Randomize</button>
-      <button class="btn-secondary" id="resetBtn">Reset</button>
-    </div>
+    <button class="btn-secondary" id="randomizeBtn" style="width:100%;">Randomize</button>
   </aside>
 
   <main class="stage">
@@ -349,7 +475,6 @@
 
 </div>
 
-<button class="version-badge" id="versionBadge" type="button" title="What's new">v0.0.0</button>
 <div class="modal-overlay" id="changelogModal">
   <div class="modal-box">
     <div class="modal-head">
@@ -357,6 +482,22 @@
       <button class="icon-btn" id="changelogCloseBtn" title="Close">&times;</button>
     </div>
     <div class="modal-body" id="changelogBody"><p>Loading&hellip;</p></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="shortcutsModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>Keyboard Shortcuts</h2>
+      <button class="icon-btn" id="shortcutsCloseBtn" title="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="shortcut-row"><span>Undo</span><kbd>Ctrl/Cmd + Z</kbd></div>
+      <div class="shortcut-row"><span>Redo</span><kbd>Ctrl/Cmd + Shift + Z</kbd></div>
+      <div class="shortcut-row"><span>Redo (alternate)</span><kbd>Ctrl/Cmd + Y</kbd></div>
+      <div class="shortcut-row"><span>Exit Kiosk Mode</span><kbd>Esc</kbd></div>
+      <div class="shortcut-row"><span>Close any open dialog</span><kbd>Esc</kbd></div>
+    </div>
   </div>
 </div>
 
@@ -386,6 +527,14 @@
   };
   var GEOM_TYPES = ['checker','stripes','dots','hex','hud'];
 
+  // View > Palette Presets: when one is active, Randomize samples colors from
+  // here instead of fully random RGB. Empty string ('') means "Random (default)".
+  var PALETTES = {
+    'spectrum-hud': ['#00ffdc','#0091ff','#7b2ff7','#ff2fd0','#00ff85','#ffee00'],
+    'industrial':   ['#8a8f94','#5b6570','#c9a227','#3a3f44','#b0413e','#6b7076'],
+    'neon':         ['#ff00e5','#00fff9','#fff200','#ff3d00','#7cff00','#c400ff']
+  };
+
   /* ---------- color helpers (rgba with alpha) ---------- */
   function makeColor(r,g,b,a){ return { r:r, g:g, b:b, a:(a===undefined?1:a) }; }
   function rgbaCss(c){ return 'rgba(' + c.r + ',' + c.g + ',' + c.b + ',' + c.a + ')'; }
@@ -397,7 +546,13 @@
     return { r:(n>>16)&255, g:(n>>8)&255, b:n&255, a:a };
   }
   function randomColor(){
-    return makeColor(Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.round((0.5+Math.random()*0.5)*100)/100);
+    var alpha = Math.round((0.5+Math.random()*0.5)*100)/100;
+    var palette = PALETTES[activePalette];
+    if(palette && palette.length){
+      var rgb = rgbFromHex(palette[Math.floor(Math.random()*palette.length)]);
+      return makeColor(rgb.r, rgb.g, rgb.b, alpha);
+    }
+    return makeColor(Math.floor(Math.random()*256), Math.floor(Math.random()*256), Math.floor(Math.random()*256), alpha);
   }
   function escAttr(s){ return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
 
@@ -584,6 +739,49 @@
     var count = Object.keys(selectedLayerIds).filter(function(id){ return selectedLayerIds[id]; }).length;
     btn.disabled = count === 0;
     btn.textContent = count > 0 ? 'Group Selected (' + count + ')' : 'Group Selected';
+    var menuGroup = $('menuGroupBtn'), menuUngroup = $('menuUngroupBtn');
+    if(menuGroup) menuGroup.disabled = count === 0;
+    if(menuUngroup) menuUngroup.disabled = count === 0;
+  }
+
+  // Mirrors groupSelected()'s per-id lookup: every currently-checked group
+  // layer is ungrouped in place, re-finding its location fresh on each
+  // iteration since an earlier splice in the same list shifts later indices.
+  function ungroupSelected(){
+    var ids = Object.keys(selectedLayerIds).filter(function(id){ return selectedLayerIds[id]; });
+    var didSomething = false;
+    ids.forEach(function(id){
+      var loc = findContainer(id);
+      if(!loc) return;
+      var layer = loc.list[loc.index];
+      if(layer.type !== 'group') return;
+      var args = [loc.index, 1].concat(layer.children || []);
+      loc.list.splice.apply(loc.list, args);
+      didSomething = true;
+    });
+    selectedLayerIds = {};
+    if(didSomething){ renderLayersList(); scheduleRender(); }
+  }
+
+  function forEachLayerDeep(list, fn){
+    list.forEach(function(layer){
+      fn(layer);
+      if(layer.type === 'group' && layer.children) forEachLayerDeep(layer.children, fn);
+    });
+  }
+
+  // Selection is ephemeral UI state (see selectedLayerIds above), not part of
+  // the document, so these just flip checkboxes directly rather than going
+  // through renderLayersList() -- same as clicking one checkbox by hand does.
+  function selectAllLayers(){
+    forEachLayerDeep(layers, function(layer){ selectedLayerIds[layer.id] = true; });
+    document.querySelectorAll('#layersList [data-role="select"]').forEach(function(cb){ cb.checked = true; });
+    updateGroupButtonState();
+  }
+  function deselectAllLayers(){
+    selectedLayerIds = {};
+    document.querySelectorAll('#layersList [data-role="select"]').forEach(function(cb){ cb.checked = false; });
+    updateGroupButtonState();
   }
 
   /* ---------- HTML builders ---------- */
@@ -1136,14 +1334,32 @@
     var undoBtn = $('undoBtn'), redoBtn = $('redoBtn');
     if(undoBtn) undoBtn.disabled = historyIndex <= 0;
     if(redoBtn) redoBtn.disabled = historyIndex >= historyStack.length - 1;
+    var menuUndoBtn = $('menuUndoBtn'), menuRedoBtn = $('menuRedoBtn');
+    if(menuUndoBtn) menuUndoBtn.disabled = historyIndex <= 0;
+    if(menuRedoBtn) menuRedoBtn.disabled = historyIndex >= historyStack.length - 1;
   }
 
   function pushHistory(){
+    // Auto-Save (Settings menu) piggybacks on this same hook -- it's already
+    // the one place every structural change (and every undo/redo restore,
+    // since restoreHistory() sets `layers` before calling renderLayersList())
+    // funnels through, so it's the correct single spot to mirror the current
+    // design into localStorage from.
+    persistDesignToStorage();
     if(isRestoringHistory) return;
     historyStack.length = historyIndex + 1; // drop any redo branch we've moved past
     historyStack.push(cloneLayers(layers));
     if(historyStack.length > HISTORY_LIMIT) historyStack.shift();
     historyIndex = historyStack.length - 1;
+    updateHistoryButtons();
+  }
+
+  // Manual override (Edit menu) to free the memory held by old snapshots --
+  // mainly useful when layers include large embedded images, where 50 full
+  // snapshots can add up. Keeps only the current state, as a fresh baseline.
+  function purgeHistory(){
+    historyStack = [cloneLayers(layers)];
+    historyIndex = 0;
     updateHistoryButtons();
   }
 
@@ -1228,20 +1444,109 @@
   $('customW').addEventListener('input', function(){ resizeCanvasToTarget(); scheduleRender(); });
   $('customH').addEventListener('input', function(){ resizeCanvasToTarget(); scheduleRender(); });
 
-  $('exportBtn').addEventListener('click', function(){
+  function sanitizedFilename(){
+    return (val('filename') || 'background').trim().replace(/[^a-z0-9_\-]+/gi,'_') || 'background';
+  }
+  function downloadBlob(blob, filename){
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+  }
+  function downloadText(text, filename, mime){
+    downloadBlob(new Blob([text], { type: mime || 'text/plain' }), filename);
+  }
+
+  function exportPNG(onDone){
     render();
-    var name = (val('filename') || 'background').trim().replace(/[^a-z0-9_\-]+/gi,'_') || 'background';
+    var name = sanitizedFilename();
     canvas.toBlob(function(blob){
-      var url = URL.createObjectURL(blob);
-      var a = document.createElement('a');
-      a.href = url;
-      a.download = name + '.png';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+      downloadBlob(blob, name + '.png');
+      if(onDone) onDone(name, blob);
     }, 'image/png');
-  });
+  }
+
+  // A raster composite (blend modes, masks, noise, grouped layers) can't be
+  // translated back into arbitrary CSS gradients in general, so this bakes
+  // the rendered result into one PNG and drops it into a background-image
+  // data URI -- the most literal, always-correct reading of "export to CSS"
+  // for a tool whose whole design is "render everything down to pixels."
+  function exportCSS(){
+    render();
+    var name = sanitizedFilename();
+    var dataUrl = canvas.toDataURL('image/png');
+    var css = '/* Generated by Background Image Generator -- ' + canvas.width + '×' + canvas.height + ' */\n' +
+      '.' + name + '-bg {\n' +
+      '  background-image: url("' + dataUrl + '");\n' +
+      '  background-size: cover;\n' +
+      '  background-position: center;\n' +
+      '  background-repeat: no-repeat;\n' +
+      '}\n';
+    downloadText(css, name + '.css', 'text/css');
+  }
+
+  // A minimal Rainmeter skin: an Image meter pointed at the PNG exported
+  // alongside it (same folder, same base name). Real skins often add
+  // [Variables], @Resources folders, multi-monitor offsets, etc. -- this is
+  // a working starting skeleton, not a full skin author's setup.
+  function exportRainmeter(){
+    exportPNG(function(name){
+      var ini = '[Rainmeter]\n' +
+        'Update=-1\n' +
+        'AccurateText=1\n\n' +
+        '[MeterBackground]\n' +
+        'Meter=Image\n' +
+        'ImageName=' + name + '.png\n' +
+        'X=0\n' +
+        'Y=0\n' +
+        'W=' + canvas.width + '\n' +
+        'H=' + canvas.height + '\n' +
+        'PreserveAspectRatio=1\n';
+      downloadText(ini, name + '.ini', 'text/plain');
+    });
+  }
+
+  // File > Save / Load: the raw layers array (plus canvas settings) as a
+  // plain local .json file -- a proper backup file, distinct from the
+  // Copy Link/Code hash (which is meant for pasting, not archiving) and from
+  // the localStorage autosave (which is invisible, single-slot, this-browser-only).
+  function exportDesignJSON(){
+    var payload = buildStatePayload();
+    downloadText(JSON.stringify(payload, null, 2), sanitizedFilename() + '.json', 'application/json');
+  }
+  function importDesignJSONFile(){
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.style.display = 'none';
+    document.body.appendChild(input); // some browsers need it attached for .click() to reliably open the picker
+    function cleanup(){ if(input.parentNode) input.parentNode.removeChild(input); }
+    input.addEventListener('change', function(){
+      var file = input.files && input.files[0];
+      if(!file){ cleanup(); return; }
+      var reader = new FileReader();
+      reader.onload = function(){
+        try {
+          var payload = JSON.parse(reader.result);
+          if(!applyStatePayload(payload)) throw new Error('no layers found in that file');
+          selectedLayerIds = {};
+          handlePresetChange();
+          renderLayersList();
+          resizeCanvasToTarget();
+          scheduleRender();
+        } catch(e){
+          alert("That file doesn't look like a design saved from this app.");
+        }
+        cleanup();
+      };
+      reader.readAsText(file);
+    });
+    input.click();
+  }
 
   /* ---------- shareable URL state ---------- */
   // The whole design (layers, including any embedded image data) round-trips
@@ -1308,8 +1613,11 @@
       });
   }
 
-  function buildShareState(){
-    var payload = {
+  // The plain (not-yet-encoded) design payload -- shared by the base64
+  // hash/code (buildShareState) and the raw .json file (exportDesignJSON),
+  // so both save formats always carry exactly the same fields.
+  function buildStatePayload(){
+    return {
       v: 1,
       layers: layers,
       preset: val('preset'),
@@ -1317,7 +1625,9 @@
       customH: $('customH').value,
       filename: val('filename')
     };
-    var code = toUrlSafeB64(JSON.stringify(payload));
+  }
+  function buildShareState(){
+    var code = toUrlSafeB64(JSON.stringify(buildStatePayload()));
     return { code: code, bytes: code.length };
   }
   function buildShareURL(){
@@ -1366,6 +1676,19 @@
     return text.replace(/\s+/g, '');
   }
 
+  // The copied link/code reflects the design at the moment it was copied --
+  // as soon as the user changes anything, that snapshot is stale, so the box
+  // showing it should disappear rather than keep displaying an out-of-date
+  // hash. Called from scheduleRender() (covers every layer/setting change)
+  // and from the file-name field's own listener (which doesn't otherwise
+  // trigger a render).
+  function hideShareOutput(){
+    var output = $('shareLinkOutput');
+    var hint = $('shareLinkHint');
+    if(output) output.style.display = 'none';
+    if(hint) hint.style.display = 'none';
+  }
+
   // Copies `text` to the clipboard (falling back to a selected, manually
   // copyable textarea when the Clipboard API is unavailable -- common when a
   // page is opened straight from a file:// path) and reports what happened.
@@ -1393,27 +1716,26 @@
     }
   }
 
-  $('shareLinkBtn').addEventListener('click', function(){
+  function copyShareLink(){
     var result = buildShareURL();
-    history.replaceState(null, '', result.url); // also makes reloading this tab keep the current design
     publishToClipboard(result.url, result.bytes, 'Link copied to your clipboard.');
-  });
-
-  $('copyCodeBtn').addEventListener('click', function(){
+  }
+  function copyShareCode(){
     var state = buildShareState();
     publishToClipboard(state.code, state.bytes, 'Design code copied to your clipboard.');
-  });
+  }
 
-  $('importToggleBtn').addEventListener('click', function(){
-    var panel = $('importPanel');
-    var opening = panel.style.display === 'none' || !panel.style.display;
-    panel.style.display = opening ? 'block' : 'none';
-    if(opening){
-      $('importInput').value = '';
-      $('importHint').style.display = 'none';
-      $('importInput').focus();
-    }
-  });
+  // The file name field doesn't otherwise trigger scheduleRender() (it
+  // doesn't affect the canvas), but it's still a setting, so a copied
+  // link/code that baked in the old name should still disappear when it changes.
+  $('filename').addEventListener('input', hideShareOutput);
+
+  function openImportPanel(){
+    $('importInput').value = '';
+    $('importHint').style.display = 'none';
+    $('importPanel').style.display = 'block';
+    $('importInput').focus();
+  }
   $('importCancelBtn').addEventListener('click', function(){
     $('importPanel').style.display = 'none';
   });
@@ -1943,6 +2265,11 @@
 
   var rafPending = false;
   function scheduleRender(){
+    hideShareOutput(); // any change that affects the render is a settings change -- the last copied link/code no longer matches
+    // Settings > Performance Mode: skip intermediate renders while a control
+    // is actively being dragged (mousedown->mouseup, tracked below); the
+    // mouseup handler forces one final render so the result always catches up.
+    if(performanceModeEnabled && pointerIsDown) return;
     if(rafPending) return;
     rafPending = true;
     requestAnimationFrame(function(){ rafPending = false; render(); });
@@ -2009,16 +2336,17 @@
     scheduleRender();
   });
 
-  $('resetBtn').addEventListener('click', function(){
+  // File > New Workspace (also what a first, un-shared, un-autosaved load uses).
+  function newDesign(){
     $('preset').value = '2560x1440';
-    $('filename').value = 'background';
+    $('filename').value = ''; // empty -- shows the dimmed "Background" placeholder again, same as first load
     handlePresetChange();
     layers = defaultLayers();
     selectedLayerIds = {};
     renderLayersList();
     resizeCanvasToTarget();
     scheduleRender();
-  });
+  }
 
   /* ---------- undo / redo wiring ---------- */
   $('undoBtn').addEventListener('click', undo);
@@ -2037,13 +2365,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.12';
+  var APP_VERSION = '0.0.14';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -2092,20 +2420,205 @@
     });
   }
   function closeChangelogModal(){ $('changelogModal').classList.remove('open'); }
+  function openShortcutsModal(){ $('shortcutsModal').classList.add('open'); }
+  function closeShortcutsModal(){ $('shortcutsModal').classList.remove('open'); }
 
-  $('versionBadge').textContent = 'v' + APP_VERSION;
-  $('versionBadge').addEventListener('click', openChangelogModal);
+  $('menuWhatsNewBtn').textContent = "What's New (v" + APP_VERSION + ")";
   $('changelogCloseBtn').addEventListener('click', closeChangelogModal);
   $('changelogModal').addEventListener('click', function(e){ if(e.target === $('changelogModal')) closeChangelogModal(); });
+  $('shortcutsCloseBtn').addEventListener('click', closeShortcutsModal);
+  $('shortcutsModal').addEventListener('click', function(e){ if(e.target === $('shortcutsModal')) closeShortcutsModal(); });
   document.addEventListener('keydown', function(e){
-    if(e.key === 'Escape' && $('changelogModal').classList.contains('open')) closeChangelogModal();
+    if(e.key !== 'Escape') return;
+    if($('changelogModal').classList.contains('open')) closeChangelogModal();
+    else if($('shortcutsModal').classList.contains('open')) closeShortcutsModal();
+    else if(document.documentElement.classList.contains('kiosk-mode')) document.documentElement.classList.remove('kiosk-mode');
+  });
+
+  /* ---------- settings + design autosave (localStorage) ---------- */
+  var AUTOSAVE_KEY = 'bgGenerator.autosaveDesign';
+  var SETTINGS_KEY = 'bgGenerator.settings';
+
+  function loadSettings(){
+    try {
+      var raw = localStorage.getItem(SETTINGS_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch(e){ return {}; }
+  }
+  function saveSettings(){
+    try {
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify({
+        theme: currentTheme, performanceMode: performanceModeEnabled,
+        autoSave: autoSaveEnabled, palette: activePalette
+      }));
+    } catch(e){ /* localStorage unavailable (private browsing, quota, etc.) -- settings just won't persist */ }
+  }
+
+  var savedSettings = loadSettings();
+  var currentTheme = savedSettings.theme === 'light' ? 'light' : 'dark';
+  var performanceModeEnabled = !!savedSettings.performanceMode;
+  var autoSaveEnabled = savedSettings.autoSave !== false; // on by default
+  var activePalette = savedSettings.palette || '';
+  var viewFitToScreen = true;
+
+  // Hooked into pushHistory() (defined above) so every structural change --
+  // and every undo/redo restore -- mirrors the current design here too.
+  function persistDesignToStorage(){
+    if(!autoSaveEnabled) return;
+    try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(buildStatePayload())); }
+    catch(e){ /* private-browsing quota, etc. -- autosave just silently no-ops */ }
+  }
+  function loadDesignFromStorage(){
+    try {
+      var raw = localStorage.getItem(AUTOSAVE_KEY);
+      if(!raw) return false;
+      return applyStatePayload(JSON.parse(raw));
+    } catch(e){ return false; }
+  }
+
+  function applyTheme(){
+    document.documentElement.classList.toggle('theme-light', currentTheme === 'light');
+    var btn = $('menuThemeBtn');
+    if(btn) btn.classList.toggle('is-on', currentTheme === 'light');
+  }
+  function toggleTheme(){
+    currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+    applyTheme();
+    saveSettings();
+  }
+
+  // Suppresses re-renders while a control is actively being dragged (see the
+  // pointer tracking below and the gate added to scheduleRender()), then
+  // forces one real render on release -- meant for heavy layers (Perlin
+  // noise at large canvas sizes) where redrawing on every 'input' tick during
+  // a drag can visibly lag.
+  function togglePerformanceMode(){
+    performanceModeEnabled = !performanceModeEnabled;
+    $('menuPerfBtn').classList.toggle('is-on', performanceModeEnabled);
+    saveSettings();
+  }
+  var pointerIsDown = false;
+  document.addEventListener('mousedown', function(){ pointerIsDown = true; });
+  document.addEventListener('mouseup', function(){
+    var wasDown = pointerIsDown;
+    pointerIsDown = false;
+    if(wasDown && performanceModeEnabled) scheduleRender();
+  });
+
+  function toggleAutoSave(){
+    autoSaveEnabled = !autoSaveEnabled;
+    $('menuAutosaveBtn').classList.toggle('is-on', autoSaveEnabled);
+    saveSettings();
+    if(autoSaveEnabled) persistDesignToStorage(); // capture the current state right away, not just future changes
+  }
+
+  function toggleKioskMode(){
+    document.documentElement.classList.toggle('kiosk-mode');
+  }
+
+  function updateViewMenuChecks(){
+    var fitBtn = $('menuFitBtn');
+    if(fitBtn) fitBtn.classList.toggle('is-on', viewFitToScreen);
+  }
+  function toggleFitToScreen(){
+    viewFitToScreen = !viewFitToScreen;
+    document.documentElement.classList.toggle('actual-size-mode', !viewFitToScreen);
+    updateViewMenuChecks();
+  }
+
+  var PALETTE_MENU_IDS = { '':'paletteOptRandom', 'spectrum-hud':'paletteOptSpectrum-hud', 'industrial':'paletteOptIndustrial', 'neon':'paletteOptNeon' };
+  function updatePaletteMenuChecks(){
+    Object.keys(PALETTE_MENU_IDS).forEach(function(key){
+      var el = $(PALETTE_MENU_IDS[key]);
+      if(el) el.classList.toggle('is-on', activePalette === key);
+    });
+  }
+  function setActivePalette(key){
+    activePalette = key || '';
+    saveSettings();
+    updatePaletteMenuChecks();
+  }
+
+  /* ---------- header menu bar: open/close + submenu + dispatch ---------- */
+  function closeAllMenus(){
+    document.querySelectorAll('.menu-dropdown.open').forEach(function(el){ el.classList.remove('open'); });
+    document.querySelectorAll('.menu-btn.open').forEach(function(el){ el.classList.remove('open'); });
+    document.querySelectorAll('.submenu-inline.open').forEach(function(el){ el.classList.remove('open'); });
+  }
+  document.querySelectorAll('#menubar > .menu-item-wrap > .menu-btn').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var panel = btn.nextElementSibling;
+      var isOpen = panel.classList.contains('open');
+      closeAllMenus();
+      if(!isOpen){ panel.classList.add('open'); btn.classList.add('open'); }
+    });
+  });
+  document.querySelectorAll('.has-submenu').forEach(function(btn){
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      btn.nextElementSibling.classList.toggle('open');
+    });
+  });
+  document.addEventListener('click', function(e){
+    if(!e.target.closest('#menubar')) closeAllMenus();
+  });
+
+  function handleMenuAction(action){
+    switch(action){
+      case 'new': newDesign(); break;
+      case 'save': exportDesignJSON(); break;
+      case 'load': importDesignJSONFile(); break;
+      case 'import': openImportPanel(); break;
+      case 'exportPng': exportPNG(); break;
+      case 'exportCss': exportCSS(); break;
+      case 'exportRainmeter': exportRainmeter(); break;
+      case 'copyLink': copyShareLink(); break;
+      case 'copyCode': copyShareCode(); break;
+      case 'undo': undo(); break;
+      case 'redo': redo(); break;
+      case 'groupSelected': groupSelected(); break;
+      case 'ungroupSelected': ungroupSelected(); break;
+      case 'selectAll': selectAllLayers(); break;
+      case 'deselectAll': deselectAllLayers(); break;
+      case 'purgeHistory': purgeHistory(); break;
+      case 'toggleKiosk': toggleKioskMode(); break;
+      case 'toggleFit': toggleFitToScreen(); break;
+      case 'toggleTheme': toggleTheme(); break;
+      case 'togglePerf': togglePerformanceMode(); break;
+      case 'toggleAutosave': toggleAutoSave(); break;
+      case 'shortcuts': openShortcutsModal(); break;
+      case 'whatsNew': openChangelogModal(); break;
+    }
+  }
+  $('menubar').addEventListener('click', function(e){
+    var actionBtn = e.target.closest('button[data-action]');
+    if(actionBtn){
+      handleMenuAction(actionBtn.getAttribute('data-action'));
+      closeAllMenus();
+      return;
+    }
+    var paletteBtn = e.target.closest('button[data-palette]');
+    if(paletteBtn){
+      setActivePalette(paletteBtn.getAttribute('data-palette'));
+      closeAllMenus();
+    }
   });
 
   /* ---------- init ---------- */
+  applyTheme();
+  $('menuPerfBtn').classList.toggle('is-on', performanceModeEnabled);
+  $('menuAutosaveBtn').classList.toggle('is-on', autoSaveEnabled);
+  updatePaletteMenuChecks();
+  updateViewMenuChecks();
+
   if(tryLoadStateFromHash()){
     // Opened via a share link: act as a plain live background, not the editor --
     // hide the sidebar entirely and let the generated image fill the window.
     document.documentElement.classList.add('kiosk-mode');
+  } else if(loadDesignFromStorage()){
+    // No share link, but this browser has an autosaved design -- pick up
+    // where the user left off rather than starting from the default preset.
   } else {
     layers = defaultLayers();
   }

@@ -4,6 +4,22 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.14 — 2026-09-05
+
+- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.
+- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.
+- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots — useful with large embedded images).
+- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.
+- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.
+- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.
+
+## v0.0.13 — 2026-09-05
+
+- "Copy Link" no longer rewrites the page's own address bar with the share hash — copying a link or code just copies it, without changing the URL you're currently looking at.
+- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.
+- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.
+- The File name field now shows "Background" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.
+
 ## v0.0.12
 
 - Added a small version badge in the bottom-left corner of the app (e.g. "v0.0.12"). Clicking it opens a "What's New" panel showing this changelog.
