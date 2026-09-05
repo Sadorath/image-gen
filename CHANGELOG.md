@@ -4,6 +4,11 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.21 — 2026-09-05
+
+- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color — most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.
+- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).
+
 ## v0.0.20 — 2026-09-05
 
 - Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only — fills, gradient and noise stops, the noise monochrome toggle — leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).
