@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.30 — 2026-09-05
+
+- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it — the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.
+- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it — both now share the same vertical center.
+- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.
+- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.
+- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar — and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.
+
+## v0.0.29 — 2026-09-05
+
+- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu — nothing duplicated. The sidebar now holds only the Layers section.
+
+## v0.0.28 — 2026-09-05
+
+- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y — CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset — whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON — only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).
+- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use — layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.
+- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.
+
 ## v0.0.27 — 2026-09-05
 
 - The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches "index.html" specifically can't hold back an update — every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.

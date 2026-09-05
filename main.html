@@ -55,19 +55,27 @@
     scrollbar-width:thin;
     scrollbar-color:var(--border) var(--bg-1);
   }
-  .app{ display:flex; height:100vh; width:100%; }
+  /* The page is a column: the menu bar header on top, then the sidebar+stage
+     row filling whatever's left. Deliberately NOT setting overflow:hidden
+     anywhere here -- if the row below ever ends up taller than the space
+     .app actually has (a sizing mistake somewhere), the intent is for that
+     to show up as a real, visible scrollbar on the body rather than silently
+     clipping content, so it's obvious something needs adjusting. */
+  body{ display:flex; flex-direction:column; }
+  .app{ display:flex; flex:1 1 auto; min-height:0; width:100%; }
 
   /* ---------------- Sidebar ---------------- */
   .panel{
     width:400px;
-    min-width:400px;
+    min-width:260px;
+    max-width:640px;
+    flex:0 0 auto;
     background:var(--bg-1);
-    border-right:1px solid var(--border);
     overflow-y:auto;
     overflow-x:hidden;
     padding:16px 16px 60px 16px;
   }
-  .panel h1{ font-size:15px; margin:0 0 4px 0; letter-spacing:.3px; }
+  .panel h1{ font-size:15px; margin:0 0 14px 0; letter-spacing:.3px; }
   /* Chromium/Safari scrollbar theming (the ::-webkit-scrollbar family isn't
      read by Firefox, which uses the scrollbar-color property above instead).
      Applied globally with "*" -- not scoped to one container -- so every
@@ -77,15 +85,39 @@
   *::-webkit-scrollbar-thumb{ background:var(--btn-2); border-radius:6px; border:2px solid var(--bg-1); }
   *::-webkit-scrollbar-thumb:hover{ background:var(--btn-2-hover); }
 
+  /* Drag handle between the sidebar and the stage -- see the resize script
+     near the bottom of the page. A thin strip rather than a hairline border
+     (the border-right the sidebar used to have) so there's an actually
+     comfortable hit target for the drag, with its own hover/active color so
+     it visibly reads as a control rather than just a divider. */
+  .panel-resize-handle{
+    flex:0 0 5px; cursor:col-resize; background:var(--border);
+    transition:background .15s;
+  }
+  .panel-resize-handle:hover, .panel-resize-handle.dragging{ background:var(--accent); }
+
   /* ---------------- Header menu bar ---------------- */
-  .menubar{ display:flex; align-items:center; gap:2px; margin:0 0 14px 0; padding-bottom:10px; border-bottom:1px solid var(--border); flex-wrap:wrap; }
-  .menu-item-wrap{ position:relative; }
+  /* Now a full-width header above the sidebar+stage row (not nested inside
+     the sidebar) -- own background/border, and deliberately slim padding to
+     stay compact vertically since it now eats into height that used to be
+     entirely the stage/sidebar's. */
+  .menubar{
+    display:flex; align-items:center; gap:2px; flex-wrap:wrap; flex:0 0 auto;
+    padding:6px 14px; background:var(--bg-1); border-bottom:1px solid var(--border);
+  }
+  .menu-item-wrap{ position:relative; display:flex; align-items:stretch; }
   .menu-btn{
     background:none; border:none; color:var(--text-dim); font-size:12px; font-weight:600;
     padding:6px 10px; border-radius:5px; cursor:pointer; letter-spacing:.2px;
+    /* Flex-centered rather than relying on line-height/font metrics to land
+       the text in the middle -- otherwise the icon-only gear button (a
+       different font-size than every text label next to it) visibly sits a
+       couple pixels off from File/Edit/View/etc even though every button's
+       own box is the same height. */
+    display:flex; align-items:center; line-height:1;
   }
   .menu-btn:hover, .menu-btn.open{ background:var(--btn-2); color:var(--text); }
-  .menu-btn-icon{ font-size:14px; padding:6px 9px; }
+  .menu-btn-icon{ font-size:14px; padding:6px 9px; justify-content:center; }
   .menu-dropdown{
     position:absolute; top:calc(100% + 4px); left:0; min-width:190px;
     background:var(--bg-4); border:1px solid var(--border); border-radius:7px;
@@ -310,7 +342,7 @@
 
   /* ---------------- Stage ---------------- */
   .stage{
-    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:1; min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
     padding:24px; overflow:auto;
     background:
       linear-gradient(45deg, #1a1d21 25%, transparent 25%) -10px 0/20px 20px,
@@ -319,11 +351,15 @@
       linear-gradient(-45deg, transparent 75%, #1a1d21 75%) -10px 0/20px 20px,
       #16191c;
   }
+  /* Fit-to-screen sizing is relative to the stage's own box (100%) rather
+     than fixed vw/vh guesses -- so it automatically adapts to the sidebar
+     being dragged wider/narrower or the header's height changing, instead
+     of needing its numbers re-tuned by hand every time the layout shifts. */
   .canvas-wrap{
-    max-width:100%; max-height:80vh; box-shadow:0 10px 40px rgba(0,0,0,.55);
+    max-width:100%; max-height:100%; box-shadow:0 10px 40px rgba(0,0,0,.55);
     border-radius:6px; overflow:hidden; border:1px solid #000; line-height:0;
   }
-  canvas{ display:block; max-width:80vw; max-height:78vh; width:auto; height:auto; }
+  canvas{ display:block; max-width:100%; max-height:100%; width:auto; height:auto; }
   .stage-footer{ margin-top:14px; color:var(--text-dim); font-size:11.5px; display:flex; gap:16px; align-items:center; }
   .dot{color:var(--accent);}
 
@@ -332,7 +368,8 @@
      chrome at all, just the generated image filling the whole window, so the
      page itself can be pointed to by a "live wallpaper" viewer. */
   html.kiosk-mode, html.kiosk-mode body{ overflow:hidden; }
-  .kiosk-mode .panel{ display:none; }
+  .kiosk-mode .menubar{ display:none; }
+  .kiosk-mode .panel, .kiosk-mode .panel-resize-handle{ display:none; }
   .kiosk-mode .stage{ padding:0; background:#000; }
   .kiosk-mode .stage-footer{ display:none; }
   .kiosk-mode .canvas-wrap{
@@ -341,11 +378,15 @@
   }
   .kiosk-mode canvas{ max-width:none; max-height:none; width:100vw; height:100vh; }
 
-  /* View > Fit to Screen (default) vs Actual Size: when actual-size is on,
-     the canvas drops its max-width/max-height cap and the stage's own
-     overflow:auto (see .stage above) makes it scrollable at true resolution. */
-  .actual-size-mode .canvas-wrap{ max-width:none; max-height:none; }
-  .actual-size-mode canvas{ max-width:none; max-height:none; }
+  /* View > Zoom: "Fit" (the default above) scales the canvas down to fit the
+     available space via the max-width/max-height caps above. Any explicit
+     zoom level -- Actual Size (100%), or a specific Zoom In/Out percentage --
+     drops those caps instead and sizes the canvas with an exact inline pixel
+     width/height (set in JS), so it can render both smaller AND larger than
+     the visible stage; .stage's own overflow:auto (above) makes the excess
+     scrollable rather than clipped or pushing the page itself around. */
+  .zoom-manual .canvas-wrap{ max-width:none; max-height:none; }
+  .zoom-manual canvas{ max-width:none; max-height:none; }
 
   /* ---------------- Modals (changelog, keyboard shortcuts) ---------------- */
   .modal-overlay{
@@ -380,125 +421,181 @@
   .modal-box-wide{ max-width:900px; width:92vw; height:85vh; }
   .modal-body-flush{ padding:0; overflow:hidden; flex:1; }
   #hintsFrame{ display:block; width:100%; height:100%; border:none; background:var(--bg-1); }
+  /* Debug Log modal */
+  .debug-log-banner{
+    background:#3a2a1a; border:1px solid #6b4a26; color:#e0b84a;
+    border-radius:5px; padding:8px 10px; font-size:11.5px; line-height:1.5; margin-bottom:10px;
+  }
+  html.theme-light .debug-log-banner{ background:#fff3d9; border-color:#e0b84a; color:#7a5a10; }
+  .debug-log-stats{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(120px,1fr)); gap:8px;
+    background:var(--bg-2); border:1px solid var(--border); border-radius:6px; padding:10px;
+  }
+  .debug-log-stat{ display:flex; flex-direction:column; gap:2px; }
+  .debug-log-stat .n{ font-size:15px; color:var(--text); font-variant-numeric:tabular-nums; }
+  .debug-log-stat .l{ font-size:9.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.04em; }
+  .debug-log-list{
+    max-height:38vh; overflow-y:auto; border:1px solid var(--border); border-radius:6px;
+    font-family:monospace; font-size:11px;
+  }
+  .debug-log-row{ display:flex; gap:8px; padding:5px 8px; border-bottom:1px solid var(--border); align-items:baseline; }
+  .debug-log-row:last-child{ border-bottom:none; }
+  .debug-log-row .t{ color:var(--text-dim); flex:0 0 auto; white-space:nowrap; }
+  .debug-log-row .lvl{ flex:0 0 auto; text-transform:uppercase; font-size:9.5px; font-weight:bold; letter-spacing:.03em; }
+  .debug-log-row .m{ color:var(--text); word-break:break-word; }
+  .debug-log-row .c{ color:var(--text-dim); word-break:break-word; }
+  .debug-log-row.lvl-error .lvl{ color:#ff6b6b; }
+  .debug-log-row.lvl-warn .lvl{ color:#e0b84a; }
+  .debug-log-row.lvl-info .lvl{ color:var(--accent); }
+  .debug-log-empty{ padding:16px; text-align:center; color:var(--text-dim); font-family:inherit; }
 </style>
 </head>
 <body>
-<div class="app">
-
-  <aside class="panel">
-    <h1>Background Image Generator</h1>
-
-    <nav class="menubar" id="menubar">
-      <div class="menu-item-wrap">
-        <button class="menu-btn" type="button" data-menu="file" title="New, save/load, import, and export">File</button>
-        <div class="menu-dropdown" data-menu-panel="file">
-          <button data-action="new" title="Clear everything and start a fresh, blank design">New Workspace</button>
-          <button data-action="save" title="Save this design to a local .json file">Save&hellip;</button>
-          <button data-action="load" title="Load a design from a local .json file">Load&hellip;</button>
-          <div class="menu-sep"></div>
-          <button data-action="import" title="Paste a share link or design code to load someone else&#39;s design">Import a Link or Code&hellip;</button>
-          <button data-action="exportPng" title="Render and download the current design as a PNG image">Export PNG</button>
-          <button data-action="exportCss" title="Bake the design into a CSS background-image data URI">Export CSS</button>
-          <button data-action="exportRainmeter" title="Export a Rainmeter .ini Image meter, paired with its PNG">Export Rainmeter .ini</button>
-          <button data-action="recordAnimation" title="Records exactly one loop, so it always ends where it began">Record Animation (.webm)</button>
-          <div class="menu-sep"></div>
-          <button data-action="copyLink" title="A full link that opens this exact design">Copy Share Link</button>
-          <button data-action="copyCode" title="Just the design data, to paste anywhere -- no link, no file path">Copy Code</button>
-        </div>
+  <nav class="menubar" id="menubar">
+    <div class="menu-item-wrap">
+      <button class="menu-btn" type="button" data-menu="file" title="New, save/load, import, and export">File</button>
+      <div class="menu-dropdown" data-menu-panel="file">
+        <button data-action="new" title="Clear everything and start a fresh, blank design">New Workspace</button>
+        <button data-action="save" title="Save this design to a local .json file">Save&hellip;</button>
+        <button data-action="load" title="Load a design from a local .json file">Load&hellip;</button>
+        <div class="menu-sep"></div>
+        <button data-action="import" title="Paste a share link or design code to load someone else&#39;s design">Import a Link or Code&hellip;</button>
+        <button data-action="exportPng" title="Render and download the current design as a PNG image">Export PNG</button>
+        <button data-action="exportCss" title="Bake the design into a CSS background-image data URI">Export CSS</button>
+        <button data-action="exportRainmeter" title="Export a Rainmeter .ini Image meter, paired with its PNG">Export Rainmeter .ini</button>
+        <button data-action="recordAnimation" id="animRecordBtn" title="Records exactly one loop, so it always ends where it began">Record Animation (.webm)</button>
+        <div class="menu-sep"></div>
+        <button data-action="copyLink" title="A full link that opens this exact design">Copy Share Link</button>
+        <button data-action="copyCode" title="Just the design data, to paste anywhere -- no link, no file path">Copy Code</button>
       </div>
-      <div class="menu-item-wrap">
-        <button class="menu-btn" type="button" data-menu="edit" title="Undo/redo, grouping, and randomize effects">Edit</button>
-        <div class="menu-dropdown" data-menu-panel="edit">
-          <button data-action="undo" id="menuUndoBtn" title="Undo the last change">Undo</button>
-          <button data-action="redo" id="menuRedoBtn" title="Redo the last undone change">Redo</button>
-          <div class="menu-sep"></div>
-          <button data-action="groupSelected" id="menuGroupBtn" title="Combine the checked layers into a folder">Group Selected</button>
-          <button data-action="ungroupSelected" id="menuUngroupBtn" title="Break the selected group back into its individual layers">Ungroup Selected</button>
-          <div class="menu-sep"></div>
-          <button data-action="selectAll" title="Check every layer, for grouping or bulk actions">Select All</button>
-          <button data-action="deselectAll" title="Uncheck every layer">Deselect All</button>
-          <div class="menu-sep"></div>
-          <button type="button" class="has-submenu" id="effectsToggleBtn" title="Randomize colors, layout, or both">Effects &#9662;</button>
-          <div class="submenu-inline" id="effectsSubmenu">
-            <button data-action="randomizePalette" title="Reroll every layer's colors only -- opacity, blend mode, angles, sizes, and positions stay put">Randomize: Palette</button>
-            <button data-action="randomizeLayers" title="Reroll every layer's opacity, blend mode, angles, sizes, and positions -- colors stay put">Randomize: Layers</button>
-            <button data-action="randomizeAll" title="Reroll everything -- colors, opacity, blend modes, angles, sizes, and positions">Randomize: All</button>
-          </div>
-          <div class="menu-sep"></div>
-          <button data-action="purgeHistory" title="Free the memory held by old undo snapshots">Purge History</button>
+    </div>
+    <div class="menu-item-wrap">
+      <button class="menu-btn" type="button" data-menu="edit" title="Undo/redo, grouping, and randomize effects">Edit</button>
+      <div class="menu-dropdown" data-menu-panel="edit">
+        <button data-action="undo" id="menuUndoBtn" title="Undo the last change">Undo</button>
+        <button data-action="redo" id="menuRedoBtn" title="Redo the last undone change">Redo</button>
+        <div class="menu-sep"></div>
+        <button data-action="groupSelected" id="menuGroupBtn" title="Combine the checked layers into a folder">Group Selected</button>
+        <button data-action="ungroupSelected" id="menuUngroupBtn" title="Break the selected group back into its individual layers">Ungroup Selected</button>
+        <div class="menu-sep"></div>
+        <button data-action="selectAll" title="Check every layer, for grouping or bulk actions">Select All</button>
+        <button data-action="deselectAll" title="Uncheck every layer">Deselect All</button>
+        <div class="menu-sep"></div>
+        <button type="button" class="has-submenu" id="effectsToggleBtn" title="Randomize colors, layout, or both">Effects &#9662;</button>
+        <div class="submenu-inline" id="effectsSubmenu">
+          <button data-action="randomizePalette" title="Reroll every layer's colors only -- opacity, blend mode, angles, sizes, and positions stay put">Randomize: Palette</button>
+          <button data-action="randomizeLayers" title="Reroll every layer's opacity, blend mode, angles, sizes, and positions -- colors stay put">Randomize: Layers</button>
+          <button data-action="randomizeAll" title="Reroll everything -- colors, opacity, blend modes, angles, sizes, and positions">Randomize: All</button>
         </div>
+        <div class="menu-sep"></div>
+        <button data-action="purgeHistory" title="Free the memory held by old undo snapshots">Purge History</button>
       </div>
-      <div class="menu-item-wrap">
-        <button class="menu-btn" type="button" data-menu="view" title="Kiosk mode, zoom, and palette presets">View</button>
-        <div class="menu-dropdown" data-menu-panel="view">
-          <button data-action="toggleKiosk" title="Hide all editor UI and fill the window with just the generated image">Toggle Kiosk Mode</button>
-          <button data-action="toggleFit" id="menuFitBtn" title="Toggle between fitting the canvas to your screen and viewing it at actual size">Fit to Screen</button>
-          <div class="menu-sep"></div>
-          <button type="button" class="has-submenu" id="paletteToggleBtn" title="Constrain Randomize to a themed set of colors">Palette Presets &#9662;</button>
-          <div class="submenu-inline" id="paletteSubmenu">
-            <button data-palette="" id="paletteOptRandom" title="No constraint -- Randomize picks fully random colors">Random (Default)</button>
-            <button data-palette="spectrum-hud" id="paletteOptSpectrum-hud" title="Constrain Randomize to a cyan/blue/purple/pink HUD palette">Spectrum HUD</button>
-            <button data-palette="industrial" id="paletteOptIndustrial" title="Constrain Randomize to muted grays with a mustard accent">Industrial Automation</button>
-            <button data-palette="neon" id="paletteOptNeon" title="Constrain Randomize to bright, saturated neon colors">Neon</button>
+    </div>
+    <div class="menu-item-wrap">
+      <button class="menu-btn" type="button" data-menu="view" title="Kiosk mode, zoom, and palette presets">View</button>
+      <div class="menu-dropdown" data-menu-panel="view">
+        <button data-action="toggleKiosk" title="Hide all editor UI and fill the window with just the generated image">Toggle Kiosk Mode</button>
+        <div class="menu-sep"></div>
+        <button data-action="zoomIn" title="Zoom the live preview in">Zoom In</button>
+        <button data-action="zoomOut" title="Zoom the live preview out">Zoom Out</button>
+        <button data-action="zoomFit" id="menuZoomFitBtn" title="Scale the preview to fit the available space">Zoom to Fit</button>
+        <button data-action="zoomActual" id="menuZoomActualBtn" title="Show the preview at its true, 100% pixel size">Zoom to Actual Size</button>
+        <div class="menu-inline-controls" style="padding-top:2px;padding-bottom:8px;">
+          <div class="row" style="margin:0;">
+            <label style="margin:0;" title="Current zoom level of the live preview">Zoom Level</label>
+            <span class="val" id="zoomReadout">Fit</span>
           </div>
         </div>
+        <div class="menu-sep"></div>
+        <button type="button" class="has-submenu" id="paletteToggleBtn" title="Constrain Randomize to a themed set of colors">Palette Presets &#9662;</button>
+        <div class="submenu-inline" id="paletteSubmenu">
+          <button data-palette="" id="paletteOptRandom" title="No constraint -- Randomize picks fully random colors">Random (Default)</button>
+          <button data-palette="spectrum-hud" id="paletteOptSpectrum-hud" title="Constrain Randomize to a cyan/blue/purple/pink HUD palette">Spectrum HUD</button>
+          <button data-palette="industrial" id="paletteOptIndustrial" title="Constrain Randomize to muted grays with a mustard accent">Industrial Automation</button>
+          <button data-palette="neon" id="paletteOptNeon" title="Constrain Randomize to bright, saturated neon colors">Neon</button>
+        </div>
       </div>
-      <div class="menu-item-wrap">
-        <button class="menu-btn" type="button" data-menu="canvas" title="Resolution, custom size, and file name">Canvas</button>
-        <div class="menu-dropdown" data-menu-panel="canvas" style="min-width:220px;">
-          <div class="menu-inline-controls">
-            <div class="row col">
-              <label for="preset" title="Pick a common resolution, or Custom for your own size">Resolution</label>
-              <select id="preset" title="Pick a common resolution, or Custom for your own size">
-                <option value="1920x1080">1920 &times; 1080 (Full HD)</option>
-                <option value="2560x1440" selected>2560 &times; 1440 (QHD)</option>
-                <option value="3840x2160">3840 &times; 2160 (4K UHD)</option>
-                <option value="3440x1440">3440 &times; 1440 (Ultrawide)</option>
-                <option value="2560x1600">2560 &times; 1600 (16:10)</option>
-                <option value="1366x768">1366 &times; 768</option>
-                <option value="1080x1920">1080 &times; 1920 (Mobile)</option>
-                <option value="custom">Custom&hellip;</option>
-              </select>
-            </div>
-            <div class="row col" id="customSizeRow" style="display:none">
-              <div class="two-col">
-                <div>
-                  <label for="customW" title="Custom canvas width, in pixels">Width</label>
-                  <input type="number" id="customW" min="16" max="8000" value="1920" title="Custom canvas width, in pixels" />
-                </div>
-                <div>
-                  <label for="customH" title="Custom canvas height, in pixels">Height</label>
-                  <input type="number" id="customH" min="16" max="8000" value="1080" title="Custom canvas height, in pixels" />
-                </div>
+    </div>
+    <div class="menu-item-wrap">
+      <button class="menu-btn" type="button" data-menu="canvas" title="Resolution, custom size, and file name">Canvas</button>
+      <div class="menu-dropdown" data-menu-panel="canvas" style="min-width:220px;">
+        <div class="menu-inline-controls">
+          <div class="row col">
+            <label for="preset" title="Pick a common resolution, or Custom for your own size">Resolution</label>
+            <select id="preset" title="Pick a common resolution, or Custom for your own size">
+              <option value="1920x1080">1920 &times; 1080 (Full HD)</option>
+              <option value="2560x1440" selected>2560 &times; 1440 (QHD)</option>
+              <option value="3840x2160">3840 &times; 2160 (4K UHD)</option>
+              <option value="3440x1440">3440 &times; 1440 (Ultrawide)</option>
+              <option value="2560x1600">2560 &times; 1600 (16:10)</option>
+              <option value="1366x768">1366 &times; 768</option>
+              <option value="1080x1920">1080 &times; 1920 (Mobile)</option>
+              <option value="custom">Custom&hellip;</option>
+            </select>
+          </div>
+          <div class="row col" id="customSizeRow" style="display:none">
+            <div class="two-col">
+              <div>
+                <label for="customW" title="Custom canvas width, in pixels">Width</label>
+                <input type="number" id="customW" min="16" max="8000" value="1920" title="Custom canvas width, in pixels" />
+              </div>
+              <div>
+                <label for="customH" title="Custom canvas height, in pixels">Height</label>
+                <input type="number" id="customH" min="16" max="8000" value="1080" title="Custom canvas height, in pixels" />
               </div>
             </div>
           </div>
-          <div class="menu-sep"></div>
-          <div class="menu-inline-controls">
-            <div class="row col">
-              <label for="filename" title="Name used when exporting or saving this design">File Name</label>
-              <input type="text" id="filename" placeholder="Background" title="Name used when exporting or saving this design" />
-            </div>
+        </div>
+        <div class="menu-sep"></div>
+        <div class="menu-inline-controls">
+          <div class="row col">
+            <label for="filename" title="Name used when exporting or saving this design">File Name</label>
+            <input type="text" id="filename" placeholder="Background" title="Name used when exporting or saving this design" />
           </div>
         </div>
       </div>
-      <div class="menu-item-wrap" style="margin-left:auto;">
-        <button class="menu-btn menu-btn-icon" type="button" data-menu="settings" title="Settings">&#9881;</button>
-        <div class="menu-dropdown menu-dropdown-right" data-menu-panel="settings">
-          <button data-action="toggleTheme" id="menuThemeBtn" title="Switch between the dark and light interface theme">Light Theme</button>
-          <button data-action="togglePerf" id="menuPerfBtn" title="Pause live rendering while dragging a slider, for smoother interaction">Performance Mode</button>
-          <button data-action="toggleAutosave" id="menuAutosaveBtn" title="Continuously back up your current design to this browser">Auto-Save</button>
+    </div>
+    <div class="menu-item-wrap">
+      <button class="menu-btn" type="button" data-menu="animation" title="Loop length and play/pause the live animation preview">Animation</button>
+      <div class="menu-dropdown" data-menu-panel="animation" style="min-width:230px;">
+        <div class="menu-inline-controls">
+          <div class="row col">
+            <label for="animLoopSec" title="Shared speed control -- every animated layer's loop fits into this length">Loop Length</label>
+            <div class="slidewrap" style="max-width:130px;">
+              <input type="number" id="animLoopSec" min="1" max="600" step="1" value="6" style="width:60px;" title="Shared speed control -- every animated layer's loop fits into this length" />
+              <span style="color:var(--text-dim);font-size:11px;white-space:nowrap;">seconds</span>
+            </div>
+          </div>
+          <small class="hint">This is the master speed control, shared by every layer -- each layer's own Cycles setting is how many times ITS motion repeats within this length, so raising it slows everything down at once.</small>
         </div>
+        <div class="menu-sep"></div>
+        <button data-action="toggleAnimPlayPause" id="animPlayPauseBtn" title="Play or pause the live animation preview">&#9208; Pause</button>
+        <small class="hint" style="display:block;padding:0 12px 10px;">Turn on "Animate" on a layer to see this in action. Need a video file? Record Animation (.webm) is in the File menu.</small>
       </div>
-      <div class="menu-item-wrap">
-        <button class="menu-btn" type="button" data-menu="help" title="Keyboard shortcuts, hints &amp; tips, and what&#39;s new">Help</button>
-        <div class="menu-dropdown menu-dropdown-right" data-menu-panel="help">
-          <button data-action="shortcuts" title="View the list of keyboard shortcuts">Keyboard Shortcuts</button>
-          <button data-action="hintsTips" title="Open the built-in guide: getting started, layers, masks, filters, animation, export, and tips">Hints &amp; Tips</button>
-          <button data-action="whatsNew" id="menuWhatsNewBtn" title="View the changelog of recent updates">What&rsquo;s New</button>
-        </div>
+    </div>
+    <div class="menu-item-wrap" style="margin-left:auto;">
+      <button class="menu-btn menu-btn-icon" type="button" data-menu="settings" title="Settings">&#9881;</button>
+      <div class="menu-dropdown menu-dropdown-right" data-menu-panel="settings">
+        <button data-action="toggleTheme" id="menuThemeBtn" title="Switch between the dark and light interface theme">Light Theme</button>
+        <button data-action="togglePerf" id="menuPerfBtn" title="Pause live rendering while dragging a slider, for smoother interaction">Performance Mode</button>
+        <button data-action="toggleAutosave" id="menuAutosaveBtn" title="Continuously back up your current design to this browser">Auto-Save</button>
       </div>
-    </nav>
+    </div>
+    <div class="menu-item-wrap">
+      <button class="menu-btn" type="button" data-menu="help" title="Keyboard shortcuts, hints &amp; tips, and what&#39;s new">Help</button>
+      <div class="menu-dropdown menu-dropdown-right" data-menu-panel="help">
+        <button data-action="shortcuts" title="View the list of keyboard shortcuts">Keyboard Shortcuts</button>
+        <button data-action="hintsTips" title="Open the built-in guide: getting started, layers, masks, filters, animation, export, and tips">Hints &amp; Tips</button>
+        <button data-action="debugLog" id="menuDebugLogBtn" title="A lightweight, always-on log of errors, warnings, and resource use -- useful if the app ever crashes or slows down">Debug Log</button>
+        <button data-action="whatsNew" id="menuWhatsNewBtn" title="View the changelog of recent updates">What&rsquo;s New</button>
+      </div>
+    </div>
+  </nav>
+
+<div class="app">
+
+  <aside class="panel" id="sidebarPanel">
+    <h1>Background Image Generator</h1>
 
     <textarea id="shareLinkOutput" class="share-output" readonly rows="3"></textarea>
     <small class="hint" id="shareLinkHint" style="display:none;"></small>
@@ -511,23 +608,6 @@
       <small class="hint" id="importHint" style="display:none;"></small>
     </div>
 
-    <!-- ANIMATION -->
-    <fieldset>
-      <legend>Animation</legend>
-      <div class="row">
-        <label for="animLoopSec" title="Shared speed control -- every animated layer&#39;s loop fits into this length">Loop Length</label>
-        <div class="slidewrap" style="max-width:130px;">
-          <input type="number" id="animLoopSec" min="1" max="600" step="1" value="6" style="width:60px;" title="Shared speed control -- every animated layer&#39;s loop fits into this length" />
-          <span style="color:var(--text-dim);font-size:11px;white-space:nowrap;">seconds</span>
-        </div>
-      </div>
-      <small class="hint">This is the master speed control, shared by every layer -- each layer's own Cycles setting is how many times ITS motion repeats within this length, so raising it slows everything down at once.</small>
-      <div class="btn-row">
-        <button class="btn-secondary" id="animPlayPauseBtn" type="button" title="Play or pause the live animation preview">&#9208; Pause</button>
-        <button class="btn-secondary" id="animRecordBtn" type="button" title="Record exactly one loop to a .webm video file">Record .webm</button>
-      </div>
-      <small class="hint">Turn on "Animate" on a pattern or Perlin noise layer below to see this in action. Recording captures exactly one loop, so the file always ends right where it began.</small>
-    </fieldset>
 
     <!-- LAYERS -->
     <fieldset>
@@ -557,6 +637,8 @@
       <small class="hint">Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as Mask" toggle to clip the layer directly beneath it to this layer's shape instead -- switch its mode to Inverted to punch a hole through that layer instead of clipping to it. Check the box on any layers to group them into a folder with its own shared opacity and blend.</small>
     </fieldset>
   </aside>
+
+  <div class="panel-resize-handle" id="panelResizeHandle" title="Drag to resize the sidebar"></div>
 
   <main class="stage">
     <div class="canvas-wrap">
@@ -609,6 +691,27 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="debugLogModal">
+  <div class="modal-box modal-box-wide">
+    <div class="modal-head">
+      <h2>Debug Log</h2>
+      <button class="icon-btn" id="debugLogCloseBtn" title="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="hint" style="margin-top:0;">A small, always-on log of warnings, errors, and resource use for this app -- kept only in this browser, never sent anywhere. If the app ever crashes or a design suddenly slows down, this is the first place to look.</p>
+      <div id="debugLogCrashBanner" class="debug-log-banner" style="display:none;"></div>
+      <div id="debugLogStats" class="debug-log-stats"></div>
+      <div class="btn-row" style="margin:10px 0;">
+        <button class="btn-secondary" id="debugLogRefreshBtn" type="button" title="Re-read the log and resource stats">&#8635; Refresh</button>
+        <button class="btn-secondary" id="debugLogCopyBtn" type="button" title="Copy the full log as plain text">Copy</button>
+        <button class="btn-secondary" id="debugLogDownloadBtn" type="button" title="Save the full log as a .txt file">Download .txt</button>
+        <button class="btn-secondary" id="debugLogClearBtn" type="button" title="Clear the log (resource stats are kept)">Clear</button>
+      </div>
+      <div id="debugLogList" class="debug-log-list"></div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   "use strict";
@@ -619,6 +722,134 @@
   function $(id){ return document.getElementById(id); }
   function val(id){ return $(id).value; }
   function num(id){ return parseFloat($(id).value); }
+
+  // ---------- Logger: lightweight always-on diagnostics ----------
+  // Built after an out-of-memory crash left no trace of what led up to it.
+  // Two jobs, both meant to cost almost nothing while the app is healthy:
+  //   1. A capped in-memory log of warnings/errors (plus a few informational
+  //      milestones) that's also throttle-flushed to localStorage, so a log
+  //      from *right before* a crash/OOM/tab-kill survives even though the
+  //      page never gets a chance to run its own shutdown code for a crash.
+  //   2. A periodic, very cheap resource sample (memory if the browser
+  //      exposes it, layer/undo counts, canvas size) recorded the same way,
+  //      so a rough "what was going on" picture is still there afterward.
+  // A "clean shutdown" flag (written on every normal close/reload, cleared
+  // again the instant the next load starts) is how a carried-over log gets
+  // flagged as coming from an unclean end rather than an ordinary session.
+  // Everything in here is deliberately best-effort: any failure inside the
+  // Logger itself (localStorage full/unavailable, a value that doesn't
+  // JSON-stringify, etc.) is swallowed silently -- a diagnostics tool that
+  // can itself crash the app it's diagnosing would be worse than none.
+  var Logger = (function(){
+    var LOG_KEY = 'bgGenerator.debugLog';
+    var CLEAN_KEY = 'bgGenerator.cleanShutdown';
+    var MAX_ENTRIES = 400;        // capped ring buffer -- oldest entries drop off
+    var MAX_STATS = 180;          // ~1 hour of samples at the 20s sampler interval
+    var FLUSH_DELAY_MS = 4000;    // batches bursts of log calls into one write
+    var entries = [];
+    var stats = [];
+    var dirty = false;
+    var flushTimer = null;
+
+    function nowIso(){ try { return new Date().toISOString(); } catch(e){ return ''; } }
+    function safeCtx(ctx){
+      // Callers are expected to pass small plain objects (an id, a name, a
+      // couple of numbers) -- this just guards against something circular
+      // or otherwise non-JSON sneaking in and breaking the flush entirely.
+      try { JSON.stringify(ctx); return ctx; } catch(e){ return undefined; }
+    }
+    function scheduleFlush(){
+      if(flushTimer) return;
+      flushTimer = setTimeout(function(){ flushTimer = null; flush(); }, FLUSH_DELAY_MS);
+    }
+    function flush(){
+      if(!dirty) return;
+      try {
+        localStorage.setItem(LOG_KEY, JSON.stringify({ entries: entries, stats: stats }));
+        dirty = false;
+      } catch(e){ /* quota/private-browsing -- the in-memory copy still covers this session */ }
+    }
+    function push(level, message, context){
+      try {
+        entries.push({ t: nowIso(), level: level, msg: String(message), ctx: context !== undefined ? safeCtx(context) : undefined });
+        if(entries.length > MAX_ENTRIES) entries.splice(0, entries.length - MAX_ENTRIES);
+        dirty = true;
+        scheduleFlush();
+      } catch(e){ /* logging must never itself throw */ }
+    }
+
+    // ---- crash detection ----
+    // On load, a flag still reading "0" means the LAST session never got to
+    // write "1" on its way out -- i.e. it ended without a normal close or
+    // reload (a crash, an OOM kill, the tab being force-closed) -- so
+    // whatever log was flushed during that session gets carried forward and
+    // flagged, instead of silently overwritten by this new session's log.
+    var wasCleanShutdown = true;
+    (function(){
+      try {
+        var prior = localStorage.getItem(CLEAN_KEY);
+        wasCleanShutdown = (prior === null) || (prior === '1');
+        localStorage.setItem(CLEAN_KEY, '0');
+      } catch(e){ /* localStorage unavailable -- treat as clean, nothing to carry over */ }
+    })();
+    function markCleanShutdown(){
+      try { localStorage.setItem(CLEAN_KEY, '1'); flush(); } catch(e){ /* ignore */ }
+    }
+    if(!wasCleanShutdown){
+      try {
+        var raw = localStorage.getItem(LOG_KEY);
+        var prior2 = raw ? JSON.parse(raw) : null;
+        if(prior2){
+          entries = (prior2.entries || []).concat(entries);
+          stats = (prior2.stats || []).slice(-MAX_STATS);
+        }
+      } catch(e){ /* corrupt/unreadable prior log -- start fresh instead */ }
+      push('warn', 'Previous session did not shut down cleanly -- entries above this one were carried over from before the crash/close.');
+    }
+
+    // Flushes on every path a tab can go away through that still runs JS --
+    // a true crash or OOM kill won't fire any of these, which is exactly why
+    // the periodic timer-based flush above exists too.
+    window.addEventListener('pagehide', markCleanShutdown);
+    window.addEventListener('beforeunload', markCleanShutdown);
+    document.addEventListener('visibilitychange', function(){
+      if(document.visibilityState === 'hidden') flush();
+    });
+
+    // ---- global error hooks ----
+    window.addEventListener('error', function(e){
+      push('error', e.message || 'Uncaught error', {
+        source: e.filename ? (String(e.filename).split('/').pop() + ':' + e.lineno + ':' + e.colno) : undefined,
+        stack: e.error && e.error.stack ? String(e.error.stack).slice(0, 800) : undefined
+      });
+    });
+    window.addEventListener('unhandledrejection', function(e){
+      var reason = e.reason;
+      push('error', 'Unhandled promise rejection: ' + (reason && reason.message ? reason.message : String(reason)), {
+        stack: reason && reason.stack ? String(reason.stack).slice(0, 800) : undefined
+      });
+    });
+
+    return {
+      info: function(msg, ctx){ push('info', msg, ctx); },
+      warn: function(msg, ctx){ push('warn', msg, ctx); },
+      error: function(msg, ctx){ push('error', msg, ctx); },
+      recordStat: function(sample){
+        try {
+          sample.t = nowIso();
+          stats.push(sample);
+          if(stats.length > MAX_STATS) stats.shift();
+          dirty = true;
+          scheduleFlush();
+        } catch(e){ /* ignore */ }
+      },
+      entries: function(){ return entries.slice(); },
+      stats: function(){ return stats.slice(); },
+      wasCleanShutdown: function(){ return wasCleanShutdown; },
+      clear: function(){ entries = []; stats = []; dirty = true; flush(); },
+      flushNow: flush
+    };
+  })();
 
   var BLEND_MODES = [
     ['source-over','Normal'], ['overlay','Overlay'], ['multiply','Multiply'],
@@ -1127,8 +1358,8 @@
       h += '<div class="layer-controls-row"><label title="'+ampTitle+'">'+ampLabel+'</label><div class="slidewrap"><input type="range" min="10" max="200" value="'+a.amplitude+'" data-role="animateAmplitude" title="'+ampTitle+'" />'+valInputHTML('animateAmplitudeVal', a.amplitude, '%')+'</div></div>';
     }
     if(effStyle === 'custom'){
-      h += '<textarea class="filter-svg-input" data-role="animateCustom" rows="3" title="Percent keyframes, or one property: expression; per line" placeholder="0% { opacity: 100; scale: 100; }&#10;50% { opacity: 60; scale: 130; }&#10;100% { opacity: 100; scale: 100; }">'+escAttr(a.custom||'')+'</textarea>';
-      h += '<small class="hint">Keyframes: percent stops with <code>opacity</code>, <code>scale</code>, <code>rotate</code>, <code>x</code>, <code>y</code> (numbers only) -- match your 0% and 100% values for a seamless loop. Or, with no <code>%</code> stops, one <code>property: expression;</code> per line using <code>t</code> (0-1 progress through one cycle), e.g. <code>rotate: t*360; scale: 100+20*sin(t*6.283);</code>.</small>';
+      h += '<textarea class="filter-svg-input" data-role="animateCustom" rows="3" title="Percent keyframes, or one property: expression; per line -- any numeric layer property, not just opacity/scale/rotate/x/y. See Hints &amp; Tips for the full list." placeholder="0% { opacity: 100; scale: 100; }&#10;50% { opacity: 60; scale: 130; blur: 8; }&#10;100% { opacity: 100; scale: 100; }">'+escAttr(a.custom||'')+'</textarea>';
+      h += '<small class="hint">Keyframes: percent stops with <code>opacity</code>, <code>scale</code>, <code>rotate</code>, <code>x</code>, <code>y</code> (numbers only) -- match your 0% and 100% values for a seamless loop. Or, with no <code>%</code> stops, one <code>property: expression;</code> per line using <code>t</code> (0-1 progress through one cycle), e.g. <code>rotate: t*360; scale: 100+20*sin(t*6.283);</code>. Beyond those five, any of this layer&#39;s own numeric properties can animate too -- filters like <code>blur</code>/<code>brightness</code>/<code>contrast</code>/<code>grayscale</code>/<code>huerotate</code>/<code>invert</code>/<code>filteropacity</code>/<code>saturate</code>/<code>sepia</code>/<code>shadowx</code>/<code>shadowy</code>/<code>shadowblur</code>, fill color via <code>colorr</code>/<code>colorg</code>/<code>colorb</code>/<code>coloralpha</code>, pattern/gradient <code>angle</code>/<code>size</code>/<code>fill</code>/<code>cx</code>/<code>cy</code>/<code>gradangle</code>, noise <code>grain</code>/<code>perlinscale</code>/<code>perlinoctaves</code>/<code>perlinroughness</code>/<code>perlincontrast</code>/<code>perlinveinfreq</code>/<code>perlinpower</code>, and image <code>imgscale</code>/<code>imgoffsetx</code>/<code>imgoffsety</code> -- whichever apply to this layer&#39;s type. Unknown property names are ignored (and noted in the Debug Log). See <strong>Help &rarr; Hints &amp; Tips</strong> for details.</small>';
     } else {
       var hints = {
         scroll: isNoise
@@ -1886,9 +2117,11 @@
   // mainly useful when layers include large embedded images, where 50 full
   // snapshots can add up. Keeps only the current state, as a fresh baseline.
   function purgeHistory(){
+    var before = historyStack.length;
     historyStack = [cloneLayers(layers)];
     historyIndex = 0;
     updateHistoryButtons();
+    Logger.info('Purged undo history (' + before + ' step' + (before===1?'':'s') + ' freed)');
   }
 
   function restoreHistory(index){
@@ -2025,9 +2258,14 @@
   }
   function resizeCanvasToTarget(){
     var t = targetSize();
+    var changed = canvas.width !== t.w || canvas.height !== t.h;
     if(canvas.width !== t.w) canvas.width = t.w;
     if(canvas.height !== t.h) canvas.height = t.h;
     updateResReadout();
+    // An explicit zoom percentage is applied as an exact inline pixel size
+    // computed from the canvas's native resolution -- if that resolution
+    // just changed, the old inline size is stale until this recomputes it.
+    if(changed && typeof applyStageZoom === 'function') applyStageZoom();
   }
   $('preset').addEventListener('change', function(){ handlePresetChange(); resizeCanvasToTarget(); scheduleRender(); });
 
@@ -2067,11 +2305,10 @@
     if(animationState.timeSec > v) animationState.timeSec = 0;
     refreshAnimateCycleHints();
   });
-  $('animPlayPauseBtn').addEventListener('click', function(){
-    animationState.paused = !animationState.paused;
-    $('animPlayPauseBtn').innerHTML = animationState.paused ? '&#9654; Play' : '&#9208; Pause';
-  });
-  $('animRecordBtn').addEventListener('click', recordAnimationWebM);
+  // Play/Pause and Record Animation both now live as ordinary data-action
+  // menu items (Animation menu and File menu respectively) -- see
+  // toggleAnimPlayPause() and handleMenuAction() -- rather than each having
+  // their own direct click listener here.
 
   function sanitizedFilename(){
     return (val('filename') || 'background').trim().replace(/[^a-z0-9_\-]+/gi,'_') || 'background';
@@ -2383,6 +2620,7 @@
       return applyStatePayload(payload);
     }).catch(function(e){
       console.warn('Could not load the design from this link:', e);
+      Logger.warn('Could not load the design from a share link', { error: e && e.message ? String(e.message) : String(e) });
       return false;
     });
   }
@@ -3027,9 +3265,18 @@
   // so it self-contains per layer (and per masked pair / flattened group,
   // since those each render through their own drawLayer call) with no need
   // to manually reset it afterward.
-  function buildFilterString(layer){
+  // `cacheTarget` defaults to layer.filters, but drawLayer() passes the REAL
+  // (never-cloned) layer's filters object explicitly when `layer` here is
+  // actually a per-frame effective clone (see buildEffectiveLayer) -- the
+  // injected <filter> id needs to persist somewhere durable across frames,
+  // or a Custom animation touching any OTHER filter property would force a
+  // brand new <filter> DOM node into the page every single frame forever
+  // (the old ones never being reused/removed since each got a fresh random
+  // id), which is exactly the kind of leak that can run a page out of memory.
+  function buildFilterString(layer, cacheTarget){
     var f = layer.filters;
     if(!f || !f.enabled) return 'none';
+    cacheTarget = cacheTarget || f;
     var parts = [];
     if(f.blur > 0) parts.push('blur(' + f.blur + 'px)');
     if(f.brightness !== 100) parts.push('brightness(' + f.brightness + '%)');
@@ -3044,10 +3291,10 @@
       parts.push('drop-shadow(' + f.dropShadow.x + 'px ' + f.dropShadow.y + 'px ' + f.dropShadow.blur + 'px ' + rgbaCss(f.dropShadow.color) + ')');
     }
     if(f.customSvg){
-      if(!f.customSvgId || !document.getElementById(f.customSvgId)){
-        f.customSvgId = injectCustomFilter(f.customSvg, f.customSvgId || ('customFilter_' + Math.random().toString(36).slice(2,9)));
+      if(!cacheTarget.customSvgId || !document.getElementById(cacheTarget.customSvgId)){
+        cacheTarget.customSvgId = injectCustomFilter(f.customSvg, cacheTarget.customSvgId || ('customFilter_' + Math.random().toString(36).slice(2,9)));
       }
-      if(f.customSvgId) parts.push('url(#' + f.customSvgId + ')');
+      if(cacheTarget.customSvgId) parts.push('url(#' + cacheTarget.customSvgId + ')');
     }
     return parts.length ? parts.join(' ') : 'none';
   }
@@ -3061,6 +3308,78 @@
   // layer type, including a whole group's flattened bitmap.
   var ANIM_IDENTITY = { opacity:100, scale:100, rotate:0, x:0, y:0 };
   var ANIM_PROP_LIST = ['opacity','scale','rotate','x','y'];
+
+  // ---------- Custom animate: every numeric layer property ----------
+  // Beyond the whole-layer transform above (opacity/scale/rotate/x/y, which
+  // stay wrapper-only and never touch the model), a Custom animation can also
+  // drive any of the layer's own numeric fields directly -- its Filters, its
+  // fill color, its angle/size/etc. Each entry below knows which layer(s)
+  // it applies to, how to read the current value (for reference/authoring),
+  // and how to write a new value onto an EFFECTIVE (cloned-for-this-frame)
+  // layer -- see buildEffectiveLayer -- so the animation only ever affects
+  // what gets drawn this frame, never the saved design, undo history, or
+  // exported JSON. Deliberately excluded: gradient/noise color-stop arrays
+  // (their length varies per design, so a stable stopN-style name would
+  // silently break if a stop is added/removed) and non-numeric fields like
+  // blend mode, image source, or noise type -- a continuous animation curve
+  // doesn't make sense for a string/enum choice.
+  function cloneInto(effLayer, key, patch){ effLayer[key] = Object.assign({}, effLayer[key], patch); }
+  var EXTRA_ANIM_PROPS = {
+    // -- CSS Filters (every layer type has a filters block) --
+    blur:         { min:0, max:50,   applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.blur; },       set:function(e,v){ cloneInto(e,'filters',{ blur:clampNum(v,0,50) }); } },
+    brightness:   { min:0, max:200,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.brightness; }, set:function(e,v){ cloneInto(e,'filters',{ brightness:clampNum(v,0,200) }); } },
+    contrast:     { min:0, max:200,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.contrast; },   set:function(e,v){ cloneInto(e,'filters',{ contrast:clampNum(v,0,200) }); } },
+    grayscale:    { min:0, max:100,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.grayscale; },  set:function(e,v){ cloneInto(e,'filters',{ grayscale:clampNum(v,0,100) }); } },
+    huerotate:    { min:0, max:360,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.hueRotate; },  set:function(e,v){ cloneInto(e,'filters',{ hueRotate:clampNum(v,0,360) }); } },
+    invert:       { min:0, max:100,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.invert; },     set:function(e,v){ cloneInto(e,'filters',{ invert:clampNum(v,0,100) }); } },
+    filteropacity:{ min:0, max:100,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.opacity; },    set:function(e,v){ cloneInto(e,'filters',{ opacity:clampNum(v,0,100) }); } },
+    saturate:     { min:0, max:200,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.saturate; },   set:function(e,v){ cloneInto(e,'filters',{ saturate:clampNum(v,0,200) }); } },
+    sepia:        { min:0, max:100,  applicable:function(l){ return !!l.filters; }, get:function(l){ return l.filters.sepia; },      set:function(e,v){ cloneInto(e,'filters',{ sepia:clampNum(v,0,100) }); } },
+    shadowx:      { min:-50, max:50, applicable:function(l){ return !!(l.filters && l.filters.dropShadow); }, get:function(l){ return l.filters.dropShadow.x; }, set:function(e,v){ e.filters = Object.assign({}, e.filters, { dropShadow: Object.assign({}, e.filters.dropShadow, { x:clampNum(v,-50,50) }) }); } },
+    shadowy:      { min:-50, max:50, applicable:function(l){ return !!(l.filters && l.filters.dropShadow); }, get:function(l){ return l.filters.dropShadow.y; }, set:function(e,v){ e.filters = Object.assign({}, e.filters, { dropShadow: Object.assign({}, e.filters.dropShadow, { y:clampNum(v,-50,50) }) }); } },
+    shadowblur:   { min:0, max:50,   applicable:function(l){ return !!(l.filters && l.filters.dropShadow); }, get:function(l){ return l.filters.dropShadow.blur; }, set:function(e,v){ e.filters = Object.assign({}, e.filters, { dropShadow: Object.assign({}, e.filters.dropShadow, { blur:clampNum(v,0,50) }) }); } },
+    // -- Solid fill / pattern flat-color (not present when a gradient fills a pattern, or on linear/radial which use stops instead) --
+    colorr:       { min:0, max:255,  applicable:function(l){ return !!l.color; }, get:function(l){ return l.color.r; }, set:function(e,v){ cloneInto(e,'color',{ r:Math.round(clampNum(v,0,255)) }); } },
+    colorg:       { min:0, max:255,  applicable:function(l){ return !!l.color; }, get:function(l){ return l.color.g; }, set:function(e,v){ cloneInto(e,'color',{ g:Math.round(clampNum(v,0,255)) }); } },
+    colorb:       { min:0, max:255,  applicable:function(l){ return !!l.color; }, get:function(l){ return l.color.b; }, set:function(e,v){ cloneInto(e,'color',{ b:Math.round(clampNum(v,0,255)) }); } },
+    coloralpha:   { min:0, max:100,  applicable:function(l){ return !!l.color; }, get:function(l){ return Math.round(l.color.a*100); }, set:function(e,v){ cloneInto(e,'color',{ a:clampNum(v,0,100)/100 }); } },
+    // -- Angle / tile geometry (linear gradient direction and pattern tile rotation share the same "angle" field) --
+    angle:        { min:0, max:360,  applicable:function(l){ return l.angle !== undefined; }, get:function(l){ return l.angle; }, set:function(e,v){ e.angle = clampNum(v,0,360); } },
+    size:         { min:4, max:200,  applicable:function(l){ return GEOM_TYPES.indexOf(l.type) !== -1; }, get:function(l){ return l.size; }, set:function(e,v){ e.size = clampNum(v,4,200); } },
+    fill:         { min:5, max:95,   applicable:function(l){ return GEOM_TYPES.indexOf(l.type) !== -1; }, get:function(l){ return l.fill; }, set:function(e,v){ e.fill = clampNum(v,5,95); } },
+    // -- Radial gradient center, and a pattern's own gradient fill (dispatches to whichever the layer actually has) --
+    cx:           { min:0, max:100,  applicable:function(l){ return l.type==='radial' || !!l.patternGradient; }, get:function(l){ return l.type==='radial' ? l.cx : l.patternGradient.cx; }, set:function(e,v){ v=clampNum(v,0,100); if(e.type==='radial') e.cx=v; else if(e.patternGradient) cloneInto(e,'patternGradient',{ cx:v }); } },
+    cy:           { min:0, max:100,  applicable:function(l){ return l.type==='radial' || !!l.patternGradient; }, get:function(l){ return l.type==='radial' ? l.cy : l.patternGradient.cy; }, set:function(e,v){ v=clampNum(v,0,100); if(e.type==='radial') e.cy=v; else if(e.patternGradient) cloneInto(e,'patternGradient',{ cy:v }); } },
+    gradangle:    { min:0, max:360,  applicable:function(l){ return !!l.patternGradient; }, get:function(l){ return l.patternGradient.angle; }, set:function(e,v){ cloneInto(e,'patternGradient',{ angle:clampNum(v,0,360) }); } },
+    // -- Grain / Noise --
+    grain:        { min:1, max:100,  applicable:function(l){ return l.type==='noise'; }, get:function(l){ return l.intensity; }, set:function(e,v){ e.intensity = clampNum(v,1,100); } },
+    perlinscale:  { min:20, max:500, applicable:function(l){ return l.type==='noise' && !!l.perlin; }, get:function(l){ return l.perlin.scale; }, set:function(e,v){ cloneInto(e,'perlin',{ scale:clampNum(v,20,500) }); } },
+    perlinoctaves:{ min:1, max:7,    applicable:function(l){ return l.type==='noise' && !!l.perlin; }, get:function(l){ return l.perlin.octaves; }, set:function(e,v){ cloneInto(e,'perlin',{ octaves:Math.round(clampNum(v,1,7)) }); } },
+    perlinroughness:{ min:10, max:90, applicable:function(l){ return l.type==='noise' && !!l.perlin; }, get:function(l){ return Math.round(l.perlin.roughness*100); }, set:function(e,v){ cloneInto(e,'perlin',{ roughness:clampNum(v,10,90)/100 }); } },
+    perlincontrast:{ min:0, max:100, applicable:function(l){ return l.type==='noise' && !!l.perlin; }, get:function(l){ return l.perlin.contrast; }, set:function(e,v){ cloneInto(e,'perlin',{ contrast:clampNum(v,0,100) }); } },
+    perlinveinfreq:{ min:1, max:24,  applicable:function(l){ return l.type==='noise' && !!l.perlin; }, get:function(l){ return l.perlin.veinFreq; }, set:function(e,v){ cloneInto(e,'perlin',{ veinFreq:clampNum(v,1,24) }); } },
+    perlinpower:  { min:0, max:30,   applicable:function(l){ return l.type==='noise' && !!l.perlin; }, get:function(l){ return l.perlin.power; }, set:function(e,v){ cloneInto(e,'perlin',{ power:clampNum(v,0,30) }); } },
+    // -- Image overlay --
+    imgscale:     { min:10, max:400, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.scale; }, set:function(e,v){ e.scale = clampNum(v,10,400); } },
+    imgoffsetx:   { min:-50, max:50, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.offsetX; }, set:function(e,v){ e.offsetX = clampNum(v,-50,50); } },
+    imgoffsety:   { min:-50, max:50, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.offsetY; }, set:function(e,v){ e.offsetY = clampNum(v,-50,50); } }
+  };
+  // Builds a shallow-cloned "effective" layer with this frame's Custom-animated
+  // extra values applied, for use ONLY as the thing that gets drawn -- the
+  // real `layer` (and all its nested objects not touched here) is left
+  // completely untouched, so Undo/Redo, Save, and the exported JSON always
+  // reflect the design's real, un-animated values.
+  function buildEffectiveLayer(layer, extraVals){
+    var keys = extraVals ? Object.keys(extraVals) : [];
+    if(!keys.length) return layer;
+    var eff = Object.assign({}, layer);
+    keys.forEach(function(key){
+      var spec = EXTRA_ANIM_PROPS[key];
+      if(!spec || !spec.applicable(layer)) return;
+      spec.set(eff, extraVals[key]);
+    });
+    return eff;
+  }
 
   function clampNum(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
 
@@ -3091,11 +3410,14 @@
   // off the source string too, so an edit to the textarea is picked up as soon
   // as the string it was built from no longer matches.
   var animCustomParseCache = new WeakMap();
+  function isKnownAnimProp(name){ return ANIM_PROP_LIST.indexOf(name) !== -1 || !!EXTRA_ANIM_PROPS[name]; }
+  function isExtraAnimProp(name){ return ANIM_PROP_LIST.indexOf(name) === -1 && !!EXTRA_ANIM_PROPS[name]; }
   function parseAnimCustom(layer){
     var src = (layer.animate && layer.animate.custom) || '';
     var cached = animCustomParseCache.get(layer);
     if(cached && cached.src === src) return cached;
-    var result = { src: src, mode: 'none', timelines: null, exprs: null };
+    var result = { src: src, mode: 'none', timelines: null, exprs: null, extraTimelines: null, extraExprs: null, unknownProps: [] };
+    var unknown = {};
     var stops = [];
     var kfRe = /(-?\d+(?:\.\d+)?)\s*%\s*\{([^}]*)\}/g, m;
     while((m = kfRe.exec(src))){
@@ -3107,36 +3429,51 @@
         if(!mm) return;
         var name = mm[1].toLowerCase();
         var val = parseFloat(mm[2]);
-        if(!isNaN(val) && ANIM_PROP_LIST.indexOf(name) !== -1) props[name] = val;
+        if(isNaN(val)) return;
+        if(isKnownAnimProp(name)) props[name] = val;
+        else unknown[name] = true;
       });
       stops.push({ t: clampNum(pct, 0, 100)/100, props: props });
     }
     if(stops.length){
       stops.sort(function(x,y){ return x.t - y.t; });
-      var timelines = {};
+      var timelines = {}, extraTimelines = {};
       ANIM_PROP_LIST.forEach(function(prop){
         var pts = stops.filter(function(s){ return s.props[prop] !== undefined; })
                         .map(function(s){ return { t: s.t, v: s.props[prop] }; });
         if(pts.length) timelines[prop] = pts;
       });
+      Object.keys(EXTRA_ANIM_PROPS).forEach(function(prop){
+        var pts = stops.filter(function(s){ return s.props[prop] !== undefined; })
+                        .map(function(s){ return { t: s.t, v: s.props[prop] }; });
+        if(pts.length) extraTimelines[prop] = pts;
+      });
       result.mode = 'keyframes';
       result.timelines = timelines;
+      result.extraTimelines = extraTimelines;
     } else {
-      var exprs = {};
+      var exprs = {}, extraExprs = {};
       src.split(/[\n;]/).forEach(function(line){
         var mm = /^\s*([a-zA-Z]+)\s*:\s*(.+?)\s*$/.exec(line);
         if(!mm) return;
         var name = mm[1].toLowerCase();
-        if(ANIM_PROP_LIST.indexOf(name) === -1) return;
+        if(!isKnownAnimProp(name)){ unknown[name] = true; return; }
         try {
           // eslint-disable-next-line no-new-func -- a tiny user-authored math
           // formula for their OWN local design, same trust level this file
           // already gives a pasted custom SVG <filter>.
-          exprs[name] = new Function('t','cycles','sin','cos','tan','abs','min','max','sqrt','pow','PI','floor','ceil','round',
+          var fn = new Function('t','cycles','sin','cos','tan','abs','min','max','sqrt','pow','PI','floor','ceil','round',
             'return (' + mm[2] + ');');
+          if(isExtraAnimProp(name)) extraExprs[name] = fn; else exprs[name] = fn;
         } catch(e){ /* malformed expression -- that property just won't animate */ }
       });
-      if(Object.keys(exprs).length){ result.mode = 'expr'; result.exprs = exprs; }
+      if(Object.keys(exprs).length || Object.keys(extraExprs).length){
+        result.mode = 'expr'; result.exprs = exprs; result.extraExprs = extraExprs;
+      }
+    }
+    result.unknownProps = Object.keys(unknown);
+    if(result.unknownProps.length && typeof Logger !== 'undefined'){
+      Logger.warn('Custom animation references unknown propert' + (result.unknownProps.length===1?'y':'ies') + ': ' + result.unknownProps.join(', '), { layerId: layer.id, layerName: layer.name });
     }
     animCustomParseCache.set(layer, result);
     return result;
@@ -3157,7 +3494,7 @@
     return last.v;
   }
   function computeCustomTransform(layer, frac){
-    var out = { opacity:100, scale:100, rotate:0, x:0, y:0 };
+    var out = { opacity:100, scale:100, rotate:0, x:0, y:0, extra:null };
     var parsed = parseAnimCustom(layer);
     var cycles = Math.max(1, Math.round((layer.animate && layer.animate.cycles) || 1));
     if(parsed.mode === 'keyframes'){
@@ -3165,6 +3502,12 @@
         var pts = parsed.timelines[prop];
         if(pts && pts.length) out[prop] = interpolateAnimTimeline(pts, frac);
       });
+      var extra = {};
+      Object.keys(parsed.extraTimelines || {}).forEach(function(prop){
+        var pts = parsed.extraTimelines[prop];
+        if(pts && pts.length) extra[prop] = interpolateAnimTimeline(pts, frac);
+      });
+      if(Object.keys(extra).length) out.extra = extra;
     } else if(parsed.mode === 'expr'){
       ANIM_PROP_LIST.forEach(function(prop){
         var fn = parsed.exprs[prop];
@@ -3174,6 +3517,16 @@
           if(typeof v === 'number' && isFinite(v)) out[prop] = v;
         } catch(e){ /* runtime error -- leave this property at its identity value */ }
       });
+      var extraE = {};
+      Object.keys(parsed.extraExprs || {}).forEach(function(prop){
+        var fn = parsed.extraExprs[prop];
+        if(!fn) return;
+        try {
+          var v2 = fn(frac, cycles, Math.sin, Math.cos, Math.tan, Math.abs, Math.min, Math.max, Math.sqrt, Math.pow, Math.PI, Math.floor, Math.ceil, Math.round);
+          if(typeof v2 === 'number' && isFinite(v2)) extraE[prop] = v2;
+        } catch(e){ /* runtime error -- leave this property at its current value */ }
+      });
+      if(Object.keys(extraE).length) out.extra = extraE;
     }
     return out;
   }
@@ -3216,13 +3569,19 @@
     targetCtx = targetCtx || ctx;
     if(!layer.visible) return;
     var animT = computeAnimTransform(layer);
-    var filterStr = buildFilterString(layer);
+    // A Custom animation touching any of the "every numeric layer property"
+    // extras (see EXTRA_ANIM_PROPS) draws from a per-frame effective clone
+    // instead of the real layer -- the real layer (and its saved design,
+    // undo history, exported JSON) is never mutated by this. When nothing
+    // extra is animated, effLayer === layer (same reference, zero overhead).
+    var effLayer = animT.extra ? buildEffectiveLayer(layer, animT.extra) : layer;
+    var filterStr = buildFilterString(effLayer, layer.filters);
     if(filterStr === 'none'){
       targetCtx.save();
       targetCtx.globalAlpha = (layer.opacity/100) * (animT.opacity/100);
       targetCtx.globalCompositeOperation = layer.blend;
       applyAnimTransform(targetCtx, animT, w, h);
-      drawLayerContent(layer, w, h, targetCtx);
+      drawLayerContent(effLayer, w, h, targetCtx);
       targetCtx.restore();
       return;
     }
@@ -3241,7 +3600,7 @@
     filterBufCtx.clearRect(0, 0, w, h);
     filterBufCtx.save();
     applyAnimTransform(filterBufCtx, animT, w, h);
-    drawLayerContent(layer, w, h, filterBufCtx);
+    drawLayerContent(effLayer, w, h, filterBufCtx);
     filterBufCtx.restore();
     targetCtx.save();
     targetCtx.globalAlpha = (layer.opacity/100) * (animT.opacity/100);
@@ -3498,7 +3857,7 @@
           animationState.paused = wasPaused;
           syncAnimationLoopState();
           recordBtn.disabled = false;
-          recordBtn.textContent = 'Record .webm';
+          recordBtn.textContent = 'Record Animation (.webm)';
           return;
         }
         recorder.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
@@ -3508,7 +3867,7 @@
           animationState.paused = wasPaused;
           syncAnimationLoopState();
           recordBtn.disabled = false;
-          recordBtn.textContent = 'Record .webm';
+          recordBtn.textContent = 'Record Animation (.webm)';
         };
         // Push the very first frame (the canvas as it already is, at timeSec=0)
         // into the track before the recorder even starts, so there's never a
@@ -3659,13 +4018,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.27';
+  var APP_VERSION = '0.0.30';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -3719,6 +4078,130 @@
   function openHintsModal(){ $('hintsModal').classList.add('open'); broadcastThemeToHints(); }
   function closeHintsModal(){ $('hintsModal').classList.remove('open'); }
 
+  /* ---------- Debug Log modal ---------- */
+  function debugLogLevelLabel(level){ return level === 'error' ? 'Error' : (level === 'warn' ? 'Warn' : 'Info'); }
+  function formatLogTime(iso){
+    // Just the time-of-day portion for a compact list; the full ISO
+    // timestamp is still in the exported/copied text for anyone who needs
+    // the actual date (an always-on log can easily span several days).
+    var d = new Date(iso);
+    if(isNaN(d.getTime())) return String(iso || '');
+    return d.toLocaleString(undefined, { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+  function debugLogEntryToText(e){
+    var line = '[' + e.t + '] ' + debugLogLevelLabel(e.level).toUpperCase() + ': ' + e.msg;
+    if(e.ctx !== undefined){ try { line += ' ' + JSON.stringify(e.ctx); } catch(err){ /* skip context */ } }
+    return line;
+  }
+  function buildDebugLogText(){
+    var lines = [];
+    lines.push('Background Image Generator -- Debug Log (v' + APP_VERSION + ')');
+    lines.push('Exported ' + new Date().toISOString());
+    lines.push('Last session end: ' + (Logger.wasCleanShutdown() ? 'clean' : 'UNCLEAN (crash or forced close)'));
+    lines.push('');
+    var stats = Logger.stats();
+    if(stats.length){
+      var latest = stats[stats.length-1];
+      lines.push('Latest resource sample (' + latest.t + '):');
+      lines.push('  Layers: ' + latest.layers + '   Undo steps: ' + latest.historyDepth + '   Canvas: ' + latest.canvasW + '×' + latest.canvasH +
+        '   Auto-save size: ' + (latest.autosaveKB!==null ? latest.autosaveKB+'KB' : 'n/a') +
+        '   JS heap: ' + (latest.heapUsedMB!==null ? latest.heapUsedMB+'MB / '+latest.heapLimitMB+'MB' : 'n/a (not exposed by this browser)'));
+      lines.push('');
+    }
+    lines.push('Log entries (oldest first):');
+    var entries = Logger.entries();
+    if(!entries.length) lines.push('  (empty)');
+    entries.forEach(function(e){ lines.push('  ' + debugLogEntryToText(e)); });
+    return lines.join('\n');
+  }
+  function renderDebugLog(){
+    var banner = $('debugLogCrashBanner');
+    if(!Logger.wasCleanShutdown()){
+      banner.style.display = 'block';
+      banner.textContent = 'The previous session did not shut down cleanly (a crash, an out-of-memory kill, or the tab/window being force-closed) -- entries carried over from before that are marked below.';
+    } else {
+      banner.style.display = 'none';
+    }
+
+    var statsEl = $('debugLogStats');
+    var stats = Logger.stats();
+    var latest = stats.length ? stats[stats.length-1] : null;
+    function statBlock(label, value){ return '<div class="debug-log-stat"><span class="n">'+escAttr(value)+'</span><span class="l">'+escAttr(label)+'</span></div>'; }
+    if(latest){
+      statsEl.innerHTML =
+        statBlock('Layers', latest.layers) +
+        statBlock('Undo Steps', latest.historyDepth) +
+        statBlock('Canvas', latest.canvasW + '×' + latest.canvasH) +
+        statBlock('Auto-Save Size', latest.autosaveKB !== null ? latest.autosaveKB + ' KB' : 'n/a') +
+        statBlock('JS Heap Used', latest.heapUsedMB !== null ? latest.heapUsedMB + ' MB' : 'n/a') +
+        statBlock('JS Heap Limit', latest.heapLimitMB !== null ? latest.heapLimitMB + ' MB' : 'n/a');
+    } else {
+      statsEl.innerHTML = '<div class="debug-log-empty">No resource samples yet.</div>';
+    }
+
+    var listEl = $('debugLogList');
+    var entries = Logger.entries().slice().reverse(); // newest first, easier to spot what just happened
+    if(!entries.length){
+      listEl.innerHTML = '<div class="debug-log-empty">No log entries yet -- nothing has gone wrong so far.</div>';
+      return;
+    }
+    listEl.innerHTML = entries.map(function(e){
+      var ctxText = '';
+      if(e.ctx !== undefined){ try { ctxText = ' <span class="c">' + escAttr(JSON.stringify(e.ctx)) + '</span>'; } catch(err){ /* skip */ } }
+      return '<div class="debug-log-row lvl-'+escAttr(e.level)+'">' +
+        '<span class="t">'+escAttr(formatLogTime(e.t))+'</span>' +
+        '<span class="lvl">'+escAttr(debugLogLevelLabel(e.level))+'</span>' +
+        '<span class="m">'+escAttr(e.msg)+ctxText+'</span>' +
+        '</div>';
+    }).join('');
+  }
+  function openDebugLogModal(){
+    sampleResourcesOnce(); // fresh numbers for the moment the user actually looks, not a stale periodic tick
+    renderDebugLog();
+    $('debugLogModal').classList.add('open');
+  }
+  function closeDebugLogModal(){ $('debugLogModal').classList.remove('open'); }
+  function copyDebugLogToClipboard(){
+    var text = buildDebugLogText();
+    function announce(ok){
+      var btn = $('debugLogCopyBtn');
+      if(!btn) return;
+      var original = 'Copy';
+      btn.textContent = ok ? 'Copied!' : 'Could not copy';
+      setTimeout(function(){ btn.textContent = original; }, 1600);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ announce(true); }).catch(function(){ announce(false); });
+    } else {
+      // Clipboard API unavailable (common when opened straight from a local
+      // file) -- fall back to a temporary, selected textarea + execCommand.
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try { announce(document.execCommand('copy')); } catch(e){ announce(false); }
+      document.body.removeChild(ta);
+    }
+  }
+  function downloadDebugLog(){
+    var text = buildDebugLogText();
+    var blob = new Blob([text], { type:'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'bg-generator-debug-log.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+  function clearDebugLog(){
+    Logger.clear();
+    renderDebugLog();
+  }
+
   $('menuWhatsNewBtn').textContent = "What's New (v" + APP_VERSION + ")";
   $('changelogCloseBtn').addEventListener('click', closeChangelogModal);
   $('changelogModal').addEventListener('click', function(e){ if(e.target === $('changelogModal')) closeChangelogModal(); });
@@ -3726,11 +4209,18 @@
   $('shortcutsModal').addEventListener('click', function(e){ if(e.target === $('shortcutsModal')) closeShortcutsModal(); });
   $('hintsCloseBtn').addEventListener('click', closeHintsModal);
   $('hintsModal').addEventListener('click', function(e){ if(e.target === $('hintsModal')) closeHintsModal(); });
+  $('debugLogCloseBtn').addEventListener('click', closeDebugLogModal);
+  $('debugLogModal').addEventListener('click', function(e){ if(e.target === $('debugLogModal')) closeDebugLogModal(); });
+  $('debugLogRefreshBtn').addEventListener('click', renderDebugLog);
+  $('debugLogCopyBtn').addEventListener('click', copyDebugLogToClipboard);
+  $('debugLogDownloadBtn').addEventListener('click', downloadDebugLog);
+  $('debugLogClearBtn').addEventListener('click', clearDebugLog);
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
     if($('changelogModal').classList.contains('open')) closeChangelogModal();
     else if($('shortcutsModal').classList.contains('open')) closeShortcutsModal();
     else if($('hintsModal').classList.contains('open')) closeHintsModal();
+    else if($('debugLogModal').classList.contains('open')) closeDebugLogModal();
     else if(document.documentElement.classList.contains('kiosk-mode')) document.documentElement.classList.remove('kiosk-mode');
   });
 
@@ -3742,15 +4232,21 @@
     try {
       var raw = localStorage.getItem(SETTINGS_KEY);
       return raw ? JSON.parse(raw) : {};
-    } catch(e){ return {}; }
+    } catch(e){ Logger.warn('Could not read saved settings from this browser', { error: String(e && e.message || e) }); return {}; }
   }
   function saveSettings(){
     try {
+      var sidebarEl = $('sidebarPanel');
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         theme: currentTheme, performanceMode: performanceModeEnabled,
-        autoSave: autoSaveEnabled, palette: activePalette
+        autoSave: autoSaveEnabled, palette: activePalette,
+        // Read live off the element (rather than tracking a separate variable)
+        // so this stays correct no matter what triggered the save -- a drag,
+        // or any other unrelated setting change that happens to save at the
+        // same time.
+        sidebarWidth: sidebarEl ? Math.round(sidebarEl.getBoundingClientRect().width) : undefined
       }));
-    } catch(e){ /* localStorage unavailable (private browsing, quota, etc.) -- settings just won't persist */ }
+    } catch(e){ Logger.warn('Could not save settings to this browser (private browsing, or storage is full)', { error: String(e && e.message || e) }); }
   }
 
   var savedSettings = loadSettings();
@@ -3758,21 +4254,30 @@
   var performanceModeEnabled = savedSettings.performanceMode !== false; // on by default
   var autoSaveEnabled = savedSettings.autoSave !== false; // on by default
   var activePalette = savedSettings.palette || '';
-  var viewFitToScreen = true;
+  var stageZoomPct = null; // null = Zoom to Fit (default); a number is an explicit zoom percentage
 
   // Hooked into pushHistory() (defined above) so every structural change --
   // and every undo/redo restore -- mirrors the current design here too.
+  var autosaveFailureLogged = false; // avoid re-logging the same failure on every structural change
   function persistDesignToStorage(){
     if(!autoSaveEnabled) return;
     try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(buildStatePayload())); }
-    catch(e){ /* private-browsing quota, etc. -- autosave just silently no-ops */ }
+    catch(e){
+      // private-browsing quota, etc. -- autosave just silently no-ops, but
+      // worth logging ONCE (this runs on every structural change, so without
+      // the guard a full session could log the same failure hundreds of times).
+      if(!autosaveFailureLogged){
+        autosaveFailureLogged = true;
+        Logger.warn('Auto-Save could not write the design to this browser (private browsing, or storage is full) -- further failures this session are not logged again', { error: String(e && e.message || e) });
+      }
+    }
   }
   function loadDesignFromStorage(){
     try {
       var raw = localStorage.getItem(AUTOSAVE_KEY);
       if(!raw) return false;
       return applyStatePayload(JSON.parse(raw));
-    } catch(e){ return false; }
+    } catch(e){ Logger.warn('Could not load the auto-saved design from this browser', { error: String(e && e.message || e) }); return false; }
   }
 
   function applyTheme(){
@@ -3832,14 +4337,117 @@
     document.documentElement.classList.toggle('kiosk-mode');
   }
 
-  function updateViewMenuChecks(){
-    var fitBtn = $('menuFitBtn');
-    if(fitBtn) fitBtn.classList.toggle('is-on', viewFitToScreen);
+  function toggleAnimPlayPause(){
+    animationState.paused = !animationState.paused;
+    $('animPlayPauseBtn').innerHTML = animationState.paused ? '&#9654; Play' : '&#9208; Pause';
   }
-  function toggleFitToScreen(){
-    viewFitToScreen = !viewFitToScreen;
-    document.documentElement.classList.toggle('actual-size-mode', !viewFitToScreen);
+
+  /* ---------- resource sampler (feeds the Logger / Debug Log) ---------- */
+  // Deliberately cheap: no JSON.stringify of the whole design or undo stack
+  // (that would add exactly the kind of memory/CPU churn this exists to
+  // diagnose) -- just counters and lengths that are already sitting around,
+  // plus the one JS-heap number Chromium-family browsers expose for free.
+  var RESOURCE_SAMPLE_INTERVAL_MS = 20000;
+  var MEMORY_WARN_RATIO = 0.85; // logged once per crossing, not every sample
+  var memoryWarnLogged = false;
+  function countAllLayers(){
+    var n = 0;
+    forEachLayerDeep(layers, function(){ n++; });
+    return n;
+  }
+  function sampleResourcesOnce(){
+    var sample = {
+      layers: countAllLayers(),
+      historyDepth: historyStack.length,
+      canvasW: canvas.width,
+      canvasH: canvas.height,
+      autosaveKB: null,
+      heapUsedMB: null,
+      heapLimitMB: null
+    };
+    try {
+      var raw = localStorage.getItem(AUTOSAVE_KEY);
+      if(raw) sample.autosaveKB = Math.round(raw.length / 1024);
+    } catch(e){ /* best-effort only */ }
+    // performance.memory is Chrome/Edge-only (non-standard) -- simply absent
+    // elsewhere, which is fine, the rest of the sample still stands alone.
+    if(window.performance && performance.memory){
+      var mem = performance.memory;
+      sample.heapUsedMB = Math.round(mem.usedJSHeapSize / 1048576);
+      sample.heapLimitMB = Math.round(mem.jsHeapSizeLimit / 1048576);
+      var ratio = mem.jsHeapSizeLimit ? (mem.usedJSHeapSize / mem.jsHeapSizeLimit) : 0;
+      if(ratio >= MEMORY_WARN_RATIO){
+        if(!memoryWarnLogged){
+          memoryWarnLogged = true;
+          Logger.warn('Memory use is high (' + sample.heapUsedMB + 'MB of a ' + sample.heapLimitMB + 'MB limit) -- consider Edit > Purge History if the design has large embedded images', { historyDepth: sample.historyDepth, layers: sample.layers });
+        }
+      } else {
+        memoryWarnLogged = false; // back under the threshold -- a future crossing can warn again
+      }
+    }
+    Logger.recordStat(sample);
+  }
+  function startResourceSampler(){
+    sampleResourcesOnce();
+    setInterval(sampleResourcesOnce, RESOURCE_SAMPLE_INTERVAL_MS);
+  }
+
+  /* ---------- View > Zoom ---------- */
+  // stageZoomPct is null for "Zoom to Fit" (the canvas scales down/up to the
+  // available space via CSS max-width/max-height:100%, see .canvas-wrap/
+  // canvas above) or a number (10-400) for an explicit percentage, which
+  // instead sizes the canvas with an exact inline pixel width/height and lets
+  // .stage's own scrolling handle whatever doesn't fit -- same underlying
+  // mechanism the old Fit/Actual-Size toggle used, just generalized to any
+  // percentage instead of only those two fixed states.
+  var ZOOM_MIN = 10, ZOOM_MAX = 400, ZOOM_STEP = 10;
+  function clampZoom(pct){ return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round(pct))); }
+  // The percentage the canvas is CURRENTLY rendered at, whether that's from
+  // an explicit zoom or from Fit doing its own automatic scaling -- used as
+  // the starting point for Zoom In/Out so the first click continues smoothly
+  // from whatever Fit was already showing, instead of jumping to a fixed
+  // default.
+  function currentRenderedZoomPct(){
+    if(!canvas.width) return 100;
+    var rect = canvas.getBoundingClientRect();
+    return clampZoom((rect.width / canvas.width) * 100);
+  }
+  function applyStageZoom(){
+    var manual = stageZoomPct !== null;
+    document.documentElement.classList.toggle('zoom-manual', manual);
+    if(manual){
+      canvas.style.width = Math.round(canvas.width * stageZoomPct / 100) + 'px';
+      canvas.style.height = Math.round(canvas.height * stageZoomPct / 100) + 'px';
+    } else {
+      canvas.style.width = '';
+      canvas.style.height = '';
+    }
+    updateZoomReadout();
+  }
+  function updateZoomReadout(){
+    var el = $('zoomReadout');
+    if(el) el.textContent = stageZoomPct === null ? 'Fit' : (stageZoomPct + '%');
+  }
+  function setZoomPct(pct){
+    stageZoomPct = clampZoom(pct);
+    applyStageZoom();
     updateViewMenuChecks();
+  }
+  function zoomIn(){ setZoomPct((stageZoomPct !== null ? stageZoomPct : currentRenderedZoomPct()) + ZOOM_STEP); }
+  function zoomOut(){ setZoomPct((stageZoomPct !== null ? stageZoomPct : currentRenderedZoomPct()) - ZOOM_STEP); }
+  function zoomToFit(){
+    stageZoomPct = null;
+    applyStageZoom();
+    updateViewMenuChecks();
+  }
+  function zoomToActual(){ setZoomPct(100); }
+
+  function updateViewMenuChecks(){
+    var fitBtn = $('menuZoomFitBtn');
+    if(fitBtn) fitBtn.classList.toggle('is-on', stageZoomPct === null);
+    var actualBtn = $('menuZoomActualBtn');
+    if(actualBtn) actualBtn.classList.toggle('is-on', stageZoomPct === 100);
+    updateZoomReadout();
   }
 
   var PALETTE_MENU_IDS = { '':'paletteOptRandom', 'spectrum-hud':'paletteOptSpectrum-hud', 'industrial':'paletteOptIndustrial', 'neon':'paletteOptNeon' };
@@ -3903,12 +4511,17 @@
       case 'randomizeAll': randomizeDesign('all'); break;
       case 'purgeHistory': purgeHistory(); break;
       case 'toggleKiosk': toggleKioskMode(); break;
-      case 'toggleFit': toggleFitToScreen(); break;
+      case 'toggleAnimPlayPause': toggleAnimPlayPause(); break;
+      case 'zoomIn': zoomIn(); break;
+      case 'zoomOut': zoomOut(); break;
+      case 'zoomFit': zoomToFit(); break;
+      case 'zoomActual': zoomToActual(); break;
       case 'toggleTheme': toggleTheme(); break;
       case 'togglePerf': togglePerformanceMode(); break;
       case 'toggleAutosave': toggleAutoSave(); break;
       case 'shortcuts': openShortcutsModal(); break;
       case 'hintsTips': openHintsModal(); break;
+      case 'debugLog': openDebugLogModal(); break;
       case 'whatsNew': openChangelogModal(); break;
     }
   }
@@ -3926,7 +4539,43 @@
     }
   });
 
+  /* ---------- sidebar resize (drag the handle between it and the stage) ---------- */
+  (function(){
+    var handle = $('panelResizeHandle');
+    var sidebar = $('sidebarPanel');
+    if(!handle || !sidebar) return;
+    var SIDEBAR_MIN = 260, SIDEBAR_MAX = 640;
+    var dragging = false, startX = 0, startWidth = 0;
+    handle.addEventListener('mousedown', function(e){
+      dragging = true;
+      startX = e.clientX;
+      startWidth = sidebar.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e){
+      if(!dragging) return;
+      var next = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, startWidth + (e.clientX - startX)));
+      sidebar.style.width = next + 'px';
+    });
+    window.addEventListener('mouseup', function(){
+      if(!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      saveSettings(); // remembers the chosen width for next time
+    });
+  })();
+  if(savedSettings.sidebarWidth){
+    var restoredWidth = Math.max(260, Math.min(640, savedSettings.sidebarWidth));
+    var sidebarEl = $('sidebarPanel');
+    if(sidebarEl) sidebarEl.style.width = restoredWidth + 'px';
+  }
+
   /* ---------- init ---------- */
+  Logger.info('App started (v' + APP_VERSION + ')');
+  startResourceSampler();
   applyTheme();
   $('menuPerfBtn').classList.toggle('is-on', performanceModeEnabled);
   $('menuAutosaveBtn').classList.toggle('is-on', autoSaveEnabled);

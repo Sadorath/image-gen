@@ -94,6 +94,7 @@
 <div class="wrap">
   <nav class="toc">
     <a href="#getting-started">Getting Started</a>
+    <a href="#layout">View &amp; Layout</a>
     <a href="#layers">Layers</a>
     <a href="#masks">Masks</a>
     <a href="#filters">Filters</a>
@@ -112,6 +113,13 @@
       <p>A design is built from <strong>layers</strong>, stacked from bottom to top just like Photoshop or GIMP. Start with the <strong>Canvas</strong> menu to pick a resolution (or type a custom width/height), then use <strong>+ Add Layer</strong> to build up your background one layer at a time.</p>
       <p>Hover over almost anything in the sidebar &mdash; labels, sliders, buttons, dropdowns &mdash; and a short tooltip will explain what it does. That's the fastest way to learn the interface hands-on.</p>
       <div class="tip"><strong>Tip:</strong> Nothing you do here is destructive until you export. Feel free to experiment &mdash; Undo (<kbd>Ctrl/Cmd+Z</kbd>) covers the last 50 changes.</div>
+    </section>
+
+    <section id="layout">
+      <h2>View &amp; Layout</h2>
+      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is split into the sidebar on the left and the live preview (the <strong>stage</strong>) on the right.</p>
+      <p>Drag the thin strip on the sidebar's right edge to make it wider or narrower &mdash; the width is remembered the next time you open the app. If the sidebar's contents don't fit at its current width or window height, the sidebar itself scrolls internally rather than the whole page growing a scrollbar.</p>
+      <p>Use the <strong>View</strong> menu to control how the preview is scaled: <strong>Zoom to Fit</strong> shrinks it to fit the available space (the default), <strong>Zoom to Actual Size</strong> shows it at exactly 100% (one image pixel per screen pixel), and <strong>Zoom In</strong> / <strong>Zoom Out</strong> step through preset percentages &mdash; the current zoom level is always shown in the menu. None of this changes the canvas's actual resolution, only how large it's displayed.</p>
     </section>
 
     <section id="layers">
@@ -150,7 +158,7 @@
 
     <section id="animation">
       <h2>Animation</h2>
-      <p>Turn on <strong>Animate</strong> on any layer to make it move in a seamless, perfectly-looping cycle. The shared <strong>Loop Length</strong> control (above the layer list) sets how long one full loop takes for every animated layer; each layer's own <strong>Cycles</strong> value is how many times its motion repeats within that length.</p>
+      <p>Turn on <strong>Animate</strong> on any layer to make it move in a seamless, perfectly-looping cycle. The shared <strong>Loop Length</strong> control, in the <strong>Animation</strong> menu at the top of the page, sets how long one full loop takes for every animated layer; each layer's own <strong>Cycles</strong> value is how many times its motion repeats within that length.</p>
       <table>
         <tr><th>Motion Style</th><th>What it does</th></tr>
         <tr><td>Scroll / Pan</td><td>Scrolls a tile pattern, or drifts Perlin noise (only available on pattern &amp; noise layers)</td></tr>
@@ -159,8 +167,21 @@
         <tr><td>Orbit</td><td>Drifts the layer's position in a small circle</td></tr>
         <tr><td>Custom</td><td>Percent keyframes or your own per-frame expressions</td></tr>
       </table>
-      <p>Use <strong>Play/Pause</strong> to preview the animation live, and <strong>Record .webm</strong> (or File &gt; Record Animation) to capture exactly one loop to a video file that repeats with no visible seam.</p>
+      <p>Use <strong>Animation &gt; Play/Pause</strong> to preview the animation live, and <strong>File &gt; Record Animation (.webm)</strong> to capture exactly one loop to a video file that repeats with no visible seam.</p>
       <div class="tip"><strong>Tip:</strong> Cycles is always a whole number on purpose &mdash; a fractional cycle count would make position match at the loop boundary but velocity reverse, which shows up as a visible jump.</div>
+
+      <h3>Custom animation: every numeric layer property</h3>
+      <p>Custom accepts either percent keyframes (one or more <code>0%&nbsp;{ ... }</code> blocks) or, with no <code>%</code> stops at all, one <code>property: expression;</code> line per property using <code>t</code> (0&ndash;1 progress through a single cycle) and <code>cycles</code>, plus <code>sin/cos/tan/abs/min/max/sqrt/pow/PI/floor/ceil/round</code>. Both forms can drive the five whole-layer transform properties &mdash; <code>opacity</code>, <code>scale</code>, <code>rotate</code>, <code>x</code>, <code>y</code> &mdash; and also any of the layer's own numeric fields below, whichever apply to that layer's type. Animating one of these never changes the saved design, undo history, or exported JSON &mdash; it only affects what's drawn for that one frame.</p>
+      <table>
+        <tr><th>Group</th><th>Properties</th></tr>
+        <tr><td>Filters</td><td><code>blur</code>, <code>brightness</code>, <code>contrast</code>, <code>grayscale</code>, <code>huerotate</code>, <code>invert</code>, <code>filteropacity</code>, <code>saturate</code>, <code>sepia</code>, <code>shadowx</code>, <code>shadowy</code>, <code>shadowblur</code></td></tr>
+        <tr><td>Fill color</td><td><code>colorr</code>, <code>colorg</code>, <code>colorb</code>, <code>coloralpha</code> (solid fill, or a pattern's flat color)</td></tr>
+        <tr><td>Pattern &amp; gradient geometry</td><td><code>angle</code>, <code>size</code>, <code>fill</code>, <code>cx</code>, <code>cy</code>, <code>gradangle</code></td></tr>
+        <tr><td>Noise</td><td><code>grain</code>, <code>perlinscale</code>, <code>perlinoctaves</code>, <code>perlinroughness</code>, <code>perlincontrast</code>, <code>perlinveinfreq</code>, <code>perlinpower</code></td></tr>
+        <tr><td>Image overlay</td><td><code>imgscale</code>, <code>imgoffsetx</code>, <code>imgoffsety</code></td></tr>
+      </table>
+      <p>Example: <code>0% { opacity: 100; blur: 0; } 50% { opacity: 60; blur: 12; huerotate: 180; } 100% { opacity: 100; blur: 0; }</code> breathes a layer's opacity, blurs it, and drifts its hue over one cycle, then returns exactly to where it started.</p>
+      <div class="tip"><strong>Tip:</strong> a property name that doesn't apply to the current layer, or isn't recognized at all (a typo, or a gradient color-stop index &mdash; those aren't animatable since a design's stop count can vary), is silently skipped rather than breaking the animation. If the app's Debug Log is enabled (Help &gt; Debug Log), skipped/unknown names are recorded there too, which is the quickest way to catch a typo.</div>
     </section>
 
     <section id="export">
