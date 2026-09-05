@@ -212,6 +212,36 @@
     box-shadow:none; border-radius:0; border:none;
   }
   .kiosk-mode canvas{ max-width:none; max-height:none; width:100vw; height:100vh; }
+
+  /* ---------------- Version badge + changelog modal ---------------- */
+  .version-badge{
+    position:fixed; left:10px; bottom:8px; z-index:20;
+    background:var(--bg-2); border:1px solid var(--border); border-radius:5px;
+    color:var(--text-dim); font-size:10px; font-weight:600; letter-spacing:.3px;
+    padding:3px 7px; cursor:pointer; opacity:.85; box-shadow:0 2px 8px rgba(0,0,0,.35);
+  }
+  .version-badge:hover{ opacity:1; color:var(--accent); border-color:var(--accent-dim); }
+  .kiosk-mode .version-badge{ display:none; }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:100;
+    display:none; align-items:center; justify-content:center; padding:24px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-box{
+    background:var(--bg-1); border:1px solid var(--border); border-radius:10px;
+    max-width:520px; width:100%; max-height:80vh; display:flex; flex-direction:column;
+    box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .modal-head{ display:flex; align-items:center; justify-content:space-between; padding:12px 8px 12px 16px; border-bottom:1px solid var(--border); flex:0 0 auto; }
+  .modal-head h2{ margin:0; font-size:14px; }
+  .modal-body{ padding:14px 18px 18px 18px; overflow-y:auto; font-size:12px; line-height:1.6; color:var(--text); }
+  .modal-body h3{ font-size:13px; color:var(--accent); margin:16px 0 6px 0; }
+  .modal-body h3:first-child{ margin-top:0; }
+  .modal-body blockquote{ margin:0 0 12px 0; padding:6px 10px; border-left:2px solid var(--border); color:var(--text-dim); font-size:11px; }
+  .modal-body ul{ margin:0 0 4px 0; padding-left:18px; }
+  .modal-body li{ margin:3px 0; }
+  .modal-body p{ margin:4px 0; }
 </style>
 </head>
 <body>
@@ -317,6 +347,17 @@
     </div>
   </main>
 
+</div>
+
+<button class="version-badge" id="versionBadge" type="button" title="What's new">v0.0.0</button>
+<div class="modal-overlay" id="changelogModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h2>What&rsquo;s New</h2>
+      <button class="icon-btn" id="changelogCloseBtn" title="Close">&times;</button>
+    </div>
+    <div class="modal-body" id="changelogBody"><p>Loading&hellip;</p></div>
+  </div>
 </div>
 
 <script>
@@ -1993,6 +2034,71 @@
       e.preventDefault();
       redo();
     }
+  });
+
+  /* ---------- version / changelog ---------- */
+  var APP_VERSION = '0.0.12';
+
+  // Same content as CHANGELOG.md, kept here so the "What's New" panel still
+  // works when the app is opened straight from a local file (see below --
+  // fetch() of a plain file:// path is blocked by CORS in most browsers).
+  // Update both places together when a new version ships.
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+
+  // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
+  // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
+  // separated paragraphs). Not a general markdown parser -- it doesn't need
+  // to be, since it only ever renders this one file.
+  function changelogEscapeHtml(s){
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function changelogInline(s){
+    return changelogEscapeHtml(s).replace(/`([^`]+)`/g, '<code>$1</code>').replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  }
+  function renderChangelogMarkdown(md){
+    var lines = String(md).replace(/\r\n/g,'\n').split('\n');
+    var html = '';
+    var inList = false;
+    function closeList(){ if(inList){ html += '</ul>'; inList = false; } }
+    lines.forEach(function(line){
+      var mH = /^##\s+(.*)/.exec(line);
+      var mQ = /^>\s?(.*)/.exec(line);
+      var mLi = /^[-*]\s+(.*)/.exec(line);
+      if(mH){ closeList(); html += '<h3>'+changelogInline(mH[1])+'</h3>'; }
+      else if(mQ){ closeList(); html += '<blockquote>'+changelogInline(mQ[1])+'</blockquote>'; }
+      else if(mLi){ if(!inList){ html += '<ul>'; inList = true; } html += '<li>'+changelogInline(mLi[1])+'</li>'; }
+      else if(line.trim() === '' || /^#\s/.test(line)){ closeList(); }
+      else { closeList(); html += '<p>'+changelogInline(line)+'</p>'; }
+    });
+    closeList();
+    return html;
+  }
+
+  function openChangelogModal(){
+    var modal = $('changelogModal');
+    var body = $('changelogBody');
+    modal.classList.add('open');
+    // Prefer the real CHANGELOG.md (so edits to it show up without touching
+    // this file) and only fall back to the embedded copy above when it can't
+    // be fetched -- which is the normal case for a page opened via file://,
+    // since browsers block fetch() of local files for security reasons.
+    fetch('CHANGELOG.md').then(function(res){
+      if(!res.ok) throw new Error('CHANGELOG.md not found');
+      return res.text();
+    }).then(function(text){
+      body.innerHTML = renderChangelogMarkdown(text);
+    }).catch(function(){
+      body.innerHTML = renderChangelogMarkdown(CHANGELOG_FALLBACK_MD);
+    });
+  }
+  function closeChangelogModal(){ $('changelogModal').classList.remove('open'); }
+
+  $('versionBadge').textContent = 'v' + APP_VERSION;
+  $('versionBadge').addEventListener('click', openChangelogModal);
+  $('changelogCloseBtn').addEventListener('click', closeChangelogModal);
+  $('changelogModal').addEventListener('click', function(e){ if(e.target === $('changelogModal')) closeChangelogModal(); });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && $('changelogModal').classList.contains('open')) closeChangelogModal();
   });
 
   /* ---------- init ---------- */
