@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.24 — 2026-09-05
+
+- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized — small joining words like "with," "as," and "to" stay lowercase), for a more consistent, polished look throughout.
+
 ## v0.0.23 — 2026-09-05
 
 - Mask layers can now be Inverted: the "Use as mask?" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite — it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.
