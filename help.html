@@ -109,16 +109,16 @@
 
     <section id="getting-started">
       <h2>Getting Started</h2>
-      <p>The canvas on the right shows a live, constantly-updating preview of your design. Everything you change in the sidebar on the left &mdash; layers, colors, filters, animation &mdash; renders instantly, so there's no separate "preview" step.</p>
-      <p>A design is built from <strong>layers</strong>, stacked from bottom to top just like Photoshop or GIMP. Start with the <strong>Canvas</strong> menu to pick a resolution (or type a custom width/height), then use <strong>+ Add Layer</strong> to build up your background one layer at a time.</p>
-      <p>Hover over almost anything in the sidebar &mdash; labels, sliders, buttons, dropdowns &mdash; and a short tooltip will explain what it does. That's the fastest way to learn the interface hands-on.</p>
+      <p>The canvas behind everything shows a live, constantly-updating preview of your design. Everything you change in the Layers window &mdash; layers, colors, filters, animation &mdash; renders instantly, so there's no separate "preview" step.</p>
+      <p>A design is built from <strong>layers</strong>, stacked from bottom to top just like Photoshop or GIMP. Start with the <strong>Canvas</strong> menu to pick a resolution (or type a custom width/height), then use <strong>+ Add Layer</strong> in the Layers window to build up your background one layer at a time.</p>
+      <p>Hover over almost anything in the Layers window &mdash; labels, sliders, buttons, dropdowns &mdash; and a short tooltip will explain what it does. That's the fastest way to learn the interface hands-on.</p>
       <div class="tip"><strong>Tip:</strong> Nothing you do here is destructive until you export. Feel free to experiment &mdash; Undo (<kbd>Ctrl/Cmd+Z</kbd>) covers the last 50 changes.</div>
     </section>
 
     <section id="layout">
       <h2>View &amp; Layout</h2>
-      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is split into the sidebar on the left and the live preview (the <strong>stage</strong>) on the right.</p>
-      <p>Drag the thin strip on the sidebar's right edge to make it wider or narrower &mdash; the width is remembered the next time you open the app. If the sidebar's contents don't fit at its current width or window height, the sidebar itself scrolls internally rather than the whole page growing a scrollbar.</p>
+      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is the live preview (the <strong>stage</strong>), with the <strong>Layers</strong> window floating on top of it.</p>
+      <p>The Layers window can be dragged anywhere by its titlebar &mdash; it's constrained so it can never be dragged outside the app's own window, so its titlebar (and your way to move it back) is never out of reach. Click the <strong>&times;</strong> in its corner to close it; this only ever hides it, nothing is lost. Bring it back from <strong>View &gt; Show Layers</strong>, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered the next time you open the app.</p>
       <p>Use the <strong>View</strong> menu to control how the preview is scaled: <strong>Zoom to Fit</strong> shrinks it to fit the available space (the default), <strong>Zoom to Actual Size</strong> shows it at exactly 100% (one image pixel per screen pixel), and <strong>Zoom In</strong> / <strong>Zoom Out</strong> step through preset percentages &mdash; the current zoom level is always shown in the menu. None of this changes the canvas's actual resolution, only how large it's displayed.</p>
     </section>
 
@@ -137,6 +137,7 @@
       <p>Every layer also has an <strong>Opacity</strong> slider and a <strong>Blend</strong> mode (Normal, Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion) that controls how it combines with whatever is beneath it.</p>
       <h3>Grouping</h3>
       <p>Check the small select-boxes on two or more layers, then click <strong>Group Selected</strong> to fold them into a folder. Groups can be nested, duplicated, and ungrouped again at any time.</p>
+      <div class="tip"><strong>Tip:</strong> Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as Mask" toggle to clip the layer directly beneath it to this layer's shape instead &mdash; switch its mode to Inverted to punch a hole through that layer instead of clipping to it. Check the box on any layers to group them into a folder with its own shared opacity and blend.</div>
     </section>
 
     <section id="masks">
@@ -188,6 +189,7 @@
       <h2>Export &amp; Share</h2>
       <p>Most of this lives in the <strong>File</strong> menu (the <strong>&#9679;</strong> Record button is the exception &mdash; see Animation above):</p>
       <ul>
+        <li><strong>Save&hellip;</strong> / <strong>Save As&hellip;</strong> / <strong>Load&hellip;</strong> &mdash; a full backup of the design (every layer and setting) as a local <code>.json</code> file. Save As asks for a new name first, then saves under it -- and updates the Canvas menu's File Name field to match, so PNG/CSS/Rainmeter exports pick up the new name too. The saved file's content is compressed (the same format Copy Code uses) rather than plain readable JSON, so it stays small even with several layers -- Load reads this format automatically, and still opens an older, plain-JSON save from before this change.</li>
         <li><strong>Export PNG</strong> &mdash; a static image at your chosen resolution.</li>
         <li><strong>Export CSS</strong> &mdash; bakes the design into a CSS <code>background-image</code> data URI you can drop straight into a stylesheet.</li>
         <li><strong>Export Rainmeter .ini</strong> &mdash; a Rainmeter Image meter, paired with its PNG.</li>
@@ -200,12 +202,27 @@
       <h2>Keyboard Shortcuts</h2>
       <table>
         <tr><th>Action</th><th>Shortcut</th></tr>
+        <tr><td>Save</td><td><kbd>Ctrl/Cmd + S</kbd></td></tr>
+        <tr><td>Save As</td><td><kbd>Ctrl/Cmd + Shift + S</kbd></td></tr>
+        <tr><td>Load</td><td><kbd>Ctrl/Cmd + O</kbd></td></tr>
+        <tr><td>Export PNG</td><td><kbd>Ctrl/Cmd + Shift + E</kbd></td></tr>
         <tr><td>Undo</td><td><kbd>Ctrl/Cmd + Z</kbd></td></tr>
         <tr><td>Redo</td><td><kbd>Ctrl/Cmd + Shift + Z</kbd></td></tr>
         <tr><td>Redo (alternate)</td><td><kbd>Ctrl/Cmd + Y</kbd></td></tr>
+        <tr><td>Group Selected</td><td><kbd>Ctrl/Cmd + G</kbd></td></tr>
+        <tr><td>Ungroup Selected</td><td><kbd>Ctrl/Cmd + Shift + G</kbd></td></tr>
+        <tr><td>Select All</td><td><kbd>Ctrl/Cmd + A</kbd></td></tr>
+        <tr><td>Deselect All</td><td><kbd>Ctrl/Cmd + Shift + A</kbd></td></tr>
+        <tr><td>Zoom In</td><td><kbd>Ctrl/Cmd + =</kbd></td></tr>
+        <tr><td>Zoom Out</td><td><kbd>Ctrl/Cmd + -</kbd></td></tr>
+        <tr><td>Zoom to Fit</td><td><kbd>Ctrl/Cmd + 0</kbd></td></tr>
+        <tr><td>Zoom to Actual Size</td><td><kbd>Ctrl/Cmd + 1</kbd></td></tr>
+        <tr><td>Play / Pause Animation</td><td><kbd>Space</kbd></td></tr>
+        <tr><td>Open This Shortcuts List</td><td><kbd>?</kbd></td></tr>
         <tr><td>Exit Kiosk Mode</td><td><kbd>Esc</kbd></td></tr>
         <tr><td>Close any open dialog</td><td><kbd>Esc</kbd></td></tr>
       </table>
+      <div class="tip"><strong>Tip:</strong> none of these fire while you're typing in a text field &mdash; <kbd>Ctrl/Cmd+A</kbd> in the File Name box still selects that field's text instead of selecting every layer.</div>
     </section>
 
     <section id="tips">

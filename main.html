@@ -8,15 +8,17 @@
 </head>
 <body>
   <nav class="menubar" id="menubar">
+    <span class="app-title" title="Background Image Generator">Image Generator</span>
     <div class="menu-item-wrap">
       <button class="menu-btn" type="button" data-menu="file" title="New, save/load, import, and export">File</button>
       <div class="menu-dropdown" data-menu-panel="file">
         <button data-action="new" title="Clear everything and start a fresh, blank design">New Workspace</button>
-        <button data-action="save" title="Save this design to a local .json file">Save&hellip;</button>
-        <button data-action="load" title="Load a design from a local .json file">Load&hellip;</button>
+        <button data-action="save" title="Save this design to a local .json file (Ctrl+S)">Save&hellip;</button>
+        <button data-action="saveAs" title="Choose a new name, then save this design to a local .json file (Ctrl+Shift+S)">Save As&hellip;</button>
+        <button data-action="load" title="Load a design from a local .json file (Ctrl+O)">Load&hellip;</button>
         <div class="menu-sep"></div>
         <button data-action="import" title="Paste a share link or design code to load someone else&#39;s design">Import a Link or Code&hellip;</button>
-        <button data-action="exportPng" title="Render and download the current design as a PNG image">Export PNG</button>
+        <button data-action="exportPng" title="Render and download the current design as a PNG image (Ctrl+Shift+E)">Export PNG</button>
         <button data-action="exportCss" title="Bake the design into a CSS background-image data URI">Export CSS</button>
         <button data-action="exportRainmeter" title="Export a Rainmeter .ini Image meter, paired with its PNG">Export Rainmeter .ini</button>
         <div class="menu-sep"></div>
@@ -27,14 +29,14 @@
     <div class="menu-item-wrap">
       <button class="menu-btn" type="button" data-menu="edit" title="Undo/redo, grouping, and randomize effects">Edit</button>
       <div class="menu-dropdown" data-menu-panel="edit">
-        <button data-action="undo" id="menuUndoBtn" title="Undo the last change">Undo</button>
-        <button data-action="redo" id="menuRedoBtn" title="Redo the last undone change">Redo</button>
+        <button data-action="undo" id="menuUndoBtn" title="Undo the last change (Ctrl+Z)">Undo</button>
+        <button data-action="redo" id="menuRedoBtn" title="Redo the last undone change (Ctrl+Shift+Z)">Redo</button>
         <div class="menu-sep"></div>
-        <button data-action="groupSelected" id="menuGroupBtn" title="Combine the checked layers into a folder">Group Selected</button>
-        <button data-action="ungroupSelected" id="menuUngroupBtn" title="Break the selected group back into its individual layers">Ungroup Selected</button>
+        <button data-action="groupSelected" id="menuGroupBtn" title="Combine the checked layers into a folder (Ctrl+G)">Group Selected</button>
+        <button data-action="ungroupSelected" id="menuUngroupBtn" title="Break the selected group back into its individual layers (Ctrl+Shift+G)">Ungroup Selected</button>
         <div class="menu-sep"></div>
-        <button data-action="selectAll" title="Check every layer, for grouping or bulk actions">Select All</button>
-        <button data-action="deselectAll" title="Uncheck every layer">Deselect All</button>
+        <button data-action="selectAll" title="Check every layer, for grouping or bulk actions (Ctrl+A)">Select All</button>
+        <button data-action="deselectAll" title="Uncheck every layer (Ctrl+Shift+A)">Deselect All</button>
         <div class="menu-sep"></div>
         <button type="button" class="has-submenu" id="effectsToggleBtn" title="Randomize colors, layout, or both">Effects &#9662;</button>
         <div class="submenu-inline" id="effectsSubmenu">
@@ -50,11 +52,12 @@
       <button class="menu-btn" type="button" data-menu="view" title="Kiosk mode, zoom, and palette presets">View</button>
       <div class="menu-dropdown" data-menu-panel="view">
         <button data-action="toggleKiosk" title="Hide all editor UI and fill the window with just the generated image">Toggle Kiosk Mode</button>
+        <button data-action="toggleLayersWindow" id="menuShowLayersBtn" title="Show or hide the movable Layers window">Show Layers</button>
         <div class="menu-sep"></div>
-        <button data-action="zoomIn" title="Zoom the live preview in">Zoom In</button>
-        <button data-action="zoomOut" title="Zoom the live preview out">Zoom Out</button>
-        <button data-action="zoomFit" id="menuZoomFitBtn" title="Scale the preview to fit the available space">Zoom to Fit</button>
-        <button data-action="zoomActual" id="menuZoomActualBtn" title="Show the preview at its true, 100% pixel size">Zoom to Actual Size</button>
+        <button data-action="zoomIn" title="Zoom the live preview in (Ctrl+=)">Zoom In</button>
+        <button data-action="zoomOut" title="Zoom the live preview out (Ctrl+-)">Zoom Out</button>
+        <button data-action="zoomFit" id="menuZoomFitBtn" title="Scale the preview to fit the available space (Ctrl+0)">Zoom to Fit</button>
+        <button data-action="zoomActual" id="menuZoomActualBtn" title="Show the preview at its true, 100% pixel size (Ctrl+1)">Zoom to Actual Size</button>
         <div class="menu-inline-controls" style="padding-top:2px;padding-bottom:8px;">
           <div class="row" style="margin:0;">
             <label style="margin:0;" title="Current zoom level of the live preview">Zoom Level</label>
@@ -126,7 +129,7 @@
       </div>
     </div>
     <div class="anim-transport">
-      <button type="button" class="anim-transport-btn anim-play-btn" data-action="toggleAnimPlayPause" id="animPlayPauseBtn" title="Turn on &quot;Animate&quot; on a layer to see this in action.">&#9654;</button>
+      <button type="button" class="anim-transport-btn anim-play-btn" data-action="toggleAnimPlayPause" id="animPlayPauseBtn" title="Turn on &quot;Animate&quot; on a layer to see this in action. (Space)">&#9654;</button>
       <button type="button" class="anim-transport-btn anim-record-btn" data-action="recordAnimation" id="animRecordBtn" aria-label="Record Animation" title="Records exactly one loop, so it always ends where it began"></button>
     </div>
     <div class="menu-item-wrap" style="margin-left:auto;">
@@ -140,7 +143,7 @@
     <div class="menu-item-wrap">
       <button class="menu-btn" type="button" data-menu="help" title="Keyboard shortcuts, hints &amp; tips, and what&#39;s new">Help</button>
       <div class="menu-dropdown menu-dropdown-right" data-menu-panel="help">
-        <button data-action="shortcuts" title="View the list of keyboard shortcuts">Keyboard Shortcuts</button>
+        <button data-action="shortcuts" title="View the list of keyboard shortcuts (?)">Keyboard Shortcuts</button>
         <button data-action="hintsTips" title="Open the built-in guide: getting started, layers, masks, filters, animation, export, and tips">Hints &amp; Tips</button>
         <button data-action="debugLog" id="menuDebugLogBtn" title="A lightweight, always-on log of errors, warnings, and resource use -- useful if the app ever crashes or slows down">Debug Log</button>
         <button data-action="whatsNew" id="menuWhatsNewBtn" title="View the changelog of recent updates">What&rsquo;s New</button>
@@ -151,8 +154,6 @@
 <div class="app">
 
   <aside class="panel" id="sidebarPanel">
-    <h1>Background Image Generator</h1>
-
     <textarea id="shareLinkOutput" class="share-output" readonly rows="3"></textarea>
     <small class="hint" id="shareLinkHint" style="display:none;"></small>
     <div id="importPanel" style="display:none;margin-bottom:10px;">
@@ -165,33 +166,6 @@
     </div>
 
 
-    <!-- LAYERS -->
-    <fieldset>
-      <legend>Layers</legend>
-      <div class="btn-row" style="margin-bottom:10px;">
-        <button class="btn-secondary" id="undoBtn" title="Undo (Ctrl+Z)" disabled>&#8630; Undo</button>
-        <button class="btn-secondary" id="redoBtn" title="Redo (Ctrl+Shift+Z)" disabled>&#8631; Redo</button>
-      </div>
-      <div class="add-layer-wrap">
-        <button class="btn-secondary" id="addLayerBtn" style="width:100%" title="Add a new layer to the top of the stack">+ Add Layer</button>
-        <div class="add-menu" id="addMenu">
-          <button data-type="group" class="add-group-btn" title="Start an empty folder to hold other layers">&#128193; New Group</button>
-          <button data-type="solid" title="A single flat color fill">Solid Fill</button>
-          <button data-type="linear" title="A straight-line color gradient">Linear Gradient</button>
-          <button data-type="radial" title="A color gradient radiating from a center point">Radial Gradient</button>
-          <button data-type="checker" title="A diagonal checkerboard pattern">Diagonal Checker</button>
-          <button data-type="stripes" title="Repeating diagonal stripes">Stripes</button>
-          <button data-type="dots" title="A repeating dot pattern">Dots</button>
-          <button data-type="hex" title="A hexagonal grid pattern">Hex Grid</button>
-          <button data-type="hud" title="A sci-fi HUD-style grid pattern">Sci-Fi HUD Grid</button>
-          <button data-type="noise" title="Static grain or smooth Perlin noise texture">Grain / Noise</button>
-          <button data-type="image" title="Overlay a picture from your computer">Image Overlay&hellip;</button>
-        </div>
-      </div>
-      <button class="btn-secondary" id="groupSelectedBtn" style="width:100%;margin-bottom:10px;" disabled title="Check layers below, then group them into a folder">Group Selected</button>
-      <div id="layersList"></div>
-      <small class="hint">Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as Mask" toggle to clip the layer directly beneath it to this layer's shape instead -- switch its mode to Inverted to punch a hole through that layer instead of clipping to it. Check the box on any layers to group them into a folder with its own shared opacity and blend.</small>
-    </fieldset>
   </aside>
 
   <div class="panel-resize-handle" id="panelResizeHandle" title="Drag to resize the sidebar"></div>
@@ -207,6 +181,40 @@
     </div>
   </main>
 
+</div>
+
+<!-- LAYERS -->
+<!-- Used to be a fieldset pinned inside the sidebar above; it's now its own
+     free-floating window so it can be dragged anywhere and closed
+     independently of the rest of the UI (View > Show Layers brings it back).
+     Lives as a sibling of .app, not nested inside it, since it's
+     position:fixed and drags relative to the viewport, not any scrolling
+     parent. -->
+<div class="floating-window" id="layersWindow">
+  <div class="floating-window-titlebar" id="layersWindowTitlebar">
+    <span class="floating-window-title">Layers</span>
+    <button class="floating-window-close" id="layersWindowCloseBtn" type="button" title="Close (View &gt; Show Layers to reopen)">&times;</button>
+  </div>
+  <div class="floating-window-body">
+    <div class="add-layer-wrap">
+      <button class="btn-secondary" id="addLayerBtn" style="width:100%" title="Add a new layer to the top of the stack">+ Add Layer</button>
+      <div class="add-menu" id="addMenu">
+        <button data-type="group" class="add-group-btn" title="Start an empty folder to hold other layers">&#128193; New Group</button>
+        <button data-type="solid" title="A single flat color fill">Solid Fill</button>
+        <button data-type="linear" title="A straight-line color gradient">Linear Gradient</button>
+        <button data-type="radial" title="A color gradient radiating from a center point">Radial Gradient</button>
+        <button data-type="checker" title="A diagonal checkerboard pattern">Diagonal Checker</button>
+        <button data-type="stripes" title="Repeating diagonal stripes">Stripes</button>
+        <button data-type="dots" title="A repeating dot pattern">Dots</button>
+        <button data-type="hex" title="A hexagonal grid pattern">Hex Grid</button>
+        <button data-type="hud" title="A sci-fi HUD-style grid pattern">Sci-Fi HUD Grid</button>
+        <button data-type="noise" title="Static grain or smooth Perlin noise texture">Grain / Noise</button>
+        <button data-type="image" title="Overlay a picture from your computer">Image Overlay&hellip;</button>
+      </div>
+    </div>
+    <button class="btn-secondary" id="groupSelectedBtn" style="width:100%;margin-bottom:10px;" disabled title="Check layers below, then group them into a folder">Group Selected</button>
+    <div id="layersList"></div>
+  </div>
 </div>
 
 <div class="modal-overlay" id="changelogModal">
@@ -226,11 +234,26 @@
       <button class="icon-btn" id="shortcutsCloseBtn" title="Close">&times;</button>
     </div>
     <div class="modal-body">
+      <div class="shortcut-row"><span>Save</span><kbd>Ctrl/Cmd + S</kbd></div>
+      <div class="shortcut-row"><span>Save As</span><kbd>Ctrl/Cmd + Shift + S</kbd></div>
+      <div class="shortcut-row"><span>Load</span><kbd>Ctrl/Cmd + O</kbd></div>
+      <div class="shortcut-row"><span>Export PNG</span><kbd>Ctrl/Cmd + Shift + E</kbd></div>
       <div class="shortcut-row"><span>Undo</span><kbd>Ctrl/Cmd + Z</kbd></div>
       <div class="shortcut-row"><span>Redo</span><kbd>Ctrl/Cmd + Shift + Z</kbd></div>
       <div class="shortcut-row"><span>Redo (Alternate)</span><kbd>Ctrl/Cmd + Y</kbd></div>
+      <div class="shortcut-row"><span>Group Selected</span><kbd>Ctrl/Cmd + G</kbd></div>
+      <div class="shortcut-row"><span>Ungroup Selected</span><kbd>Ctrl/Cmd + Shift + G</kbd></div>
+      <div class="shortcut-row"><span>Select All</span><kbd>Ctrl/Cmd + A</kbd></div>
+      <div class="shortcut-row"><span>Deselect All</span><kbd>Ctrl/Cmd + Shift + A</kbd></div>
+      <div class="shortcut-row"><span>Zoom In</span><kbd>Ctrl/Cmd + =</kbd></div>
+      <div class="shortcut-row"><span>Zoom Out</span><kbd>Ctrl/Cmd + &minus;</kbd></div>
+      <div class="shortcut-row"><span>Zoom to Fit</span><kbd>Ctrl/Cmd + 0</kbd></div>
+      <div class="shortcut-row"><span>Zoom to Actual Size</span><kbd>Ctrl/Cmd + 1</kbd></div>
+      <div class="shortcut-row"><span>Play / Pause Animation</span><kbd>Space</kbd></div>
+      <div class="shortcut-row"><span>Open This Shortcuts List</span><kbd>?</kbd></div>
       <div class="shortcut-row"><span>Exit Kiosk Mode</span><kbd>Esc</kbd></div>
       <div class="shortcut-row"><span>Close Any Open Dialog</span><kbd>Esc</kbd></div>
+      <small class="hint" style="display:block;margin-top:10px;">Shortcuts that would type into a text field (like Ctrl+A in the File Name box) fall back to the browser's normal behavior there instead of triggering the app action.</small>
     </div>
   </div>
 </div>
@@ -1646,9 +1669,10 @@
   function cloneLayers(arr){ return arr.map(cloneValue); }
 
   function updateHistoryButtons(){
-    var undoBtn = $('undoBtn'), redoBtn = $('redoBtn');
-    if(undoBtn) undoBtn.disabled = historyIndex <= 0;
-    if(redoBtn) redoBtn.disabled = historyIndex >= historyStack.length - 1;
+    // Undo/Redo used to also live as their own buttons at the top of the
+    // sidebar's Layers section, duplicating the Edit menu's Undo/Redo --
+    // removed since the Edit menu (and now Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y) already
+    // cover it, so this only has the menu pair left to keep in sync.
     var menuUndoBtn = $('menuUndoBtn'), menuRedoBtn = $('menuRedoBtn');
     if(menuUndoBtn) menuUndoBtn.disabled = historyIndex <= 0;
     if(menuRedoBtn) menuRedoBtn.disabled = historyIndex >= historyStack.length - 1;
@@ -1935,13 +1959,35 @@
     });
   }
 
-  // File > Save / Load: the raw layers array (plus canvas settings) as a
-  // plain local .json file -- a proper backup file, distinct from the
-  // Copy Link/Code hash (which is meant for pasting, not archiving) and from
-  // the localStorage autosave (which is invisible, single-slot, this-browser-only).
+  // File > Save / Load: the design (layers, canvas settings) as a local
+  // .json file -- a proper backup file, distinct from the Copy Link/Code
+  // hash (which is meant for pasting, not archiving) and from the
+  // localStorage autosave (which is invisible, single-slot, this-browser-only).
+  // The file's content is the same compressed/encoded hash Copy Code
+  // produces (see encodeShareCode above) rather than raw pretty-printed
+  // JSON -- a JSON-heavy design (many layers, color stops, filter settings)
+  // shrinks substantially, and Load already knows how to read this format
+  // back (it also still reads an older, plain-JSON save -- see importDesignJSONFile).
   function exportDesignJSON(){
-    var payload = buildStatePayload();
-    downloadText(JSON.stringify(payload, null, 2), sanitizedFilename() + '.json', 'application/json');
+    var json = JSON.stringify(buildStatePayload());
+    var filename = sanitizedFilename() + '.json';
+    encodeShareCode(json).then(function(code){
+      downloadText(code, filename, 'application/json');
+    });
+  }
+  // File > Save As: prompts for a new name, updates the File Name field
+  // (Canvas menu) to match, then saves immediately under that name -- same
+  // "rename, then save" behavior as Save As in a desktop app. Cancelling the
+  // prompt (or leaving it blank) leaves the current name and file untouched.
+  function saveAsDesign(){
+    var current = val('filename') || 'Background';
+    var name = window.prompt('Save design as:', current);
+    if(name === null) return;
+    name = name.trim();
+    if(!name) return;
+    $('filename').value = name;
+    hideShareOutput(); // the file name just changed, same as if the user had typed it themselves
+    exportDesignJSON();
   }
   function importDesignJSONFile(){
     var input = document.createElement('input');
@@ -1950,23 +1996,44 @@
     input.style.display = 'none';
     document.body.appendChild(input); // some browsers need it attached for .click() to reliably open the picker
     function cleanup(){ if(input.parentNode) input.parentNode.removeChild(input); }
+    function finishLoad(payload){
+      if(!applyStatePayload(payload)) throw new Error('no layers found in that file');
+      selectedLayerIds = {};
+      handlePresetChange();
+      renderLayersList();
+      resizeCanvasToTarget();
+      scheduleRender();
+    }
     input.addEventListener('change', function(){
       var file = input.files && input.files[0];
       if(!file){ cleanup(); return; }
       var reader = new FileReader();
       reader.onload = function(){
+        var text = String(reader.result || '');
+        var parsed, parseError;
+        try { parsed = JSON.parse(text); } catch(e){ parseError = e; }
+        if(!parseError){
+          // Plain, readable JSON -- an older save from before compression was
+          // added (see exportDesignJSON above). Apply it directly.
+          try { finishLoad(parsed); }
+          catch(e){ alert("That file doesn't look like a design saved from this app."); }
+          cleanup();
+          return;
+        }
+        // Not plain JSON -- a current save is a single compressed/encoded
+        // hash string instead (the same format Copy Code produces), so a
+        // bare hash isn't valid JSON on its own and lands here. Decode it
+        // exactly the way a pasted share code would be.
         try {
-          var payload = JSON.parse(reader.result);
-          if(!applyStatePayload(payload)) throw new Error('no layers found in that file');
-          selectedLayerIds = {};
-          handlePresetChange();
-          renderLayersList();
-          resizeCanvasToTarget();
-          scheduleRender();
+          decodeShareCode(text.trim()).then(function(payload){
+            finishLoad(payload);
+          }).catch(function(){
+            alert("That file doesn't look like a design saved from this app.");
+          }).finally(cleanup);
         } catch(e){
           alert("That file doesn't look like a design saved from this app.");
+          cleanup();
         }
-        cleanup();
       };
       reader.readAsText(file);
     });
@@ -3571,30 +3638,89 @@
     scheduleRender();
   }
 
-  /* ---------- undo / redo wiring ---------- */
-  $('undoBtn').addEventListener('click', undo);
-  $('redoBtn').addEventListener('click', redo);
-
+  /* ---------- keyboard shortcuts ----------
+     Undo/Redo (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl/Cmd+Y) already existed;
+     everything else below lines up with whatever the closest industry
+     standard is -- Photoshop/Illustrator/Figma conventions for the
+     design-tool actions (Group/Ungroup, zoom to fit/100%), the universal
+     browser convention for Zoom In/Out, Figma's Ctrl/Cmd+Shift+E for
+     Export, and the media-player convention (Space) for Play/Pause. A
+     handful of combinations browsers reserve for themselves and never let
+     any page intercept -- Ctrl/Cmd+N (new window), Ctrl+T/W (tabs), Ctrl+D
+     (bookmark) -- are left off the menu's shortcut hints and out of this
+     handler entirely rather than silently failing.
+     Deselect All is the one deliberate deviation: Photoshop's actual
+     standard is Ctrl/Cmd+D, but Chrome treats that as "bookmark this page"
+     and never lets a page's own preventDefault stop it, so Ctrl/Cmd+Shift+A
+     (paired with Select All's Ctrl/Cmd+A) is used instead. */
+  function isTypingTarget(e){
+    var t = e.target;
+    if(!t) return false;
+    var tag = t.tagName;
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || !!t.isContentEditable;
+  }
   document.addEventListener('keydown', function(e){
     var key = e.key ? e.key.toLowerCase() : '';
-    if(!(e.ctrlKey || e.metaKey)) return;
-    if(key === 'z'){
+    var mod = e.ctrlKey || e.metaKey;
+
+    if(mod){
+      if(key === 'z'){
+        e.preventDefault();
+        if(e.shiftKey) redo(); else undo();
+        return;
+      }
+      if(key === 'y'){ e.preventDefault(); redo(); return; }
+      if(key === 's'){
+        e.preventDefault();
+        if(e.shiftKey) saveAsDesign(); else exportDesignJSON();
+        return;
+      }
+      if(key === 'o'){ e.preventDefault(); importDesignJSONFile(); return; }
+      if(key === 'g'){
+        e.preventDefault();
+        if(e.shiftKey) ungroupSelected(); else groupSelected();
+        return;
+      }
+      if(key === 'e' && e.shiftKey){ e.preventDefault(); exportPNG(); return; }
+      if(key === 'a'){
+        if(isTypingTarget(e)) return; // let normal text-field select-all through
+        e.preventDefault();
+        if(e.shiftKey) deselectAllLayers(); else selectAllLayers();
+        return;
+      }
+      if(key === '0'){ e.preventDefault(); zoomToFit(); return; }
+      if(key === '1'){ e.preventDefault(); zoomToActual(); return; }
+      if(key === '=' || key === '+'){ e.preventDefault(); zoomIn(); return; }
+      if(key === '-' || key === '_'){ e.preventDefault(); zoomOut(); return; }
+      return;
+    }
+
+    // Space toggles animation Play/Pause, like any media player -- but only
+    // away from text fields and focused buttons, where Space already has a
+    // job (typing a space, activating the focused button).
+    if(key === ' ' || e.code === 'Space'){
+      if(isTypingTarget(e) || (e.target && e.target.tagName === 'BUTTON')) return;
       e.preventDefault();
-      if(e.shiftKey) redo(); else undo();
-    } else if(key === 'y'){
+      toggleAnimPlayPause();
+      return;
+    }
+    // "?" for the shortcuts reference, matching GitHub/Gmail/Slack.
+    if(key === '?'){
+      if(isTypingTarget(e)) return;
       e.preventDefault();
-      redo();
+      openShortcutsModal();
+      return;
     }
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.34';
+  var APP_VERSION = '0.0.37';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.34 -- 2026-09-05\n\n- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character -- a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.\n\n## v0.0.33 -- 2026-09-05\n\n- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes -- they now share the same fixed 24x24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.\n\n## v0.0.32 -- 2026-09-05\n\n- All of this page's CSS has moved out of an inline &lt;style&gt; block into its own style.css file, linked from main.html's &lt;head&gt;. main.html is noticeably slimmer now; style.css needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.\n\n## v0.0.31 -- 2026-09-05\n\n- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (&#9654;/&#9208; and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.37 -- 2026-09-05\n\n- The Layers panel is no longer pinned inside the sidebar -- it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the &times; in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.\n- The rest of the old sidebar (the Copy Link/Code output box, and the Import a Link or Code panel) is hidden for now while the Layers panel above finds its new home -- nothing was removed, it's simply switched off for later.\n- Moved the Layers section's \"Top of the list = top of the stack...\" tip out of the app itself and into Help > Hints & Tips (Layers section), alongside the rest of the reference material.\n\n## v0.0.36 -- 2026-09-05\n\n- Save/Load now stores a design as the same compressed hash format Copy Code already used, instead of pretty-printed JSON -- a multi-layer test design's saved .json file shrank by 77%. Loading still reads older, plain-JSON saves from before this change.\n- Every control in the menu bar (the File/Edit/View/... text buttons, the Settings gear, and the Play/Record icons) now shares one exact height, fixing small inconsistencies that used to show up between text buttons, icon-only buttons, and the Play/Record pair.\n- Removed the duplicate Undo/Redo buttons that used to sit at the top of the sidebar's Layers section -- the Edit menu's Undo/Redo (and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y shortcuts) already cover it.\n- Added keyboard shortcuts for most of the menu bar, matching the closest industry-standard equivalent where one exists: Ctrl/Cmd+S (Save), Ctrl/Cmd+Shift+S (Save As), Ctrl/Cmd+O (Load), Ctrl/Cmd+Shift+E (Export PNG), Ctrl/Cmd+G / Ctrl/Cmd+Shift+G (Group/Ungroup Selected), Ctrl/Cmd+A / Ctrl/Cmd+Shift+A (Select All / Deselect All), Ctrl/Cmd+0 / Ctrl/Cmd+1 (Zoom to Fit / Actual Size), Ctrl/Cmd+= / Ctrl/Cmd+- (Zoom In/Out), Space (Play/Pause Animation), and ? (open this Keyboard Shortcuts list). None of these hijack a text field -- Ctrl+A in the File Name box still selects its text instead of selecting every layer. (Ctrl+N, Ctrl+T/W, and Ctrl+D were left out on purpose -- browsers reserve those for themselves and never let a page override them.)\n\n## v0.0.35 -- 2026-09-05\n\n- The app's title moved from its own heading at the top of the sidebar into the menu bar itself, shortened to \"Image Generator\" in a quiet, low-contrast rounded label (hover it to see the full \"Background Image Generator\" name) -- frees up sidebar space now that the menu bar is the app's actual header.\n- Added File > Save As..., which asks for a new name and saves the design under it immediately, updating the Canvas menu's File Name field to match (so PNG/CSS/Rainmeter exports pick up the new name too).\n\n## v0.0.34 -- 2026-09-05\n\n- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character -- a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.\n\n## v0.0.33 -- 2026-09-05\n\n- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes -- they now share the same fixed 24x24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.\n\n## v0.0.32 -- 2026-09-05\n\n- All of this page's CSS has moved out of an inline &lt;style&gt; block into its own style.css file, linked from main.html's &lt;head&gt;. main.html is noticeably slimmer now; style.css needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.\n\n## v0.0.31 -- 2026-09-05\n\n- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (&#9654;/&#9208; and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -3807,6 +3933,7 @@
   function saveSettings(){
     try {
       var sidebarEl = $('sidebarPanel');
+      var layersWin = $('layersWindow');
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({
         theme: currentTheme, performanceMode: performanceModeEnabled,
         autoSave: autoSaveEnabled, palette: activePalette,
@@ -3814,7 +3941,20 @@
         // so this stays correct no matter what triggered the save -- a drag,
         // or any other unrelated setting change that happens to save at the
         // same time.
-        sidebarWidth: sidebarEl ? Math.round(sidebarEl.getBoundingClientRect().width) : undefined
+        sidebarWidth: sidebarEl ? Math.round(sidebarEl.getBoundingClientRect().width) : undefined,
+        // Layers window: remembered the same way -- where it was left, and
+        // whether it was open or closed. Read off its inline left/top style
+        // rather than getBoundingClientRect() -- closing it hides it via
+        // display:none (see the [hidden] CSS rule), and a display:none
+        // element's bounding rect is always all-zero, which would silently
+        // forget the position the moment the window that triggered this
+        // save was the close button itself. The inline style holds the same
+        // pixel value either way, hidden or not.
+        layersWindow: layersWin ? {
+          open: !layersWin.hidden,
+          left: Math.round(parseFloat(layersWin.style.left)) || 0,
+          top: Math.round(parseFloat(layersWin.style.top)) || 0
+        } : undefined
       }));
     } catch(e){ Logger.warn('Could not save settings to this browser (private browsing, or storage is full)', { error: String(e && e.message || e) }); }
   }
@@ -4012,11 +4152,47 @@
   }
   function zoomToActual(){ setZoomPct(100); }
 
+  /* ---------- Layers floating window: show/hide + drag ----------
+     The Layers panel moved out of the sidebar into its own free-floating
+     window (see the markup right after .app). "Closing" it only ever hides
+     it -- the DOM, its listeners, and the layer list itself are untouched --
+     so View > Show Layers (or calling this again) brings back exactly what
+     was there. Position and open/closed state persist the same way the old
+     sidebar's width did (see saveSettings/loadSettings). */
+  function isLayersWindowOpen(){
+    var win = $('layersWindow');
+    return !!win && !win.hidden;
+  }
+  function clampLayersWindowPosition(){
+    var win = $('layersWindow');
+    var appEl = document.querySelector('.app');
+    if(!win || !appEl || win.hidden) return;
+    var appRect = appEl.getBoundingClientRect();
+    var winRect = win.getBoundingClientRect();
+    var maxLeft = Math.max(appRect.left, appRect.right - winRect.width);
+    var maxTop = Math.max(appRect.top, appRect.bottom - winRect.height);
+    var left = Math.min(Math.max(winRect.left, appRect.left), maxLeft);
+    var top = Math.min(Math.max(winRect.top, appRect.top), maxTop);
+    win.style.left = left + 'px';
+    win.style.top = top + 'px';
+  }
+  function setLayersWindowOpen(open){
+    var win = $('layersWindow');
+    if(!win) return;
+    win.hidden = !open;
+    if(open) clampLayersWindowPosition();
+    updateViewMenuChecks();
+    saveSettings();
+  }
+  function toggleLayersWindow(){ setLayersWindowOpen(!isLayersWindowOpen()); }
+
   function updateViewMenuChecks(){
     var fitBtn = $('menuZoomFitBtn');
     if(fitBtn) fitBtn.classList.toggle('is-on', stageZoomPct === null);
     var actualBtn = $('menuZoomActualBtn');
     if(actualBtn) actualBtn.classList.toggle('is-on', stageZoomPct === 100);
+    var showLayersBtn = $('menuShowLayersBtn');
+    if(showLayersBtn) showLayersBtn.classList.toggle('is-on', isLayersWindowOpen());
     updateZoomReadout();
   }
 
@@ -4062,6 +4238,7 @@
     switch(action){
       case 'new': newDesign(); break;
       case 'save': exportDesignJSON(); break;
+      case 'saveAs': saveAsDesign(); break;
       case 'load': importDesignJSONFile(); break;
       case 'import': openImportPanel(); break;
       case 'exportPng': exportPNG(); break;
@@ -4081,6 +4258,7 @@
       case 'randomizeAll': randomizeDesign('all'); break;
       case 'purgeHistory': purgeHistory(); break;
       case 'toggleKiosk': toggleKioskMode(); break;
+      case 'toggleLayersWindow': toggleLayersWindow(); break;
       case 'toggleAnimPlayPause': toggleAnimPlayPause(); break;
       case 'zoomIn': zoomIn(); break;
       case 'zoomOut': zoomOut(); break;
@@ -4142,6 +4320,75 @@
     var sidebarEl = $('sidebarPanel');
     if(sidebarEl) sidebarEl.style.width = restoredWidth + 'px';
   }
+
+  /* ---------- Layers window drag (drag the titlebar to move it) ---------- */
+  (function(){
+    var win = $('layersWindow');
+    var titlebar = $('layersWindowTitlebar');
+    var closeBtn = $('layersWindowCloseBtn');
+    if(!win || !titlebar || !closeBtn) return;
+    var dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+    titlebar.addEventListener('mousedown', function(e){
+      if(e.target.closest('.floating-window-close')) return;
+      dragging = true;
+      var winRect = win.getBoundingClientRect();
+      startX = e.clientX; startY = e.clientY;
+      startLeft = winRect.left; startTop = winRect.top;
+      titlebar.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', function(e){
+      if(!dragging) return;
+      var appEl = document.querySelector('.app');
+      if(!appEl) return;
+      var appRect = appEl.getBoundingClientRect();
+      var winRect = win.getBoundingClientRect();
+      var nextLeft = startLeft + (e.clientX - startX);
+      var nextTop = startTop + (e.clientY - startY);
+      // Clamped to the app area's own bounds (below the header, beside
+      // whatever else is on screen) -- never lets the window drag out where
+      // its titlebar (and so any way to drag it back) would be unreachable.
+      var maxLeft = Math.max(appRect.left, appRect.right - winRect.width);
+      var maxTop = Math.max(appRect.top, appRect.bottom - winRect.height);
+      nextLeft = Math.min(Math.max(nextLeft, appRect.left), maxLeft);
+      nextTop = Math.min(Math.max(nextTop, appRect.top), maxTop);
+      win.style.left = nextLeft + 'px';
+      win.style.top = nextTop + 'px';
+    });
+    window.addEventListener('mouseup', function(){
+      if(!dragging) return;
+      dragging = false;
+      titlebar.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      saveSettings(); // remembers the chosen position for next time
+    });
+    closeBtn.addEventListener('click', function(){ setLayersWindowOpen(false); });
+    // A viewport resize can leave a previously-valid position outside the
+    // (now smaller) app area -- pull it back in bounds rather than letting
+    // it hang off-screen or behind the menu bar.
+    window.addEventListener('resize', clampLayersWindowPosition);
+  })();
+  (function(){
+    var win = $('layersWindow');
+    if(!win) return;
+    var lw = savedSettings.layersWindow;
+    if(lw && typeof lw.left === 'number' && typeof lw.top === 'number'){
+      win.style.left = lw.left + 'px';
+      win.style.top = lw.top + 'px';
+    } else {
+      // First run (nothing saved yet): sit roughly where the old sidebar
+      // used to be, just under the header and in from the left edge.
+      var headerEl = $('menubar');
+      var headerRect = headerEl ? headerEl.getBoundingClientRect() : { bottom: 40 };
+      win.style.left = '16px';
+      win.style.top = (headerRect.bottom + 12) + 'px';
+    }
+    // Defaults to open (Layers editing is core to the app) unless a saved
+    // session explicitly left it closed.
+    win.hidden = !!lw && lw.open === false;
+    clampLayersWindowPosition();
+  })();
 
   /* ---------- init ---------- */
   Logger.info('App started (v' + APP_VERSION + ')');

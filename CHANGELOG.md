@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.37 — 2026-09-05
+
+- The Layers panel is no longer pinned inside the sidebar — it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the × in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.
+- The rest of the old sidebar (the Copy Link/Code output box, and the Import a Link or Code panel) is hidden for now while the Layers panel above finds its new home — nothing was removed, it's simply switched off for later.
+- Moved the Layers section's "Top of the list = top of the stack..." tip out of the app itself and into Help > Hints & Tips (Layers section), alongside the rest of the reference material.
+
+## v0.0.36 — 2026-09-05
+
+- Save/Load now stores a design as the same compressed hash format Copy Code already used, instead of pretty-printed JSON — a multi-layer test design's saved .json file shrank by 77%. Loading still reads older, plain-JSON saves from before this change.
+- Every control in the menu bar (the File/Edit/View/... text buttons, the Settings gear, and the Play/Record icons) now shares one exact height, fixing small inconsistencies that used to show up between text buttons, icon-only buttons, and the Play/Record pair.
+- Removed the duplicate Undo/Redo buttons that used to sit at the top of the sidebar's Layers section — the Edit menu's Undo/Redo (and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y shortcuts) already cover it.
+- Added keyboard shortcuts for most of the menu bar, matching the closest industry-standard equivalent where one exists: Ctrl/Cmd+S (Save), Ctrl/Cmd+Shift+S (Save As), Ctrl/Cmd+O (Load), Ctrl/Cmd+Shift+E (Export PNG), Ctrl/Cmd+G / Ctrl/Cmd+Shift+G (Group/Ungroup Selected), Ctrl/Cmd+A / Ctrl/Cmd+Shift+A (Select All / Deselect All), Ctrl/Cmd+0 / Ctrl/Cmd+1 (Zoom to Fit / Actual Size), Ctrl/Cmd+= / Ctrl/Cmd+- (Zoom In/Out), Space (Play/Pause Animation), and ? (open this Keyboard Shortcuts list). None of these hijack a text field — Ctrl+A in the File Name box still selects its text instead of selecting every layer. (Ctrl+N, Ctrl+T/W, and Ctrl+D were left out on purpose — browsers reserve those for themselves and never let a page override them.)
+
+## v0.0.35 — 2026-09-05
+
+- The app's title moved from its own heading at the top of the sidebar into the menu bar itself, shortened to "Image Generator" in a quiet, low-contrast rounded label (hover it to see the full "Background Image Generator" name) — frees up sidebar space now that the menu bar is the app's actual header.
+- Added File > Save As…, which asks for a new name and saves the design under it immediately, updating the Canvas menu's File Name field to match (so PNG/CSS/Rainmeter exports pick up the new name too).
+
 ## v0.0.34 — 2026-09-05
 
 - The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character — a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.
