@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.17 — 2026-09-05
+
+- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in — a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.
+- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.
+- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle — set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and "Record .webm" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background — including embedded in an iframe or a Rainmeter WebView — not just a static render.
+
 ## v0.0.16 — 2026-09-05
 
 - Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.

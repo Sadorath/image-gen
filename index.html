@@ -215,6 +215,16 @@
 
   .layer-card{ background:var(--bg-3); border:1px solid var(--border); border-radius:7px; margin-bottom:8px; overflow:hidden; }
   .layer-card.hidden-layer{ opacity:.45; }
+  /* Drag-and-drop reordering (in addition to, not instead of, the Move
+     up/down arrow buttons): only the small grip handle is draggable="true",
+     so a drag can only ever start from that one small element -- every other
+     control in the header (name field, buttons, checkboxes) is completely
+     unaffected and needs no special-casing. */
+  .drag-handle{ cursor:grab; color:var(--text-dim); font-size:13px; line-height:1; letter-spacing:-2px; padding:0 2px; flex:0 0 auto; user-select:none; }
+  .drag-handle:active{ cursor:grabbing; }
+  .layer-card.dragging{ opacity:.35; }
+  .layer-card.drag-over-before{ box-shadow: inset 0 3px 0 0 var(--accent); }
+  .layer-card.drag-over-after{ box-shadow: inset 0 -3px 0 0 var(--accent); }
   .layer-card.is-mask-layer{ border-color:#8a6ad8; border-bottom-left-radius:0; border-bottom-right-radius:0; margin-bottom:0; }
   .layer-card.is-mask-layer .layer-header{ background:#2a2440; }
   .layer-card.is-masked-target{ border-top-left-radius:0; border-top-right-radius:0; border-top:1px dashed #8a6ad8; margin-top:0; }
@@ -353,6 +363,7 @@
           <button data-action="exportPng">Export PNG</button>
           <button data-action="exportCss">Export CSS</button>
           <button data-action="exportRainmeter">Export Rainmeter .ini</button>
+          <button data-action="recordAnimation" title="Records exactly one loop, so it always ends where it began">Record Animation (.webm)</button>
           <div class="menu-sep"></div>
           <button data-action="copyLink" title="A full link that opens this exact design">Copy Share Link</button>
           <button data-action="copyCode" title="Just the design data, to paste anywhere -- no link, no file path">Copy Code</button>
@@ -449,6 +460,23 @@
         <input type="text" id="filename" placeholder="Background" />
       </div>
       <small class="hint">Export, Save/Load, and sharing all moved to the File menu above.</small>
+    </fieldset>
+
+    <!-- ANIMATION -->
+    <fieldset>
+      <legend>Animation</legend>
+      <div class="row">
+        <label for="animLoopSec">Loop length</label>
+        <div class="slidewrap" style="max-width:120px;">
+          <input type="number" id="animLoopSec" min="1" max="60" step="1" value="6" style="width:56px;" />
+          <span style="color:var(--text-dim);font-size:11px;white-space:nowrap;">seconds</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" id="animPlayPauseBtn" type="button">&#9208; Pause</button>
+        <button class="btn-secondary" id="animRecordBtn" type="button">Record .webm</button>
+      </div>
+      <small class="hint">Turn on "Animate" on a pattern or Perlin noise layer below to see this in action. Recording captures exactly one loop, so the file always ends right where it began.</small>
     </fieldset>
 
     <!-- LAYERS -->
@@ -593,8 +621,20 @@
     };
   }
 
+  // Defaults for the optional per-layer Animate block (pattern/grid layers
+  // and Perlin noise only -- see the eligibility check in bodyHTML). "cycles"
+  // is deliberately an integer: the whole point is that the layer's motion
+  // repeats an exact whole number of times within the shared Loop length
+  // (animationLoopLengthSec, set in the Animation panel above the layer
+  // list), which is what makes a recorded .webm clip loop perfectly with no
+  // visible seam -- a fractional cycle count would make position match at
+  // the loop boundary but velocity/direction reverse, which reads as a jump.
+  function defaultAnimate(){
+    return { enabled:false, cycles:1, amplitude:100 };
+  }
+
   function newLayer(type){
-    var base = { id:'L'+(layerIdCounter++), type:type, name:TYPE_LABELS[type], visible:true, opacity:100, blend:'source-over', expanded:true, isMask:false, filters:defaultFilters() };
+    var base = { id:'L'+(layerIdCounter++), type:type, name:TYPE_LABELS[type], visible:true, opacity:100, blend:'source-over', expanded:true, isMask:false, filters:defaultFilters(), animate:defaultAnimate() };
     switch(type){
       case 'solid':
         base.color = makeColor(60,60,60,1);
@@ -710,6 +750,93 @@
     renderLayersList();
     scheduleRender();
   }
+  // Drag-and-drop reordering, in addition to the arrow buttons above -- scoped
+  // the same way they are: only within the same list (siblings at the same
+  // nesting level), never across a group boundary. Moving a layer into or out
+  // of a group by drag isn't supported (same as the arrows can't do it
+  // either); dragging over a card from a different list just shows no
+  // drop indicator and no-ops on drop, which is what the code below does.
+  function reorderLayerByDrag(dragId, targetId, insertBefore){
+    if(dragId === targetId) return;
+    var srcLoc = findContainer(dragId);
+    var targetLoc = findContainer(targetId);
+    if(!srcLoc || !targetLoc || srcLoc.list !== targetLoc.list) return;
+    var list = srcLoc.list;
+    var layer = list[srcLoc.index];
+    var targetLayer = list[targetLoc.index];
+    list.splice(srcLoc.index, 1);
+    var newTargetIdx = list.indexOf(targetLayer);
+    list.splice(insertBefore ? newTargetIdx : newTargetIdx + 1, 0, layer);
+    renderLayersList();
+    scheduleRender();
+  }
+  // Delegated at the container level rather than rewired per-card: #layersList
+  // itself survives every renderLayersList() rebuild (only its innerHTML is
+  // replaced), so one set of listeners attached here, once, at init time
+  // covers every card forever -- including ones inside a group's nested
+  // .layer-children, since drag events bubble the same as any other event.
+  (function wireLayerDragAndDrop(){
+    var draggingLayerId = null;
+    var listEl = $('layersList');
+    function clearDragOverMarks(){
+      listEl.querySelectorAll('.drag-over-before, .drag-over-after').forEach(function(el){
+        el.classList.remove('drag-over-before', 'drag-over-after');
+      });
+    }
+    listEl.addEventListener('dragstart', function(e){
+      // Only the small grip handle carries draggable="true" (see cardHTML),
+      // so this only ever fires for a gesture that actually started there --
+      // every other control in the header works exactly as it always has.
+      var handle = e.target.closest('[data-role="dragHandle"]');
+      var card = handle && handle.closest('.layer-card');
+      if(!card){ e.preventDefault(); return; }
+      draggingLayerId = card.getAttribute('data-layer-id');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', draggingLayerId); } catch(err){ /* Firefox requires setData to be called at all; already done above */ }
+      try { e.dataTransfer.setDragImage(card, 20, 16); } catch(err){ /* cosmetic only -- fine if unsupported */ }
+      card.classList.add('dragging');
+    });
+    listEl.addEventListener('dragover', function(e){
+      if(!draggingLayerId) return;
+      var card = e.target.closest('.layer-card');
+      if(!card || card.getAttribute('data-layer-id') === draggingLayerId) return;
+      var srcLoc = findContainer(draggingLayerId);
+      var targetLoc = findContainer(card.getAttribute('data-layer-id'));
+      // Reordering is scoped to siblings within the same list, same as the
+      // arrow buttons -- hovering a card from a different list (e.g. across
+      // a group boundary) shows no drop indicator and the browser's own
+      // "not allowed" cursor, since preventDefault() is what permits a drop.
+      if(!srcLoc || !targetLoc || srcLoc.list !== targetLoc.list) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      var rect = card.getBoundingClientRect();
+      var before = (e.clientY - rect.top) < rect.height/2;
+      clearDragOverMarks();
+      card.classList.toggle('drag-over-before', before);
+      card.classList.toggle('drag-over-after', !before);
+    });
+    listEl.addEventListener('drop', function(e){
+      if(!draggingLayerId) return;
+      var card = e.target.closest('.layer-card');
+      clearDragOverMarks();
+      if(card){
+        e.preventDefault();
+        var rect = card.getBoundingClientRect();
+        var before = (e.clientY - rect.top) < rect.height/2;
+        reorderLayerByDrag(draggingLayerId, card.getAttribute('data-layer-id'), before);
+      }
+      draggingLayerId = null;
+    });
+    listEl.addEventListener('dragend', function(){
+      // Looked up fresh rather than holding onto the dragged element itself,
+      // since a drop just tore down and rebuilt the whole list -- the
+      // original node dragend fires on may no longer be in the document.
+      var draggedEl = listEl.querySelector('.layer-card.dragging');
+      if(draggedEl) draggedEl.classList.remove('dragging');
+      clearDragOverMarks();
+      draggingLayerId = null;
+    });
+  })();
   function deleteLayer(id){
     var loc = findContainer(id);
     if(!loc) return;
@@ -854,6 +981,33 @@
         '<div class="slidewrap"><input type="range" min="0" max="100" value="'+Math.round(color.a*100)+'" data-role="fDsColorAlpha" />'+valInputHTML('fDsColorAlphaVal', Math.round(color.a*100), '%')+'</div>' +
       '</div>'
     );
+  }
+
+  // Eligible for the Animate section: the tile-pattern layer types (they
+  // scroll seamlessly, since a tile grid already repeats on its own) and
+  // Perlin/fBm noise (it drifts in a small seamless loop) -- static grain has
+  // no coherent structure to animate, same reasoning as why its other
+  // Perlin-only controls stay hidden until Noise type is switched to Perlin.
+  function animateEligible(layer){
+    return GEOM_TYPES.indexOf(layer.type) !== -1 || (layer.type === 'noise' && layer.noiseType === 'perlin');
+  }
+  // Animate section, appended only for eligible layer types (see above).
+  // Reuses the same collapsible-toggle look as the Filters section below it.
+  function animateControlsHTML(layer){
+    var a = layer.animate;
+    var isNoise = layer.type === 'noise';
+    var h = '';
+    h += '<div class="layer-controls-row filters-toggle-row"><label><input type="checkbox" data-role="animateEnabled"'+(a.enabled?' checked':'')+' /> <strong>Animate</strong></label></div>';
+    h += '<div class="filters-panel" data-role="animatePanel"'+(a.enabled?'':' style="display:none"')+'>';
+    h += '<div class="layer-controls-row"><label>Cycles</label><div class="slidewrap"><input type="range" min="1" max="10" step="1" value="'+a.cycles+'" data-role="animateCycles" />'+valInputHTML('animateCyclesVal', a.cycles, '')+'</div></div>';
+    if(isNoise){
+      h += '<div class="layer-controls-row"><label>Drift</label><div class="slidewrap"><input type="range" min="10" max="200" value="'+a.amplitude+'" data-role="animateAmplitude" />'+valInputHTML('animateAmplitudeVal', a.amplitude, '%')+'</div></div>';
+      h += '<small class="hint">Drifts the noise field in a small seamless loop. Cycles is how many times it repeats within the Loop length set in the Animation panel above the layer list.</small>';
+    } else {
+      h += '<small class="hint">Scrolls the tile pattern in a seamless loop. Cycles is how many times it repeats within the Loop length set in the Animation panel above the layer list.</small>';
+    }
+    h += '</div>';
+    return h;
   }
 
   // CSS Filters section, appended to every layer card's body regardless of
@@ -1018,6 +1172,7 @@
                : '<div class="layers-empty">Empty group &mdash; check layers below and click &ldquo;Group Selected&rdquo; to move them in.</div>') +
            '</div>';
     }
+    if(animateEligible(layer)) h += animateControlsHTML(layer);
     h += filterControlsHTML(layer);
     return h;
   }
@@ -1031,6 +1186,7 @@
     return (
       '<div class="'+classes+'" data-layer-id="'+layer.id+'">' +
         '<div class="layer-header">' +
+          '<span class="drag-handle" data-role="dragHandle" draggable="true" title="Drag to reorder">&#8942;&#8942;</span>' +
           '<input type="checkbox" class="select-checkbox" data-role="select" title="Select for grouping"'+(selectedLayerIds[layer.id]?' checked':'')+' />' +
           '<button class="icon-btn" data-role="moveUp" title="Move up"'+(idx===0?' disabled':'')+'>&uarr;</button>' +
           '<button class="icon-btn" data-role="moveDown" title="Move down"'+(idx===list.length-1?' disabled':'')+'>&darr;</button>' +
@@ -1381,7 +1537,42 @@
       cardEl.querySelector('[data-role="ungroup"]').addEventListener('click', function(){ ungroupLayer(layer.id); });
     }
 
+    wireAnimateControls(cardEl, layer);
     wireFilterControls(cardEl, layer);
+  }
+
+  // Wires the Animate section that animateControlsHTML() appends for
+  // eligible layer types only -- cardEl simply won't have these elements for
+  // an ineligible type, so every lookup here is defensive.
+  function wireAnimateControls(cardEl, layer){
+    var enabledInput = cardEl.querySelector('[data-role="animateEnabled"]');
+    if(!enabledInput) return;
+    var a = layer.animate;
+    var panel = cardEl.querySelector('[data-role="animatePanel"]');
+    enabledInput.addEventListener('change', function(e){
+      a.enabled = e.target.checked;
+      panel.style.display = a.enabled ? 'block' : 'none';
+      syncAnimationLoopState();
+      scheduleRender();
+    });
+    var cyclesInput = cardEl.querySelector('[data-role="animateCycles"]');
+    var cyclesVal = cardEl.querySelector('[data-role="animateCyclesVal"]');
+    cyclesInput.addEventListener('input', function(){
+      a.cycles = Math.max(1, Math.round(+cyclesInput.value));
+      cyclesVal.value = String(a.cycles);
+      scheduleRender();
+    });
+    wireEditableValue(cyclesVal, cyclesInput);
+    var ampInput = cardEl.querySelector('[data-role="animateAmplitude"]');
+    if(ampInput){
+      var ampVal = cardEl.querySelector('[data-role="animateAmplitudeVal"]');
+      ampInput.addEventListener('input', function(){
+        a.amplitude = +ampInput.value;
+        ampVal.value = ampInput.value + '%';
+        scheduleRender();
+      });
+      wireEditableValue(ampVal, ampInput);
+    }
   }
 
   // Wires the CSS Filters section that filterControlsHTML() appends to every
@@ -1616,12 +1807,14 @@
     if(layers.length === 0){
       container.innerHTML = '<div class="layers-empty">No layers yet. Click &ldquo;+ Add Layer&rdquo; to start building your background.</div>';
       updateGroupButtonState();
+      syncAnimationLoopState();
       return;
     }
     container.innerHTML = layers.map(function(layer, idx){ return cardHTML(layer, idx); }).join('');
     wireLayerTree(layers, container);
     updateGroupButtonState();
     restoreLayersListFocus(container, focusSnapshot);
+    syncAnimationLoopState();
   }
 
   /* ---------- add-layer menu ---------- */
@@ -1696,6 +1889,17 @@
   }
   $('customW').addEventListener('input', onCustomSizeInput);
   $('customH').addEventListener('input', onCustomSizeInput);
+
+  $('animLoopSec').addEventListener('input', function(){
+    var v = Math.max(1, Math.min(60, Math.round(+$('animLoopSec').value) || 6));
+    animationLoopLengthSec = v;
+    if(animationState.timeSec > v) animationState.timeSec = 0;
+  });
+  $('animPlayPauseBtn').addEventListener('click', function(){
+    animationState.paused = !animationState.paused;
+    $('animPlayPauseBtn').innerHTML = animationState.paused ? '&#9654; Play' : '&#9208; Pause';
+  });
+  $('animRecordBtn').addEventListener('click', recordAnimationWebM);
 
   function sanitizedFilename(){
     return (val('filename') || 'background').trim().replace(/[^a-z0-9_\-]+/gi,'_') || 'background';
@@ -1806,13 +2010,12 @@
   /* ---------- shareable URL state ---------- */
   // The whole design (layers, including any embedded image data) round-trips
   // through the URL's #state=<base64> hash -- nothing is uploaded anywhere,
-  // so "sharing" just means handing someone a URL. btoa/atob only handle
-  // Latin1 text, so a plain JSON string (layer names can contain any Unicode
-  // character) has to go through UTF-8 bytes first; the chunked loop avoids
-  // blowing the call stack that String.fromCharCode.apply hits on huge inputs
-  // (an embedded photo can easily be a few million base64 characters).
-  function utf8ToBase64(str){
-    var bytes = new TextEncoder().encode(str);
+  // so "sharing" just means handing someone a URL. These are raw-byte
+  // primitives (used both for the plain legacy format and as the base64
+  // layer under the gzip-compressed format below); the chunked loop avoids
+  // blowing the call stack that String.fromCharCode.apply hits on huge
+  // inputs (an embedded photo can easily be a few million base64 characters).
+  function bytesToBase64(bytes){
     var binary = '';
     var chunkSize = 0x8000;
     for(var i=0; i<bytes.length; i+=chunkSize){
@@ -1820,11 +2023,11 @@
     }
     return btoa(binary);
   }
-  function base64ToUtf8(b64){
+  function base64ToBytes(b64){
     var binary = atob(b64);
     var bytes = new Uint8Array(binary.length);
     for(var i=0; i<binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    return new TextDecoder().decode(bytes);
+    return bytes;
   }
   // "URL-safe" base64 (RFC 4648 sec.5: - and _ instead of + and /, no padding).
   // This is the actual code/link text people see and paste around, so it
@@ -1832,13 +2035,74 @@
   // something treats it as form-encoded, and a raw / can look like a path
   // separator to an auto-linker. Decoding also accepts plain base64, so a
   // stray + or / typed back in by hand still works.
-  function toUrlSafeB64(str){
-    return utf8ToBase64(str).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-  }
-  function fromUrlSafeB64(code){
+  function toUrlSafe(b64){ return b64.replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+  function fromUrlSafe(code){
     var b64 = String(code).replace(/-/g,'+').replace(/_/g,'/');
     while(b64.length % 4) b64 += '=';
-    return base64ToUtf8(b64);
+    return b64;
+  }
+  function utf8ToBase64(str){ return bytesToBase64(new TextEncoder().encode(str)); }
+  function base64ToUtf8(b64){ return new TextDecoder().decode(base64ToBytes(b64)); }
+  function toUrlSafeB64(str){ return toUrlSafe(utf8ToBase64(str)); }
+  function fromUrlSafeB64(code){ return base64ToUtf8(fromUrlSafe(code)); }
+
+  // Share links/codes are gzipped (via the browser's native Compression
+  // Streams API -- no bundled compression library needed) before being
+  // base64'd, cutting the size of a JSON-heavy design (many layers, color
+  // stops, filter settings) substantially. Worth being upfront about what
+  // this does and doesn't help with: an embedded image is already PNG/JPEG
+  // data, which is close to its own entropy limit, so gzipping the base64
+  // text of an image barely shrinks it further -- this mainly helps
+  // image-free or lightly-imaged designs, not the size of the embedded photo
+  // itself. New codes are tagged with a short "Z1:" prefix so they can be
+  // told apart from a plain (uncompressed) code at a glance; decoding still
+  // falls back to the old plain format for links made before this existed,
+  // or when this browser doesn't support CompressionStream at all.
+  var COMPRESSION_SUPPORTED = (typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined');
+  var SHARE_CODE_PREFIX = 'Z1:';
+  function streamToBytes(readable){
+    return new Response(readable).arrayBuffer().then(function(buf){ return new Uint8Array(buf); });
+  }
+  function gzipCompressToBytes(str){
+    var cs = new CompressionStream('gzip');
+    var writer = cs.writable.getWriter();
+    writer.write(new TextEncoder().encode(str));
+    writer.close();
+    return streamToBytes(cs.readable);
+  }
+  function gzipDecompressToString(bytes){
+    var ds = new DecompressionStream('gzip');
+    var writer = ds.writable.getWriter();
+    writer.write(bytes);
+    writer.close();
+    return streamToBytes(ds.readable).then(function(outBytes){ return new TextDecoder().decode(outBytes); });
+  }
+  // Always resolves with a { code, bytes } pair; never rejects (compression
+  // failing for any reason just falls back to the plain uncompressed code,
+  // rather than breaking Copy Link/Copy Code entirely).
+  function encodeShareCode(json){
+    if(!COMPRESSION_SUPPORTED){
+      return Promise.resolve(toUrlSafeB64(json));
+    }
+    return gzipCompressToBytes(json).then(function(bytes){
+      return SHARE_CODE_PREFIX + toUrlSafe(bytesToBase64(bytes));
+    }).catch(function(){
+      return toUrlSafeB64(json);
+    });
+  }
+  // Resolves with the parsed payload object; rejects only when the code
+  // truly can't be read (corrupted, or compressed with a feature this
+  // browser lacks) -- callers already handle a rejection as "bad code".
+  function decodeShareCode(code){
+    code = String(code || '');
+    if(code.indexOf(SHARE_CODE_PREFIX) === 0){
+      if(!COMPRESSION_SUPPORTED){
+        return Promise.reject(new Error('This share code was compressed with a feature this browser does not support.'));
+      }
+      var bytes = base64ToBytes(fromUrlSafe(code.slice(SHARE_CODE_PREFIX.length)));
+      return gzipDecompressToString(bytes).then(function(json){ return JSON.parse(json); });
+    }
+    return Promise.resolve(JSON.parse(fromUrlSafeB64(code)));
   }
   function formatBytes(n){
     if(n < 1024) return n + ' B';
@@ -1868,6 +2132,12 @@
       else for(var dk in d.dropShadow){ if(l.filters.dropShadow[dk] === undefined) l.filters.dropShadow[dk] = d.dropShadow[dk]; }
     }
   }
+  // Same idea as normalizeLayerFilters, for the (newer still) Animate block.
+  function normalizeAnimate(l){
+    var d = defaultAnimate();
+    if(!l.animate || typeof l.animate !== 'object') l.animate = d;
+    else for(var k in d){ if(l.animate[k] === undefined) l.animate[k] = d[k]; }
+  }
   // Defensive against a hand-edited or corrupted hash: drop anything that
   // doesn't even look like a layer rather than letting a malformed object
   // reach the renderer and throw partway through drawing the stack.
@@ -1876,6 +2146,7 @@
     return list.filter(function(l){ return l && typeof l === 'object' && typeof l.id === 'string' && typeof l.type === 'string'; })
       .map(function(l){
         normalizeLayerFilters(l);
+        normalizeAnimate(l);
         if(l.type === 'group') l.children = sanitizeLoadedLayers(l.children);
         return l;
       });
@@ -1891,16 +2162,20 @@
       preset: val('preset'),
       customW: $('customW').value,
       customH: $('customH').value,
-      filename: val('filename')
+      filename: val('filename'),
+      animLoopSec: animationLoopLengthSec
     };
   }
+  // Async now (compression is Promise-based) -- resolves with { code, bytes }.
   function buildShareState(){
-    var code = toUrlSafeB64(JSON.stringify(buildStatePayload()));
-    return { code: code, bytes: code.length };
+    return encodeShareCode(JSON.stringify(buildStatePayload())).then(function(code){
+      return { code: code, bytes: code.length };
+    });
   }
   function buildShareURL(){
-    var state = buildShareState();
-    return { url: location.origin + location.pathname + location.search + '#state=' + state.code, bytes: state.bytes };
+    return buildShareState().then(function(state){
+      return { url: location.origin + location.pathname + location.search + '#state=' + state.code, bytes: state.bytes };
+    });
   }
 
   // Shared by both the initial "opened a link with #state=..." path and the
@@ -1914,20 +2189,29 @@
     if(payload.customW) $('customW').value = payload.customW;
     if(payload.customH) $('customH').value = payload.customH;
     if(payload.filename) $('filename').value = payload.filename;
+    if(payload.animLoopSec){
+      animationLoopLengthSec = Math.max(1, Math.min(60, Math.round(payload.animLoopSec)));
+      $('animLoopSec').value = animationLoopLengthSec;
+    }
+    animationState.timeSec = 0;
     return true;
   }
 
+  // Async now (decoding a compressed code is Promise-based) -- resolves with
+  // true/false rather than returning it directly; a rejection (bad/corrupt
+  // code, or a compressed link this browser can't decompress) is treated the
+  // same as "no state to load" rather than left as an unhandled rejection.
   function tryLoadStateFromHash(){
     var m = /state=([^&\s]+)/.exec(location.hash || '');
-    if(!m) return false;
-    try {
-      var code = m[1];
-      try { code = decodeURIComponent(code); } catch(e){ /* already decoded */ }
-      return applyStatePayload(JSON.parse(fromUrlSafeB64(code)));
-    } catch(e){
+    if(!m) return Promise.resolve(false);
+    var code = m[1];
+    try { code = decodeURIComponent(code); } catch(e){ /* already decoded */ }
+    return decodeShareCode(code).then(function(payload){
+      return applyStatePayload(payload);
+    }).catch(function(e){
       console.warn('Could not load the design from this link:', e);
       return false;
-    }
+    });
   }
 
   // Accepts either a bare design code or a whole share link (this session's
@@ -1985,12 +2269,14 @@
   }
 
   function copyShareLink(){
-    var result = buildShareURL();
-    publishToClipboard(result.url, result.bytes, 'Link copied to your clipboard.');
+    buildShareURL().then(function(result){
+      publishToClipboard(result.url, result.bytes, 'Link copied to your clipboard.');
+    });
   }
   function copyShareCode(){
-    var state = buildShareState();
-    publishToClipboard(state.code, state.bytes, 'Design code copied to your clipboard.');
+    buildShareState().then(function(state){
+      publishToClipboard(state.code, state.bytes, 'Design code copied to your clipboard.');
+    });
   }
 
   // The file name field doesn't otherwise trigger scheduleRender() (it
@@ -2015,8 +2301,8 @@
       importHint.textContent = 'Paste a design code or share link first.';
       return;
     }
-    try {
-      var payload = JSON.parse(fromUrlSafeB64(code));
+    importHint.textContent = 'Loading…';
+    decodeShareCode(code).then(function(payload){
       if(!applyStatePayload(payload)) throw new Error('no layers found in that code');
       selectedLayerIds = {};
       handlePresetChange();
@@ -2025,9 +2311,9 @@
       scheduleRender();
       importHint.textContent = 'Design loaded.';
       setTimeout(function(){ $('importPanel').style.display = 'none'; }, 900);
-    } catch(e){
+    }).catch(function(){
       importHint.textContent = "That code doesn't look right -- double-check you copied the whole thing.";
-    }
+    });
   });
 
   /* ---------- drawing ---------- */
@@ -2065,10 +2351,30 @@
     targetCtx.fillRect(0,0,w,h);
   }
 
+  // 0 when not animating; otherwise how far through the layer's own repeating
+  // cycle "now" is, as a fraction in [0,1). Multiplying this by whatever a
+  // given pattern's own natural tiling period is (size, hexW, ...) gives a
+  // pixel offset that scrolls the grid smoothly and returns EXACTLY to 0 once
+  // per cycle -- since a tile grid already repeats every `period` pixels by
+  // construction, shifting by any whole multiple of it is indistinguishable
+  // from not shifting at all, which is what makes this loop seamlessly with
+  // zero extra bookkeeping. Cycles is a whole number specifically so this
+  // fraction (and therefore the on-screen position) is guaranteed to land
+  // back on exactly 0 at animationLoopLengthSec -- see defaultAnimate().
+  function animCycleFrac(layer){
+    var a = layer.animate;
+    if(!a || !a.enabled) return 0;
+    var cycles = Math.max(1, Math.round(a.cycles || 1));
+    var t = (animationLoopLengthSec > 0) ? (animationState.timeSec / animationLoopLengthSec) : 0;
+    var frac = (t * cycles) % 1;
+    return frac < 0 ? frac + 1 : frac;
+  }
+
   function drawGeomPattern(layer, w, h, targetCtx, colorOverride){
     var size = Math.max(2, layer.size);
     var fill = Math.max(0.02, Math.min(0.98, layer.fill/100));
     var color = colorOverride || layer.color;
+    var animFrac = animCycleFrac(layer);
     targetCtx.fillStyle = rgbaCss(color);
     targetCtx.strokeStyle = rgbaCss(color);
     targetCtx.lineJoin = 'round';
@@ -2080,9 +2386,10 @@
 
     if(layer.type === 'checker'){
       var inset = size*(1-fill)/2;
-      for(var y=-size; y<diag+size; y+=size){
+      var phase = animFrac*size;
+      for(var y=-size+phase; y<diag+size; y+=size){
         var row = Math.floor(y/size);
-        for(var x=-size; x<diag+size; x+=size){
+        for(var x=-size+phase; x<diag+size; x+=size){
           var col = Math.floor(x/size);
           if(((row+col) % 2 + 2) % 2 === 0){
             targetCtx.fillRect(x+inset, y+inset, size-2*inset, size-2*inset);
@@ -2091,14 +2398,16 @@
       }
     } else if(layer.type === 'stripes'){
       var bandW = size*fill;
-      for(var x2=-size; x2<diag+size; x2+=size){
+      var phaseS = animFrac*size;
+      for(var x2=-size+phaseS; x2<diag+size; x2+=size){
         var idx = Math.floor(x2/size);
         if(((idx % 2)+2)%2 === 0) targetCtx.fillRect(x2, -diag, bandW, diag*2);
       }
     } else if(layer.type === 'dots'){
       var r2 = (size*fill)/2;
-      for(var y2=0; y2<diag+size; y2+=size){
-        for(var x3=0; x3<diag+size; x3+=size){
+      var phaseD = animFrac*size - size;
+      for(var y2=phaseD; y2<diag+size; y2+=size){
+        for(var x3=phaseD; x3<diag+size; x3+=size){
           targetCtx.beginPath();
           targetCtx.arc(x3+size/2, y2+size/2, r2, 0, Math.PI*2);
           targetCtx.fill();
@@ -2110,10 +2419,11 @@
       targetCtx.lineWidth = Math.max(0.75, size*fill*0.14);
       var hexW = Math.sqrt(3)*r3;
       var vertStep = 1.5*r3;
+      var phaseH = animFrac*hexW;
       var rowIdx = 0;
       for(var hy=-vertStep; hy<diag+vertStep; hy+=vertStep){
         var offsetX = (rowIdx % 2 !== 0) ? hexW/2 : 0;
-        for(var hx=-hexW+offsetX; hx<diag+hexW; hx+=hexW){
+        for(var hx=-hexW+offsetX+phaseH; hx<diag+hexW; hx+=hexW){
           targetCtx.beginPath();
           for(var hi=0; hi<6; hi++){
             var hAng = Math.PI/180*(60*hi - 30);
@@ -2131,8 +2441,9 @@
       targetCtx.lineWidth = Math.max(0.75, size*fill*0.1);
       var tick = size*0.22;
       var cross = size*0.15;
-      for(var gy=-size; gy<diag+size; gy+=size){
-        for(var gx=-size; gx<diag+size; gx+=size){
+      var phaseU = animFrac*size;
+      for(var gy=-size+phaseU; gy<diag+size; gy+=size){
+        for(var gx=-size+phaseU; gx<diag+size; gx+=size){
           targetCtx.beginPath();
           targetCtx.moveTo(gx, gy+tick);
           targetCtx.lineTo(gx, gy);
@@ -2356,15 +2667,30 @@
     var unit = Math.max(1, p.scale) * scaleDown;
     var contrastFactor = p.contrast / 50;
 
+    // Perlin noise has no natural repeat period to scroll along (unlike the
+    // tile patterns above), so instead of drifting in one direction forever,
+    // the sample position sways in a small ellipse -- sin/cos of the SAME
+    // angle, 90 degrees apart. That guarantees the field returns to exactly
+    // its starting look (position AND direction of travel) once per whole
+    // cycle, which is what makes a recorded clip of this loop seamlessly.
+    var animOffsetX = 0, animOffsetY = 0;
+    if(layer.animate && layer.animate.enabled){
+      var animCycles = Math.max(1, Math.round(layer.animate.cycles || 1));
+      var driftAngle = (animationLoopLengthSec > 0) ? (2*Math.PI*animCycles*(animationState.timeSec/animationLoopLengthSec)) : 0;
+      var driftAmp = (layer.animate.amplitude || 100) / 20;
+      animOffsetX = Math.sin(driftAngle) * driftAmp;
+      animOffsetY = Math.cos(driftAngle) * driftAmp;
+    }
+
     noiseBufCanvas.width = bw;
     noiseBufCanvas.height = bh;
     var imgData = getCachedNoiseImageData(noiseBufCtx, bw, bh);
     var d = imgData.data;
 
     for(var by=0; by<bh; by++){
-      var nyBase = by/unit;
+      var nyBase = by/unit + animOffsetY;
       for(var bx=0; bx<bw; bx++){
-        var nx = bx/unit;
+        var nx = bx/unit + animOffsetX;
         var v;
         if(p.style === 'marble'){
           var turb = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
@@ -2695,6 +3021,127 @@
     requestAnimationFrame(function(){ rafPending = false; render(); });
   }
 
+  /* ---------- animation playback (Animate toggle + Loop length) ---------- */
+  // A separate, always-driving requestAnimationFrame loop -- distinct from
+  // scheduleRender()'s "redraw once, on demand" model -- that only runs while
+  // at least one layer in the design actually animates (see
+  // designHasAnimation), so a design that never touches Animate costs nothing
+  // extra and behaves exactly as it always has. It calls render() directly,
+  // bypassing scheduleRender()'s rAF-coalescing and Performance Mode's
+  // pointer-down gating -- both exist to avoid *unnecessary* redraws, but a
+  // playing animation legitimately needs a fresh redraw every frame, which is
+  // what this loop's whole job is.
+  var animationLoopLengthSec = 6;
+  var animationState = { timeSec: 0, lastFrameTs: null, rafHandle: null, paused: false };
+
+  function designHasAnimation(list){
+    list = list || layers;
+    for(var i=0; i<list.length; i++){
+      var l = list[i];
+      if(l.animate && l.animate.enabled) return true;
+      if(l.type === 'group' && l.children && designHasAnimation(l.children)) return true;
+    }
+    return false;
+  }
+  function animationTick(ts){
+    if(animationState.rafHandle === null) return; // stopped mid-flight (syncAnimationLoopState called since the last frame was scheduled)
+    if(animationState.lastFrameTs === null) animationState.lastFrameTs = ts;
+    var dt = (ts - animationState.lastFrameTs) / 1000;
+    animationState.lastFrameTs = ts;
+    if(!animationState.paused && animationLoopLengthSec > 0){
+      animationState.timeSec = (animationState.timeSec + dt) % animationLoopLengthSec;
+    }
+    render();
+    animationState.rafHandle = requestAnimationFrame(animationTick);
+  }
+  // The single hook that decides whether the playback loop should be running
+  // right now -- called from renderLayersList() (so it re-evaluates after
+  // every structural change: toggling a layer's Animate checkbox, deleting
+  // the last animated layer, undo/redo, loading a design or a share link)
+  // and from the Play/Pause button. Starting it when it's already running,
+  // or stopping it when it's already stopped, is a safe no-op either way.
+  function syncAnimationLoopState(){
+    if(designHasAnimation()){
+      if(animationState.rafHandle === null){
+        animationState.lastFrameTs = null;
+        animationState.rafHandle = requestAnimationFrame(animationTick);
+      }
+    } else if(animationState.rafHandle !== null){
+      cancelAnimationFrame(animationState.rafHandle);
+      animationState.rafHandle = null;
+    }
+  }
+
+  // Records exactly one loop (animationLoopLengthSec seconds) of the live
+  // canvas to a .webm file via the browser's own captureStream + MediaRecorder
+  // -- no bundled video-encoding library needed. Starting the recording at
+  // timeSec=0 and stopping it at exactly animationLoopLengthSec is what makes
+  // the resulting file a genuinely seamless loop when played back on repeat:
+  // the last frame and the first frame are, by construction (see
+  // animCycleFrac and the Perlin drift above), the same position moving in
+  // the same direction.
+  function recordAnimationWebM(){
+    if(typeof MediaRecorder === 'undefined' || typeof canvas.captureStream !== 'function'){
+      alert("Recording isn't supported in this browser -- try a recent Chrome, Edge, or Firefox.");
+      return;
+    }
+    var mimeType = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'].filter(function(t){
+      return MediaRecorder.isTypeSupported(t);
+    })[0];
+    if(!mimeType){
+      alert("This browser doesn't support recording to .webm.");
+      return;
+    }
+    var recordBtn = $('animRecordBtn');
+    if(recordBtn.disabled) return; // already recording
+    var wasPaused = animationState.paused;
+
+    // Take over timeSec exclusively for the recording's duration; the general
+    // playback loop (if it was running) is handed back control afterward via
+    // syncAnimationLoopState(), same as it would after any other structural change.
+    if(animationState.rafHandle !== null){ cancelAnimationFrame(animationState.rafHandle); animationState.rafHandle = null; }
+    animationState.paused = false;
+    animationState.timeSec = 0;
+
+    var stream = canvas.captureStream(30);
+    var chunks = [];
+    var recorder;
+    try {
+      recorder = new MediaRecorder(stream, { mimeType: mimeType });
+    } catch(e){
+      alert("Couldn't start recording in this browser.");
+      animationState.paused = wasPaused;
+      syncAnimationLoopState();
+      return;
+    }
+    recorder.ondataavailable = function(e){ if(e.data && e.data.size) chunks.push(e.data); };
+    recorder.onstop = function(){
+      var blob = new Blob(chunks, { type: 'video/webm' });
+      downloadBlob(blob, sanitizedFilename() + '.webm');
+      animationState.paused = wasPaused;
+      syncAnimationLoopState();
+      recordBtn.disabled = false;
+      recordBtn.textContent = 'Record .webm';
+    };
+
+    recordBtn.disabled = true;
+    recorder.start();
+    var startTs = null;
+    function recordTick(ts){
+      if(startTs === null) startTs = ts;
+      var elapsed = (ts - startTs) / 1000;
+      animationState.timeSec = Math.min(elapsed, animationLoopLengthSec);
+      render();
+      recordBtn.textContent = 'Recording… ' + Math.max(0, Math.ceil(animationLoopLengthSec - elapsed)) + 's';
+      if(elapsed < animationLoopLengthSec){
+        requestAnimationFrame(recordTick);
+      } else {
+        recorder.stop();
+      }
+    }
+    requestAnimationFrame(recordTick);
+  }
+
   /* ---------- randomize / reset ---------- */
   function randomizeLayer(layer){
       layer.opacity = 30 + Math.floor(Math.random()*70);
@@ -2763,6 +3210,11 @@
     handlePresetChange();
     layers = defaultLayers();
     selectedLayerIds = {};
+    animationLoopLengthSec = 6;
+    $('animLoopSec').value = 6;
+    animationState.timeSec = 0;
+    animationState.paused = false;
+    $('animPlayPauseBtn').innerHTML = '&#9208; Pause';
     renderLayersList();
     resizeCanvasToTarget();
     scheduleRender();
@@ -2785,13 +3237,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.16';
+  var APP_VERSION = '0.0.17';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -2993,6 +3445,7 @@
       case 'exportPng': exportPNG(); break;
       case 'exportCss': exportCSS(); break;
       case 'exportRainmeter': exportRainmeter(); break;
+      case 'recordAnimation': recordAnimationWebM(); break;
       case 'copyLink': copyShareLink(); break;
       case 'copyCode': copyShareCode(); break;
       case 'undo': undo(); break;
@@ -3032,20 +3485,26 @@
   updatePaletteMenuChecks();
   updateViewMenuChecks();
 
-  if(tryLoadStateFromHash()){
-    // Opened via a share link: act as a plain live background, not the editor --
-    // hide the sidebar entirely and let the generated image fill the window.
-    document.documentElement.classList.add('kiosk-mode');
-  } else if(loadDesignFromStorage()){
-    // No share link, but this browser has an autosaved design -- pick up
-    // where the user left off rather than starting from the default preset.
-  } else {
-    layers = defaultLayers();
-  }
-  renderLayersList();
-  handlePresetChange();
-  resizeCanvasToTarget();
-  scheduleRender();
+  // tryLoadStateFromHash() is async now (decoding a compressed share code
+  // goes through the Compression Streams API), so the rest of init runs
+  // after it settles rather than inline -- decompression is fast enough
+  // (milliseconds) that this isn't a perceptible delay before first paint.
+  tryLoadStateFromHash().then(function(hadSharedState){
+    if(hadSharedState){
+      // Opened via a share link: act as a plain live background, not the editor --
+      // hide the sidebar entirely and let the generated image fill the window.
+      document.documentElement.classList.add('kiosk-mode');
+    } else if(loadDesignFromStorage()){
+      // No share link, but this browser has an autosaved design -- pick up
+      // where the user left off rather than starting from the default preset.
+    } else {
+      layers = defaultLayers();
+    }
+    renderLayersList();
+    handlePresetChange();
+    resizeCanvasToTarget();
+    scheduleRender();
+  });
 
 })();
 </script>
