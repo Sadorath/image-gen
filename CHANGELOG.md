@@ -4,6 +4,18 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.34 — 2026-09-05
+
+- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character — a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.
+
+## v0.0.33 — 2026-09-05
+
+- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes — they now share the same fixed 24×24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.
+
+## v0.0.32 — 2026-09-05
+
+- All of this page's CSS has moved out of an inline `<style>` block into its own `style.css` file, linked from main.html's `<head>`. main.html is noticeably slimmer now; `style.css` needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.
+
 ## v0.0.31 — 2026-09-05
 
 - Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (▶/⏸ and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.
