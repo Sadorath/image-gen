@@ -4,6 +4,12 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.16 — 2026-09-05
+
+- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.
+- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke — it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.
+- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in — focus and text selection now survive the sidebar's redraw.
+
 ## v0.0.15 — 2026-09-05
 
 - Performance Mode is now on by default (it can still be turned off from the Settings menu).

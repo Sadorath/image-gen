@@ -1,0 +1,58 @@
+================================================================================
+BACKGROUND GENERATOR - MASTER FEATURE WISHLIST
+================================================================================
+
+1. COLOR & PALETTE MANAGEMENT
+   - Color Palette Locking: Restrict the randomizer to pull exclusively from a 
+     defined set of hex codes to maintain aesthetic harmony.
+   - Thematic Palette Presets: Dropdown for predefined hex palettes (e.g., 
+     Spectrum HUD, Industrial Automation, Neon).
+   - Custom Palette Editor: Allow users to define, customize, and save their own 
+     custom hex arrays into localStorage.
+
+2. LAYER ORGANIZATION & INTERACTION
+   - Drag-and-Drop Layer Reordering: Replace up/down arrow buttons with the 
+     HTML5 Drag-and-Drop API on .layer-card elements.
+   - Layer Search and Filtering: Text search input at the top of the Layers 
+     fieldset to instantly hide non-matching cards in large projects.
+   - Object-Based Layers & The Hand Tool: Introduce X/Y coordinates, scaling, 
+     rotation, individual transform matrices, and a hand tool with viewport hit-detection.
+
+3. WORKFLOW & STATE
+   - Local Storage Autosave: Automatically serialize the layers array to 
+     window.localStorage on state changes, loading it on initialization.
+   - Header Menu: A native-style top menu bar (File, Edit, View, Settings, Help) 
+     to house expanded functionality cleanly.
+   - Keyboard Shortcuts: Bind common actions to hotkeys (e.g., Ctrl+D to duplicate, 
+     Ctrl+S to export).
+   - URL State Encoding: Serialize the layers array into a Base64 string and append 
+     it to the URL hash for instant sharing.
+   - Payload Compression (LZ-String): Compress JSON payloads before base64 encoding 
+     to prevent share links from bloating with embedded images.
+
+4. RENDERING, EXPORT & EFFECTS
+   - Blend Mode Hover Previews: Mouseover event listeners on blend select options 
+     to temporarily preview effects before committing.
+   - CSS Code Export: Generate equivalent CSS background-image properties from 
+     solid colors, gradients, and blend modes.
+   - CSS Filters Integration: Apply standard filter effects to layers or the canvas:
+     • blur() — Length values like 5px
+     • brightness() — Percentages or decimals (e.g., 150% or 1.5)
+     • contrast() — Difference between darkest and lightest parts
+     • drop-shadow() — Soft shadow behind the element's actual shape
+     • grayscale() — Convert to black and white
+     • hue-rotate() — Color wheel shift using degrees (e.g., 90deg)
+     • invert() — Photo negative color flip
+     • opacity() — Transparency adjustments
+     • saturate() — Color vividness or dullness control
+     • sepia() — Warm, vintage brown tint
+     • url() — Links to custom filters in external SVG files
+   - Symmetry Modes: Global setting to mirror final canvas renders horizontally, 
+     vertically, or radially for seamless tiling.
+   - Randomize Button Update: Clear existing layers and generate a randomized stack 
+     of 1 to 10 layers with randomized settings.
+   - Canvas Export Scaling (Supersampling): Export multiplier option (1x, 2x, 4x) 
+     to scale up canvas dimensions for 4K/8K asset generation.
+   - Dynamic Animation Export & Live Animation for Kiosk Mode: Introduce a time variable 
+     to the render loop to animate noise/HUD grids, capturing streams for looping .webm 
+     files or live Rainmeter WebView plates.
