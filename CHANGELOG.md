@@ -4,6 +4,10 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.22 — 2026-09-05
+
+- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field — all three moved out of the "Canvas & Export" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.
+
 ## v0.0.21 — 2026-09-05
 
 - Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color — most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.
