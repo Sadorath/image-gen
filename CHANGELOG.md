@@ -4,6 +4,13 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.38 — 2026-09-06
+
+- Added Smooth Playback (Settings menu, on by default): while an animated design is Playing, the app now renders one full loop's frames once and cycles through those cached bitmaps instead of redrawing the entire layer stack 60 times a second. Measured directly: a design with Perlin noise went from 9.5fps to a full 60fps during Play, a blurred layer from 19.3fps to 60fps, a Hex Grid layer from 25.3fps to 60fps, and five stacked Hex Grid layers from 7.4fps to 60fps. The app automatically skips caching for designs that are already fast enough live, so it never makes an already-smooth design slower, and always falls back to a live, pixel-perfect render while a control is actively being edited or if Smooth Playback is turned off. Recording (.webm export) always uses a full-quality live render regardless of this setting, so exported video is unaffected either way.
+- Fixed animation playback silently re-rendering the whole design every single frame even while paused — a design with any animated layer now truly sits idle (zero extra rendering work) until Play is pressed again.
+- Hex Grid and Sci-Fi HUD Grid patterns are now drawn once into a small repeating tile and stamped across the canvas as a single fill, instead of stroking every individual cell by hand every frame — noticeably faster for these two pattern types even without Smooth Playback (a single Hex Grid layer went from 25.3fps to a full 60fps during live, uncached playback).
+- Groups no longer allocate a brand-new offscreen canvas on every single render — their scratch canvas is now reused across frames (nested groups each still get their own, so groups inside groups still render correctly).
+
 ## v0.0.37 — 2026-09-05
 
 - The Layers panel is no longer pinned inside the sidebar — it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the × in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.
