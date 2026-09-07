@@ -222,7 +222,7 @@
           <button data-type="hud" title="A sci-fi HUD-style grid pattern">Sci-Fi HUD Grid</button>
           <button data-type="noise" title="Static grain or smooth Perlin noise texture">Grain / Noise</button>
           <button data-type="image" title="Overlay a picture from your computer">Image Overlay&hellip;</button>
-          <button data-type="svgObject" title="Place a bundled SVG shape as a colorable, recolorable layer">SVG Shape&hellip;</button>
+          <button data-type="svgObject" title="Place a bundled SVG shape as a colorable, recolorable layer -- its own Import SVG... button (Shape row) can swap in your own file afterward">SVG Shape&hellip;</button>
         </div>
       </div>
       <button class="btn-secondary btn-compact" id="groupSelectedBtn" disabled title="Check layers below, then group them into a folder">Group Selected</button>
@@ -371,6 +371,13 @@
         <button class="btn-secondary" id="debugLogCopyBtn" type="button" title="Copy the full log as plain text">Copy</button>
         <button class="btn-secondary" id="debugLogDownloadBtn" type="button" title="Save the full log as a .txt file">Download .txt</button>
         <button class="btn-secondary" id="debugLogClearBtn" type="button" title="Clear the log (resource stats are kept)">Clear</button>
+      </div>
+      <div class="debug-log-toggle-row" style="flex-direction:column;align-items:flex-start;gap:6px;">
+        <div class="btn-row" style="margin:0;">
+          <button class="btn-secondary" id="debugSvgImportBtn" type="button" title="Pick your project's svg folder (or any folder containing it) -- reads manifest.json plus every SVG file it lists straight from your computer, no server needed, and refreshes the Shape and Filter Preset dropdowns to match. Handy when working entirely offline, since the app can't fetch these files on its own from a file:// page.">Import manifest.json&hellip;</button>
+          <input type="file" id="debugSvgImportInput" webkitdirectory directory multiple style="display:none" />
+        </div>
+        <small class="hint" id="debugSvgImportStatus" style="margin:0;"></small>
       </div>
       <div id="debugLogList" class="debug-log-list"></div>
     </div>

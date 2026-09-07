@@ -4,6 +4,33 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.56 — 2026-09-07
+
+- Removed the separate **Import SVG…** entry from + Add Layer — it was just an SVG Shape layer starting with no bundled shape pre-picked, and the SVG Shape layer's own Shape row already has an **Import SVG…** button that does the same thing, so the extra menu entry was redundant. Adding an SVG Shape layer goes back to auto-picking a bundled shape (Star) like it always did before v0.0.53; use its Import SVG… button afterward to swap in your own file.
+
+## v0.0.55 — 2026-09-07
+
+- Fixed two SVG Shape/Filter Preset dropdown bugs, both really the same root cause: a manifest.json's "type" field is just a cached copy of what a file's own `data-svg-type` attribute said the last time something actually looked, and Update_manifest.ps1 deliberately never rewrites an already-listed entry — so that cached copy can quietly drift out of sync with the file itself (reclassified by hand, or by Compile_SVGs.ps1, after its manifest entry already existed). The app now trusts a file's own `data-svg-type` attribute over the manifest's field whenever that file's content is actually loaded, so: (1) an entry a stale manifest still calls "object" no longer leaks into the Shape dropdown if the file itself now says it's an icon (or vice versa), and (2) a manifest.json with the same file listed more than once (a stale duplicate, overlapping folders, re-importing the same manifest) now collapses to one dropdown entry instead of two or three — the most recently-loaded copy wins. Applies everywhere the manifest gets loaded: startup, the live svg/manifest.json fetch, and Import manifest.json alike.
+
+## v0.0.54 — 2026-09-07
+
+- Debug Log now has an **Import manifest.json…** button. Pick your project's svg folder (or any folder containing it, e.g. the whole project folder) and it reads manifest.json plus every SVG file it lists straight from your computer — no server needed — then refreshes the Shape dropdown and Filter Preset dropdown to match, immediately. This is the file:// equivalent of the live manifest.json fetch that already runs automatically when the app is served over http(s): same manifest parsing (a `path` key or a leading `svg/` prefix are both tolerated the same way), just reading local files instead of issuing network requests. A short status line under the button reports how many assets were imported, and the Debug Log itself notes anything that couldn't be matched or read.
+
+## v0.0.53 — 2026-09-07
+
+- Added **Import SVG…** to the + Add Layer menu: pick a `.svg` file straight from your computer and it's placed as a new layer with every control an SVG Shape layer already has — Scale (0-600%), Offset X/Y, Rotation, Flip H/V, Recolor, plus the usual Opacity/Blend/Filters/Animate every layer gets. It's actually the same layer type under the hood, just starting with no bundled shape pre-picked. Works regardless of `svg/manifest.json` or file:// — the picked file is read locally, and its content is stored right in the layer (round-trips through Save/Load, Copy Code/Link, and Undo/Redo the same way an Image Overlay's picked image already does).
+- An SVG Shape layer's own **Import SVG…** button (Shape row) does the same thing for a layer that already exists — switch it from a bundled shape to your own file, or back again with the new **Use Bundled Shape Instead** button that appears once you have. Picking a different bundled shape from the Shape dropdown also switches back out of imported mode automatically.
+
+## v0.0.52 — 2026-09-07
+
+- SVG Shape layers' Shape dropdown is back to object-type manifest entries only (briefly included icon-type entries too in v0.0.51) — icons are built at 24x24, which looks visibly blurry once stretched up to fill part of the canvas as a shape, unlike an object (256x256). Use the updated `Update_manifest.ps1` (below) to get any custom SVG classified as an object instead.
+- A layer's Filter section now has an **Import SVG…** button next to Filter Preset: pick any `.svg` file from your computer and, if it contains a `<filter>` element, it's extracted straight into Custom SVG Filter — works regardless of `svg/manifest.json` or whether this page is opened over http(s):// or file://, since the file is read locally rather than fetched.
+- `Update_manifest.ps1` no longer requires (or reads) `data-svg-type`/`data-svg-name` attributes to already be on a new `.svg` file before picking it up. It now classifies every new file itself — a `<filter>` element in the file makes it a filter, anything else becomes an object — and stamps the file's own root `<svg>` tag with the right `data-svg-type`/`data-svg-name`, plus `viewBox="0 0 256 256" width="256" height="256"` for an object, so it renders sharp once placed as a Shape layer. A file already listed in manifest.json (a hand-classified icon, say) is still left completely untouched, both in the manifest and on disk.
+
+## v0.0.51 — 2026-09-07
+
+- The SVG Shape layer's Shape dropdown now also lists every icon-type entry from `svg/manifest.json`, not just object-type ones — a custom icon with no matching built-in icon slot (Cloud, Gear, User, ...) is now directly usable as a colorable canvas shape instead of doing nothing. (An icon file already listed as an object under the same path isn't listed twice.) The Filter Preset dropdown is unaffected — it's still just filter-type entries, by name.
+
 ## v0.0.50 — 2026-09-07
 
 - Fixed `svg/manifest.json` entries silently failing to load whenever a `file` path already included a leading `svg/` (e.g. `svg/icons/cloud.svg`, which some external asset-sync tooling writes when it computes paths relative to the app's own folder rather than relative to `svg/` itself) — that redundant prefix used to get doubled up (`svg/svg/icons/cloud.svg`), 404ing on *every single entry* and, because a manifest update only applies once at least one entry loads successfully, silently discarding the whole live update and falling back to the last-known bundled copy instead of just that one broken entry. A leading `svg/` (or `svg\`) is now stripped automatically, so a manifest generated either way works.
