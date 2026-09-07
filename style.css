@@ -222,7 +222,7 @@
     padding:0; cursor:pointer;
   }
   .tool-btn:hover{ background:var(--btn-2-hover); }
-  .tool-btn .tool-icon{ font-size:12px; line-height:1; color:var(--text-dim); }
+  .tool-btn .tool-icon{ font-size:12px; line-height:1; color:var(--text-dim); scale:70%; }
   /* The name that used to sit next to the icon now lives only in the
      title-attribute tooltip (see the combined "Name: instructions." text
      in main.html) -- kept in the DOM rather than removed, just hidden, so
@@ -562,6 +562,17 @@
     font-size:9px; color:var(--text-dim); background:var(--input-bg); border-radius:4px;
     padding:2px 5px; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; flex:0 0 auto;
   }
+  /* When the tag is a real <select> (every type except Group/Drawing/Image
+     Overlay/SVG Shape -- see swappableLayerTypes()), strip every bit of the
+     browser's native select chrome so it still looks exactly like the plain
+     span version, just clickable. */
+  select.layer-type-tag{
+    appearance:none; -webkit-appearance:none; -moz-appearance:none;
+    border:none; margin:0; font:inherit; font-size:9px; text-transform:uppercase;
+    letter-spacing:.4px; cursor:pointer;
+  }
+  select.layer-type-tag:focus{ outline:1px solid var(--accent-dim); }
+  select.layer-type-tag option{ text-transform:none; }
   .icon-btn{
     background:var(--btn-2); border:none; color:var(--text-dim); border-radius:5px;
     width:22px;height:22px; font-size:12px; line-height:1; cursor:pointer;

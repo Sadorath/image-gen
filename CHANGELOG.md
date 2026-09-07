@@ -4,6 +4,24 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.60 — 2026-09-07
+
+- Added two more geometric pattern types, both built on the same hex-cell lattice as Hex Grid: **Triangle Grid Hex Pattern** (hexagon perimeters only, for a plain honeycomb lattice) and **Triangle Grid Box Pattern** (hexagon perimeters plus a Y-shaped spoke through three alternating corners of each hexagon, splitting it into three rhombi for the classic "tumbling blocks" forced-perspective cube illusion). Both get the full pattern toolkit — Tile Angle/Size, Line Width, solid-or-gradient fill, animation, and Randomize — same as every other pattern type.
+- A layer's type tag (the small label next to its name, e.g. "SOLID FILL") now doubles as a dropdown — click it to swap the layer to a different type on the spot, styled to look exactly the same as before. Solid Fill, Linear/Radial Gradient, Grain / Noise, and every pattern type can swap between each other this way: color carries over automatically, and swapping between two pattern types keeps Angle/Size/Fill and any gradient too, so trying a different texture doesn't mean redoing the styling from scratch. Group, Drawing, Image Overlay, and SVG Shape layers keep their old plain tag (not swappable), since each holds its own structural data — children, a drawn shape, a picked image or SVG file — that a type swap has no sensible way to invent.
+
+## v0.0.59 — 2026-09-07
+
+- app.js is no longer a separate file — its entire contents now live inline inside a `<script>` block at the bottom of main.html, so main.html alone is the complete, self-contained app (some hosting/delivery setups won't let a plain .js file be downloaded at all, which this sidesteps entirely). style.css, help.html, and this changelog stay as their own files. Nothing about how the app behaves changes — same code, same file:// support, just one fewer file to keep track of.
+
+## v0.0.58 — 2026-09-07
+
+- Added five new geometric pattern layer types, alongside the existing Diagonal Checker/Stripes/Dots/Hex Grid/Sci-Fi HUD Grid: **Grid / Graph Paper** (intersecting horizontal and vertical lines), **Chevron / Zigzag** (a repeating zigzag stroke), **Triangle Grid** (a tessellating isometric triangle grid), **Crosses** (a repeating grid of plus-sign marks), and **Scallops** (overlapping semicircles in a fish-scale pattern). All five get the full pattern toolkit for free — Tile Angle/Size, a Fill or Line Width slider, solid-or-gradient fill, seamless Scroll/Pulse/Spin/Orbit/Custom animation, and Randomize support — the same as every other pattern type.
+- The Drawing Tools window's small icon buttons now render their icon glyph at 70% scale, so the icon sits with a bit more visual breathing room inside its 20×20 button.
+
+## v0.0.57 — 2026-09-07
+
+- Animation is now off by default, everywhere — the Animation menu (Loop Length), the Play/Pause and Record transport buttons, Settings > Smooth Playback, every layer card's own Animate section, and the Space-bar/Ctrl+Alt+B shortcuts are all hidden until turned back on. A saved design or share link with a layer's Animate switched on is unaffected underneath (nothing is lost), it just stays inert — no animation runs, and the rest of the animation UI stays out of the way — until the feature is switched back on. Debug Log has a new **Enable Animation Features** switch (next to Track Frame Metrics) that flips all of this back on or off as one global control, remembered the same way the other Debug Log/Settings toggles are.
+
 ## v0.0.56 — 2026-09-07
 
 - Removed the separate **Import SVG…** entry from + Add Layer — it was just an SVG Shape layer starting with no bundled shape pre-picked, and the SVG Shape layer's own Shape row already has an **Import SVG…** button that does the same thing, so the extra menu entry was redundant. Adding an SVG Shape layer goes back to auto-picking a bundled shape (Star) like it always did before v0.0.53; use its Import SVG… button afterward to swap in your own file.
