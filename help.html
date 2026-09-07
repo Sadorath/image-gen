@@ -96,6 +96,8 @@
     <a href="#getting-started">Getting Started</a>
     <a href="#layout">View &amp; Layout</a>
     <a href="#layers">Layers</a>
+    <a href="#drawing">Drawing Tools</a>
+    <a href="#history">History</a>
     <a href="#masks">Masks</a>
     <a href="#filters">Filters</a>
     <a href="#animation">Animation</a>
@@ -117,8 +119,8 @@
 
     <section id="layout">
       <h2>View &amp; Layout</h2>
-      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is the live preview (the <strong>stage</strong>), with the <strong>Layers</strong> window floating on top of it.</p>
-      <p>The Layers window can be dragged anywhere by its titlebar &mdash; it's constrained so it can never be dragged outside the app's own window, so its titlebar (and your way to move it back) is never out of reach. Click the <strong>&times;</strong> in its corner to close it; this only ever hides it, nothing is lost. Bring it back from <strong>View &gt; Show Layers</strong>, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered the next time you open the app.</p>
+      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is the live preview (the <strong>stage</strong>), with the <strong>Layers</strong>, <strong>Drawing Tools</strong>, and <strong>History</strong> windows floating on top of it.</p>
+      <p>Each of these three windows can be dragged anywhere by its titlebar &mdash; each is constrained so it can never be dragged outside the app's own window, so its titlebar (and your way to move it back) is never out of reach. Click the <strong>&times;</strong> in a window's corner to close it; this only ever hides it, nothing is lost. Bring any of them back from the <strong>View</strong> menu (<strong>Show Layers</strong> / <strong>Show Drawing Tools</strong> / <strong>Show History</strong>), which shows a checkmark next to whichever are currently open. Each window's position and open/closed state are remembered the next time you open the app &mdash; Layers defaults to open, since it's core to building a design; Drawing Tools and History both default to closed until you open them.</p>
       <p>Use the <strong>View</strong> menu to control how the preview is scaled: <strong>Zoom to Fit</strong> shrinks it to fit the available space (the default), <strong>Zoom to Actual Size</strong> shows it at exactly 100% (one image pixel per screen pixel), and <strong>Zoom In</strong> / <strong>Zoom Out</strong> step through preset percentages &mdash; the current zoom level is always shown in the menu. None of this changes the canvas's actual resolution, only how large it's displayed.</p>
     </section>
 
@@ -133,11 +135,32 @@
         <li><strong>Image Overlay</strong> &mdash; a picture from your computer, with control over fit, scale, offset, and flip.</li>
         <li><strong>Group</strong> &mdash; a folder that holds other layers and applies one shared opacity/blend mode on top of them.</li>
       </ul>
+      <p>There's one more layer type, <strong>Shape</strong>, but it doesn't live behind + Add Layer &mdash; it's created by drawing on the canvas with the <a href="#drawing">Drawing Tools window</a> instead. See that section for how it works.</p>
       <p>Each layer card has a header with quick controls: the <strong>&#8942;&#8942;</strong> handle drags it to reorder (or use the &uarr;/&darr; arrows), the eye checkbox shows/hides it, and the &times; deletes it. Click the layer name area to expand or collapse its full controls.</p>
       <p>Every layer also has an <strong>Opacity</strong> slider and a <strong>Blend</strong> mode (Normal, Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion) that controls how it combines with whatever is beneath it.</p>
       <h3>Grouping</h3>
       <p>Check the small select-boxes on two or more layers, then click <strong>Group Selected</strong> to fold them into a folder. Groups can be nested, duplicated, and ungrouped again at any time.</p>
       <div class="tip"><strong>Tip:</strong> Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as Mask" toggle to clip the layer directly beneath it to this layer's shape instead &mdash; switch its mode to Inverted to punch a hole through that layer instead of clipping to it. Check the box on any layers to group them into a folder with its own shared opacity and blend.</div>
+    </section>
+
+    <section id="drawing">
+      <h2>Drawing Tools</h2>
+      <p>Open the <strong>Drawing Tools</strong> window (View &gt; Show Drawing Tools) for six basic shape tools: <strong>Pencil, Line, Rectangle, Circle, Hexagon,</strong> and <strong>Polygon</strong>. Click one to arm it, then draw right on the canvas:</p>
+      <ul>
+        <li><strong>Pencil</strong> &mdash; click and drag to draw a freehand line, release the mouse to finish.</li>
+        <li><strong>Line, Rectangle, Circle, Hexagon</strong> &mdash; two clicks each: the first places the start point (for Line), a corner (Rectangle), or the center (Circle/Hexagon); the second finishes it (the opposite corner for Rectangle, or a point on the edge that sets the radius for Circle/Hexagon).</li>
+        <li><strong>Polygon</strong> &mdash; click to place as many points as you like, then double-click to finish (at least 3 points).</li>
+      </ul>
+      <p>A dashed outline previews the shape as you go. Press <kbd>Esc</kbd> at any point to cancel the current tool without adding anything &mdash; clicking an armed tool's button again does the same.</p>
+      <p>Finishing a shape adds it to the top of the Layers stack as a new <strong>Shape</strong> layer, exactly the way + Add Layer works for every other type: it gets its own <strong>Opacity</strong>, <strong>Blend</strong>, <strong>CSS Filters</strong>, and <strong>Animate</strong> (Pulse, Spin, Orbit, Custom) for free, and shows up in <a href="#history">History</a>/Undo like any other structural change. Each Shape layer also has its own <strong>Stroke</strong> (color, alpha, and width) and <strong>Fill</strong> (color and alpha), editable from its layer card the same as any other color control.</p>
+      <p>The color/width controls in the Drawing Tools window itself set the Stroke and Fill used for the <em>next</em> shape you draw &mdash; changing them doesn't affect shapes already on the canvas, but a shape's own Stroke/Fill can always be adjusted afterward from its layer card.</p>
+      <div class="tip"><strong>Tip:</strong> A Shape layer is a plain vector outline positioned by the same absolute canvas coordinates every time it's drawn, but like Solid Fill, Gradient, and Image layers, it only gets the Spin/rotation gap coverage described in <a href="#filters">Filters</a> &mdash; giving a filtered Shape layer Orbit or Custom x/y drift can still show a thin gap at its trailing edge.</div>
+    </section>
+
+    <section id="history">
+      <h2>History</h2>
+      <p>The <strong>History</strong> window (View &gt; Show History) surfaces the same undo/redo stack that <strong>Edit &gt; Undo/Redo</strong> and <kbd>Ctrl/Cmd+Z</kbd>/<kbd>Ctrl/Cmd+Shift+Z</kbd> already use &mdash; up to the last 50 structural changes (adding/deleting/reordering a layer, grouping, masking, and the like; a plain slider or color drag doesn't add its own step, only the changes that reshape the layer list do).</p>
+      <p>Each row in the list is one saved step, labeled automatically (something like &ldquo;Added 'Hex Grid'&rdquo;, &ldquo;Edited 'Backdrop'&rdquo;, or &ldquo;Reordered layers&rdquo;) by comparing it with the step right before it &mdash; the label is a best-effort summary, not something you type in yourself. Click any row to jump straight to that point in your design's history. The two small buttons above the list step Undo/Redo one at a time, the same as the Edit menu, without needing to leave the window.</p>
     </section>
 
     <section id="masks">
@@ -156,6 +179,7 @@
       <p>Every layer has its own collapsible <strong>CSS Filters</strong> section: Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and an optional Drop Shadow (offset, blur, color). These apply on top of whatever the layer already looks like, including a whole group as one flattened effect.</p>
       <p>There's also a <strong>Custom SVG Filter</strong> box for pasting your own SVG <code>&lt;filter&gt;</code> markup, applied via <code>url(#id)</code>. Since the page usually runs straight from a local file, the filter markup itself is stored right in your design rather than referencing an external file.</p>
       <p>A filtered layer's content (everything except a Group, which always re-renders live) is rendered once and reused frame to frame, since Blur and especially Drop Shadow are the most CPU-demanding effects in the app &mdash; it's only redrawn again when something that actually changes the layer's own look does. A Pulse/Spin/Orbit/Custom transform animation reuses that same cached image every frame instead of paying for the filter again; only a Scroll/Pan animation (which changes the layer's own drawn content) still redraws every frame. One side effect worth knowing: since the filter is baked in before the whole-layer transform now, a Drop Shadow or Blur on a Spin-animated layer rotates along with the shape instead of staying fixed in one screen direction.</p>
+      <p>To keep a rotating or drifting filtered layer from showing empty canvas at the edges, that cached image is generated a bit oversized (a "bleed" margin) and centered, then the transform is applied on top. Spin gets enough margin to cover a full rotation. For a Geometric Pattern or Perlin Noise layer, Orbit and Custom animation targeting <code>x</code>/<code>y</code> get extra margin too &mdash; sized automatically from Orbit's amplitude, or a generous fixed margin for Custom &mdash; so the pattern keeps filling the frame while it drifts. Solid Fill, Gradient, and Image layers don't get this drift margin, since their content is positioned relative to the canvas's own width and height and would shift or rescale incorrectly if drawn oversized; an Orbit- or Custom-animated layer of one of those types can still show a thin gap at the trailing edge if it also has a filter enabled.</p>
     </section>
 
     <section id="animation">
@@ -223,6 +247,7 @@
         <tr><td>Open This Shortcuts List</td><td><kbd>?</kbd></td></tr>
         <tr><td>Exit Kiosk Mode</td><td><kbd>Esc</kbd></td></tr>
         <tr><td>Close any open dialog</td><td><kbd>Esc</kbd></td></tr>
+        <tr><td>Cancel the active drawing tool</td><td><kbd>Esc</kbd></td></tr>
       </table>
       <div class="tip"><strong>Tip:</strong> none of these fire while you're typing in a text field &mdash; <kbd>Ctrl/Cmd+A</kbd> in the File Name box still selects that field's text instead of selecting every layer.</div>
     </section>
@@ -237,6 +262,8 @@
         <li>Turn on <strong>Performance Mode</strong> (Settings menu) if the canvas feels sluggish while dragging a slider on a heavy Perlin noise layer.</li>
         <li><strong>Auto-Save</strong> (Settings menu) continuously backs up your current design to this browser, so an accidental refresh doesn't lose your work.</li>
         <li>The Debug Log's <strong>Track Frame Metrics</strong> switch (Help &gt; Debug Log) is off by default; turn it on to see a live Avg FPS / Avg Frame / Worst Frame reading while you track down a slow design, then switch it back off &mdash; it costs a small, constant amount of overhead while it runs. Crash detection and error/warning logging stay on either way, switch or no switch.</li>
+        <li>Sketch a rough shape with the <strong>Pencil</strong> tool, then turn on its Fill (from the layer card, or the Drawing Tools window before drawing the next one) and give it a Blur or Drop Shadow filter for a soft, painterly blob &mdash; much faster than trying to build the same shape out of a gradient or pattern layer.</li>
+        <li>Lost track of a change you're not sure you meant to make? Open <strong>View &gt; Show History</strong> and click back through the list until the preview looks right again, instead of hitting Undo over and over and hoping to land on the right step.</li>
       </ul>
     </section>
   </main>
