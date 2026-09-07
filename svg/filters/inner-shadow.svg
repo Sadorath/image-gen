@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="inner-shadow" style="display: none;">
+  <filter id="inner-shadow">
+    <feOffset dx="0" dy="4" />
+    <feGaussianBlur stdDeviation="3" result="offset-blur" />
+    <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
+    <feFlood flood-color="black" flood-opacity="0.6" result="color" />
+    <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+    <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+  </filter>
+</svg>

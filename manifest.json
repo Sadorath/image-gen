@@ -1,19 +1,215 @@
-[
-  { "file": "icons/eye-open.svg",   "type": "icon", "role": "eyeOpen",   "name": "Eye (Open)" },
-  { "file": "icons/eye-closed.svg", "type": "icon", "role": "eyeClosed", "name": "Eye (Closed)" },
-  { "file": "icons/hand.svg",       "type": "icon", "role": "hand",      "name": "Hand Tool" },
-  { "file": "icons/pencil.svg",     "type": "icon", "role": "pencil",    "name": "Pencil Tool" },
-  { "file": "icons/line.svg",       "type": "icon", "role": "line",      "name": "Line Tool" },
-  { "file": "icons/rect.svg",       "type": "icon", "role": "rect",      "name": "Rectangle Tool" },
-  { "file": "icons/ellipse.svg",    "type": "icon", "role": "ellipse",   "name": "Circle Tool" },
-  { "file": "icons/hex.svg",        "type": "icon", "role": "hex",       "name": "Hexagon Tool" },
-  { "file": "icons/poly.svg",       "type": "icon", "role": "poly",      "name": "Polygon Tool" },
-
-  { "file": "icons/star.svg",  "type": "object", "name": "Star" },
-  { "file": "icons/blob.svg",  "type": "object", "name": "Blob" },
-  { "file": "icons/arrow.svg", "type": "object", "name": "Arrow" },
-
-  { "file": "filters/filter-soft-glow.svg", "type": "filter", "name": "Soft Glow" },
-
-  { "file": "example.svg", "type": "other", "name": "Example (reserved for future use)" }
-]
+﻿{
+    "version":  "1.0.0",
+    "assets":  [
+                   {
+                       "type":  "icon",
+                       "name":  "user",
+                       "path":  "svg/icons/user.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "gear",
+                       "path":  "svg/icons/gear.svg"
+                   },
+                   {
+                       "type":  "object",
+                       "name":  "terminal",
+                       "path":  "svg/icons/terminal.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "cpu",
+                       "path":  "svg/icons/cpu.svg"
+                   },
+                   {
+                       "type":  "object",
+                       "name":  "arrow",
+                       "path":  "svg/icons/arrow.svg"
+                   },
+                   {
+                       "type":  "object",
+                       "name":  "blob",
+                       "path":  "svg/icons/blob.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "ellipse",
+                       "path":  "svg/icons/ellipse.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "terminal",
+                       "path":  "svg/icons/example.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "eye-closed",
+                       "path":  "svg/icons/eye-closed.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "eye-open",
+                       "path":  "svg/icons/eye-open.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "hand",
+                       "path":  "svg/icons/hand.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "hex",
+                       "path":  "svg/icons/hex.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "line",
+                       "path":  "svg/icons/line.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "pencil",
+                       "path":  "svg/icons/pencil.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "poly",
+                       "path":  "svg/icons/poly.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "rect",
+                       "path":  "svg/icons/rect.svg"
+                   },
+                   {
+                       "type":  "object",
+                       "name":  "star",
+                       "path":  "svg/icons/star.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "folder",
+                       "path":  "svg/icons/folder.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "code",
+                       "path":  "svg/icons/code.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "database",
+                       "path":  "svg/icons/database.svg"
+                   },
+                   {
+                       "type":  "icon",
+                       "name":  "cloud",
+                       "path":  "svg/icons/cloud.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "clean-glow",
+                       "path":  "svg/filters/clean-glow.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "comic-outline",
+                       "path":  "svg/filters/comic-outline.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "drop-shadow-deep",
+                       "path":  "svg/filters/drop-shadow-deep.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "duotone-matrix",
+                       "path":  "svg/filters/duotone-matrix.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "emboss-hard",
+                       "path":  "svg/filters/emboss-hard.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "soft-glow",
+                       "path":  "svg/filters/filter-soft-glow.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "frosted-glass",
+                       "path":  "svg/filters/frosted-glass.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "glitch-shift",
+                       "path":  "svg/filters/glitch-shift.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "neon-cyber",
+                       "path":  "svg/filters/neon-cyber.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "outline",
+                       "path":  "svg/filters/outline.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "paper-texture",
+                       "path":  "svg/filters/paper-texture.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "retro-glow",
+                       "path":  "svg/filters/retro-glow.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "rough-outline",
+                       "path":  "svg/filters/rough-outline.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "scanlines-crt",
+                       "path":  "svg/filters/scanlines-crt.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "pixel-grid",
+                       "path":  "svg/filters/turbulence.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "vignette-shadow",
+                       "path":  "svg/filters/vignette-shadow.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "halftone-dots",
+                       "path":  "svg/filters/halftone-dots.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "thermal-vision",
+                       "path":  "svg/filters/thermal-vision.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "long-shadow",
+                       "path":  "svg/filters/long-shadow.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "inner-shadow",
+                       "path":  "svg/filters/inner-shadow.svg"
+                   },
+                   {
+                       "type":  "filter",
+                       "name":  "sepia-vintage",
+                       "path":  "svg/filters/sepia-vintage.svg"
+                   }
+               ]
+}

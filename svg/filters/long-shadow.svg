@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="long-shadow" style="display: none;">
+  <filter id="long-shadow">
+    <feOffset in="SourceAlpha" dx="15" dy="15" result="offset1" />
+    <feOffset in="SourceAlpha" dx="30" dy="30" result="offset2" />
+    <feMerge>
+      <feMergeNode in="offset2" />
+      <feMergeNode in="offset1" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>
