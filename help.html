@@ -129,7 +129,7 @@
         <li><strong>Solid Fill</strong> &mdash; a single flat color.</li>
         <li><strong>Linear / Radial Gradient</strong> &mdash; a smooth color blend, with up to 6 color stops.</li>
         <li><strong>Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid</strong> &mdash; repeating geometric patterns, fillable with a flat color or their own gradient.</li>
-        <li><strong>Grain / Noise</strong> &mdash; static grain, or smooth Perlin noise (Clouds, Turbulence/Smoke, Marble).</li>
+        <li><strong>Grain / Noise</strong> &mdash; static grain, or smooth Perlin noise (Clouds, Turbulence/Smoke, Marble). A Perlin layer's <strong>High-Res Cache</strong> checkbox renders it at roughly double resolution before caching &mdash; sharper on a close-up or very large canvas, for more memory per layer.</li>
         <li><strong>Image Overlay</strong> &mdash; a picture from your computer, with control over fit, scale, offset, and flip.</li>
         <li><strong>Group</strong> &mdash; a folder that holds other layers and applies one shared opacity/blend mode on top of them.</li>
       </ul>
@@ -155,6 +155,7 @@
       <h2>Filters</h2>
       <p>Every layer has its own collapsible <strong>CSS Filters</strong> section: Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and an optional Drop Shadow (offset, blur, color). These apply on top of whatever the layer already looks like, including a whole group as one flattened effect.</p>
       <p>There's also a <strong>Custom SVG Filter</strong> box for pasting your own SVG <code>&lt;filter&gt;</code> markup, applied via <code>url(#id)</code>. Since the page usually runs straight from a local file, the filter markup itself is stored right in your design rather than referencing an external file.</p>
+      <p>A filtered layer's content (everything except a Group, which always re-renders live) is rendered once and reused frame to frame, since Blur and especially Drop Shadow are the most CPU-demanding effects in the app &mdash; it's only redrawn again when something that actually changes the layer's own look does. A Pulse/Spin/Orbit/Custom transform animation reuses that same cached image every frame instead of paying for the filter again; only a Scroll/Pan animation (which changes the layer's own drawn content) still redraws every frame. One side effect worth knowing: since the filter is baked in before the whole-layer transform now, a Drop Shadow or Blur on a Spin-animated layer rotates along with the shape instead of staying fixed in one screen direction.</p>
     </section>
 
     <section id="animation">
@@ -235,6 +236,7 @@
         <li>Layer a low-opacity Grain/Noise layer with Normal or Overlay blend on top of a flat gradient for an instant subtle texture.</li>
         <li>Turn on <strong>Performance Mode</strong> (Settings menu) if the canvas feels sluggish while dragging a slider on a heavy Perlin noise layer.</li>
         <li><strong>Auto-Save</strong> (Settings menu) continuously backs up your current design to this browser, so an accidental refresh doesn't lose your work.</li>
+        <li>The Debug Log's <strong>Track Frame Metrics</strong> switch (Help &gt; Debug Log) is off by default; turn it on to see a live Avg FPS / Avg Frame / Worst Frame reading while you track down a slow design, then switch it back off &mdash; it costs a small, constant amount of overhead while it runs. Crash detection and error/warning logging stay on either way, switch or no switch.</li>
       </ul>
     </section>
   </main>

@@ -280,8 +280,15 @@
       <button class="icon-btn" id="debugLogCloseBtn" title="Close">&times;</button>
     </div>
     <div class="modal-body">
-      <p class="hint" style="margin-top:0;">A small, always-on log of warnings, errors, and resource use for this app -- kept only in this browser, never sent anywhere. If the app ever crashes or a design suddenly slows down, this is the first place to look.</p>
+      <p class="hint" style="margin-top:0;">A small, always-on log of warnings, errors, and resource use for this app -- kept only in this browser, never sent anywhere. If the app ever crashes or a design suddenly slows down, this is the first place to look. Crash detection above stays on no matter what, even with Frame Metrics switched off.</p>
       <div id="debugLogCrashBanner" class="debug-log-banner" style="display:none;"></div>
+      <div class="debug-log-toggle-row">
+        <label class="switch" title="Continuously track live frame timing (FPS) while this is on. Off by default -- it's cheap, but there's no reason to pay even that unless you're actively chasing a performance issue.">
+          <input type="checkbox" id="debugFrameMetricsToggle" />
+          <span class="switch-track"><span class="switch-thumb"></span></span>
+          <span class="switch-label">Track Frame Metrics</span>
+        </label>
+      </div>
       <div id="debugLogStats" class="debug-log-stats"></div>
       <div class="btn-row" style="margin:10px 0;">
         <button class="btn-secondary" id="debugLogRefreshBtn" type="button" title="Re-read the log and resource stats">&#8635; Refresh</button>
@@ -556,7 +563,8 @@
         base.noiseType = 'static';
         base.perlin = {
           style:'clouds', scale:180, octaves:5, roughness:0.5,
-          veinFreq:6, power:8, contrast:50, seed: Math.floor(Math.random()*1000000000)
+          veinFreq:6, power:8, contrast:50, seed: Math.floor(Math.random()*1000000000),
+          highResCache: false
         };
         base.noiseGradient = {
           stops:[ { pos:0, color: makeColor(255,255,255,0) }, { pos:100, color: makeColor(255,255,255,1) } ]
@@ -1083,6 +1091,7 @@
           h += '<div class="layer-controls-row"><label title="How much the marble veins twist and warp">Distortion</label><div class="slidewrap"><input type="range" min="0" max="30" value="'+pl.power+'" data-role="perlinPower" title="How much the marble veins twist and warp" />'+valInputHTML('perlinPowerVal', pl.power, '')+'</div></div>';
         }
         h += '<div class="layer-controls-row"><label title="Number that determines this noise&#39;s random pattern -- the same seed always gives the same result">Seed</label><div class="slidewrap"><input type="number" data-role="perlinSeed" value="'+pl.seed+'" style="width:100%" title="Number that determines this noise&#39;s random pattern -- the same seed always gives the same result" /></div><button class="icon-btn" data-role="perlinReseed" title="New random seed">&#127922;</button></div>';
+        h += '<div class="layer-controls-row"><label class="mask-toggle" title="Render this layer\'s noise at roughly double resolution (about 4x the pixel area) before caching it -- sharper on close-up/large canvases, at a proportional memory cost per layer. The rendered noise is only ever recomputed when something that changes its own look does (seed, scale, octaves, style, gradient, etc.) -- a Spin/Pulse/Orbit animation, or any other layer\'s changes, never triggers a recompute."><input type="checkbox" data-role="perlinHighResCache"'+(pl.highResCache?' checked':'')+' /> High-Res Cache</label></div>';
         h += '<div class="stops-list" data-role="noiseStopsList">'+stopsListHTML(layer.noiseGradient.stops)+'</div>';
         h += '<button class="add-stop-btn" data-role="addNoiseStop"'+(layer.noiseGradient.stops.length>=6?' disabled':'')+'>+ Add color stop</button>';
         h += '<small class="hint">The noise value at each point looks up a color along this gradient &mdash; try transparent-to-white for soft clouds, or two stone tones for marble veins.</small>';
@@ -1437,6 +1446,10 @@
         cardEl.querySelector('[data-role="perlinReseed"]').addEventListener('click', function(){
           pl.seed = Math.floor(Math.random()*1000000000);
           seedInput.value = pl.seed;
+          scheduleRender();
+        });
+        cardEl.querySelector('[data-role="perlinHighResCache"]').addEventListener('change', function(e){
+          pl.highResCache = e.target.checked;
           scheduleRender();
         });
 
@@ -2784,36 +2797,37 @@
     return lut;
   }
 
-  var noiseBufCanvas = document.createElement('canvas');
-  var noiseBufCtx = noiseBufCanvas.getContext('2d');
-
-  // Reused across renders, resized/reallocated only when the requested
-  // buffer dimensions actually change -- createImageData() would otherwise
-  // allocate a brand-new pixel array on every single tick, which adds up to
-  // real GC pressure while a slider (or a numeric field, which Performance
-  // Mode's pointer-down gating doesn't cover) is being adjusted rapidly. Safe
-  // to reuse as-is: drawPerlinNoiseLayer's by/bx loop below always overwrites
-  // every pixel of the buffer, so there's no stale data to worry about.
-  var cachedNoiseBW = 0, cachedNoiseBH = 0, cachedNoiseImageData = null;
-  function getCachedNoiseImageData(ctxForAlloc, bw, bh){
-    if(!cachedNoiseImageData || cachedNoiseBW !== bw || cachedNoiseBH !== bh){
-      cachedNoiseBW = bw;
-      cachedNoiseBH = bh;
-      cachedNoiseImageData = ctxForAlloc.createImageData(bw, bh);
-    }
-    return cachedNoiseImageData;
-  }
-
+  // Persistent per-layer cache of the fully-rendered noise bitmap. Keyed by
+  // object identity on layer.perlin itself -- NOT on the layer, and not on
+  // the effLayer this function actually receives (drawLayerContent always
+  // calls it "layer" locally, but it's effLayer upstream in drawLayer). Why
+  // layer.perlin specifically: the ordinary slider/control wiring above
+  // mutates it IN PLACE (pl.scale = ..., pl.seed = ..., etc.), so it stays
+  // the exact same object across every normal edit and every frame -- ideal
+  // for a WeakMap key. It also stays the same object when a Custom animation
+  // clones a fresh effLayer for some OTHER property (Blur, a drop-shadow
+  // offset, ...): buildEffectiveLayer only touches the specific field(s) a
+  // Custom track targets, so effLayer.perlin still points at the real,
+  // unchanged layer.perlin whenever perlin's own fields aren't what's being
+  // animated -- meaning this cache keeps working across frames even then.
+  // Only when a Custom track targets a perlin field itself (Scale, Octaves,
+  // Roughness, Contrast, Vein Count, Distortion) does cloneInto() replace
+  // perlin with a fresh object every frame -- which naturally (and
+  // correctly) busts this cache every frame, matching the prior
+  // always-recompute behavior for exactly that one case.
+  var perlinBitmapCache = new WeakMap();
   function drawPerlinNoiseLayer(layer, w, h, targetCtx){
     var p = layer.perlin;
-    var perm = buildPermutation(p.seed);
-    var lut = getCachedGradientLUT(layer.noiseGradient, 256);
 
     // Compute the field at a capped internal resolution, then let the canvas
     // upscale it smoothly -- Perlin/fBm content is inherently low-frequency, so
     // this is visually near-identical to full-res while staying fast even at 4K.
+    // "High-Res Cache" roughly doubles that cap (about 4x the pixel area) for
+    // a sharper cached bitmap on close-up or very large canvases, at a
+    // proportional memory cost for this one layer's cached bitmap.
     var longSide = Math.max(w, h);
-    var scaleDown = Math.min(1, 900 / longSide);
+    var internalCap = p.highResCache ? 1800 : 900;
+    var scaleDown = Math.min(1, internalCap / longSide);
     var bw = Math.max(2, Math.round(w * scaleDown));
     var bh = Math.max(2, Math.round(h * scaleDown));
     var unit = Math.max(1, p.scale) * scaleDown;
@@ -2834,37 +2848,59 @@
       animOffsetY = Math.cos(driftAngle) * driftAmp;
     }
 
-    noiseBufCanvas.width = bw;
-    noiseBufCanvas.height = bh;
-    var imgData = getCachedNoiseImageData(noiseBufCtx, bw, bh);
-    var d = imgData.data;
+    // Every input that changes this layer's own drawn pixels: the noise
+    // math's parameters, the gradient's color stops, the internal buffer
+    // size (tracks the on-screen canvas size and the High-Res Cache toggle),
+    // and -- ONLY while a Scroll/Pan animation is actually driving this
+    // layer -- the current drift offset. Pulse/Spin/Orbit/Custom-on-other-
+    // properties leave animOffsetX/Y at a constant 0,0, so they keep hitting
+    // this exact same key forever and skip the fbm math entirely below;
+    // Scroll instead gets a fresh key every frame, exactly matching its
+    // previous always-recompute behavior -- no staleness, no regression.
+    var key = bw + 'x' + bh + '|' + p.seed + '|' + p.scale + '|' + p.octaves + '|' + p.roughness + '|' +
+      p.style + '|' + p.veinFreq + '|' + p.power + '|' + p.contrast + '|' +
+      JSON.stringify(layer.noiseGradient.stops) + '|' + animOffsetX.toFixed(3) + ',' + animOffsetY.toFixed(3);
 
-    for(var by=0; by<bh; by++){
-      var nyBase = by/unit + animOffsetY;
-      for(var bx=0; bx<bw; bx++){
-        var nx = bx/unit + animOffsetX;
-        var v;
-        if(p.style === 'marble'){
-          var turb = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
-          var angle = (bx/bw)*p.veinFreq*Math.PI*2 + turb*p.power;
-          v = (Math.sin(angle)+1)/2;
-        } else if(p.style === 'turbulence'){
-          v = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
-        } else {
-          v = (fbm(perm, nx, nyBase, p.octaves, p.roughness, false)+1)/2;
+    var cached = perlinBitmapCache.get(p);
+    if(!cached || cached.key !== key){
+      var perm = buildPermutation(p.seed);
+      var lut = getCachedGradientLUT(layer.noiseGradient, 256);
+      var bufCanvas = (cached && cached.canvas.width === bw && cached.canvas.height === bh) ? cached.canvas : document.createElement('canvas');
+      bufCanvas.width = bw;
+      bufCanvas.height = bh;
+      var bufCtx = bufCanvas.getContext('2d');
+      var imgData = bufCtx.createImageData(bw, bh);
+      var d = imgData.data;
+
+      for(var by=0; by<bh; by++){
+        var nyBase = by/unit + animOffsetY;
+        for(var bx=0; bx<bw; bx++){
+          var nx = bx/unit + animOffsetX;
+          var v;
+          if(p.style === 'marble'){
+            var turb = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
+            var angle = (bx/bw)*p.veinFreq*Math.PI*2 + turb*p.power;
+            v = (Math.sin(angle)+1)/2;
+          } else if(p.style === 'turbulence'){
+            v = fbm(perm, nx, nyBase, p.octaves, p.roughness, true);
+          } else {
+            v = (fbm(perm, nx, nyBase, p.octaves, p.roughness, false)+1)/2;
+          }
+          v = (v-0.5)*contrastFactor + 0.5;
+          v = v < 0 ? 0 : (v > 1 ? 1 : v);
+
+          var c = lut[Math.round(v*255)];
+          var idx = (by*bw+bx)*4;
+          d[idx] = c.r; d[idx+1] = c.g; d[idx+2] = c.b; d[idx+3] = Math.round(c.a*255);
         }
-        v = (v-0.5)*contrastFactor + 0.5;
-        v = v < 0 ? 0 : (v > 1 ? 1 : v);
-
-        var c = lut[Math.round(v*255)];
-        var idx = (by*bw+bx)*4;
-        d[idx] = c.r; d[idx+1] = c.g; d[idx+2] = c.b; d[idx+3] = Math.round(c.a*255);
       }
+      bufCtx.putImageData(imgData, 0, 0);
+      cached = { key: key, canvas: bufCanvas };
+      perlinBitmapCache.set(p, cached);
     }
-    noiseBufCtx.putImageData(imgData, 0, 0);
 
     targetCtx.imageSmoothingEnabled = true;
-    targetCtx.drawImage(noiseBufCanvas, 0, 0, bw, bh, 0, 0, w, h);
+    targetCtx.drawImage(cached.canvas, 0, 0, bw, bh, 0, 0, w, h);
   }
 
   /* ---------- image overlay layer ---------- */
@@ -3286,10 +3322,41 @@
     targetCtx.translate(-cx, -cy);
   }
 
-  // Reused scratch canvas for the filtered-layer path below -- avoids
-  // allocating a new offscreen bitmap for every filtered layer on every frame.
+  // Reused scratch canvas for the filtered-GROUP-layer path below -- avoids
+  // allocating a new offscreen bitmap for every filtered group on every frame.
   var filterBufCanvas = document.createElement('canvas');
   var filterBufCtx = filterBufCanvas.getContext('2d');
+
+  // Persistent per-layer cache of a filtered (non-group) layer's fully
+  // rendered, UNTRANSFORMED bitmap -- see drawLayer below for how this makes
+  // Pulse/Spin/Orbit compatible with an expensive filter like blur or
+  // drop-shadow. Keyed by object identity on the real, stable `layer` (never
+  // effLayer, which can be a fresh per-frame clone under Custom animation --
+  // see buildEffectiveLayer) -- the key STRING below already captures every
+  // effLayer field that can vary frame to frame, so keying on the stable
+  // object avoids constantly allocating fresh WeakMap entries for no reason,
+  // while still forcing a correct miss on any real content change.
+  var filteredContentCache = new WeakMap();
+  function buildFilteredCacheKey(layer, effLayer, filterStr, w, h){
+    // An "image" layer's imgSrc can be a multi-megabyte base64 data URL --
+    // JSON.stringify-ing it whole every single frame would cost far more
+    // than this caching is meant to save, so it's fingerprinted instead
+    // (length + a slice of each end, which still changes if the image does).
+    var fingerprintLayer = effLayer;
+    if(effLayer.type === 'image' && typeof effLayer.imgSrc === 'string' && effLayer.imgSrc.length > 200){
+      fingerprintLayer = Object.assign({}, effLayer, {
+        imgSrc: effLayer.imgSrc.length + ':' + effLayer.imgSrc.slice(0,40) + ':' + effLayer.imgSrc.slice(-40)
+      });
+    }
+    // Only a layer type that can internally Scroll/Pan (see animateCanScroll)
+    // needs a continuously-changing key while that style is active -- every
+    // other style (Pulse/Spin/Orbit/Custom-on-a-non-content-property), and
+    // every layer type that merely FALLS BACK to a Pulse-style wrapper
+    // transform when Scroll isn't supported, leaves this layer's own drawn
+    // content untouched frame to frame, so the key can (and should) stay put.
+    var animKey = animateCanScroll(layer) ? animCycleFrac(layer) : 0;
+    return w + 'x' + h + '|' + filterStr + '|' + animKey.toFixed(4) + '|' + JSON.stringify(fingerprintLayer);
+  }
 
   function drawLayer(layer, w, h, targetCtx){
     targetCtx = targetCtx || ctx;
@@ -3311,28 +3378,87 @@
       targetCtx.restore();
       return;
     }
-    // Filtered layers draw their own raw content onto a fresh, unfiltered
-    // scratch canvas first, then that ONE finished bitmap is composited onto
-    // targetCtx with the filter (and this layer's opacity/blend) applied just
-    // once. Setting ctx.filter directly on targetCtx before drawing would
-    // instead apply it separately to every individual fill/stroke call a
-    // multi-draw layer type issues internally -- a pattern layer can draw
-    // thousands of tiles, noise thousands of pixels -- which is both far too
-    // slow to be usable and not what "blur/drop-shadow this layer" should
-    // mean (the effect should read as applied to the layer's whole finished
-    // shape, not smeared onto each little piece of it separately).
-    filterBufCanvas.width = w;
-    filterBufCanvas.height = h;
-    filterBufCtx.clearRect(0, 0, w, h);
-    filterBufCtx.save();
-    applyAnimTransform(filterBufCtx, animT, w, h);
-    drawLayerContent(effLayer, w, h, filterBufCtx);
-    filterBufCtx.restore();
+
+    // A filtered GROUP is excluded from the cache below: its content depends
+    // on every descendant layer, and cheaply fingerprinting that accurately
+    // every frame isn't practical (a shallow key would go stale the instant
+    // a nested layer changes). So a filtered group keeps the original path
+    // unchanged -- always renders fresh, transform baked in BEFORE the
+    // filter is applied, exactly as before this caching was added.
+    if(layer.type === 'group'){
+      filterBufCanvas.width = w;
+      filterBufCanvas.height = h;
+      filterBufCtx.clearRect(0, 0, w, h);
+      filterBufCtx.save();
+      applyAnimTransform(filterBufCtx, animT, w, h);
+      drawLayerContent(effLayer, w, h, filterBufCtx);
+      filterBufCtx.restore();
+      targetCtx.save();
+      targetCtx.globalAlpha = (layer.opacity/100) * (animT.opacity/100);
+      targetCtx.globalCompositeOperation = layer.blend;
+      targetCtx.filter = filterStr;
+      targetCtx.drawImage(filterBufCanvas, 0, 0);
+      targetCtx.restore();
+      return;
+    }
+
+    // Every other filtered layer type: draw the layer's own UNTRANSFORMED
+    // content once onto a persistent per-layer scratch canvas and cache it,
+    // then apply the whole-layer Animate transform (Pulse/Spin/Orbit/etc.)
+    // AFTER pulling from that cache, at composite time below -- instead of
+    // baking the transform in beforehand, the way this used to work. That's
+    // what lets a transform-only animation (animT changes every frame, but
+    // the layer's own drawn content does not) reuse the exact same bitmap
+    // indefinitely instead of re-running an expensive filter's full-canvas
+    // rasterization (drop-shadow and blur are the costly ones) every frame.
+    // One visible, deliberate side effect: since the filter is now baked in
+    // BEFORE the transform instead of after, a drop-shadow or blur on a
+    // Spin/Pulse/Orbit-animated layer now rotates and scales WITH the layer,
+    // instead of staying fixed in screen-space direction as it did before.
+    //
+    // Rotation needs one more thing to look right: a plain w x h cache
+    // bitmap has nothing drawn outside its own edges, so rotating it (Spin,
+    // or a Custom track driving Rotate) would expose the canvas background
+    // at the corners -- exactly the gap a GEOM_TYPES pattern's own internal
+    // "diag"-sized over-draw (see drawGeomPattern above) used to paper over
+    // for free, back when the transform was baked in before that over-draw
+    // ran. So whenever this layer's Animate style can rotate the whole
+    // layer, the cached bitmap itself is drawn oversized -- big enough
+    // (the canvas's own diagonal, on each side) to cover a full rotation
+    // around its center -- with the real w x h content centered inside it.
+    var mayRotate = !!(layer.animate && layer.animate.enabled && (layer.animate.style === 'spin' || layer.animate.style === 'custom'));
+    var padW = w, padH = h;
+    if(mayRotate){
+      var diag = Math.ceil(Math.sqrt(w*w + h*h));
+      padW = diag; padH = diag;
+    }
+    var offX = Math.round((padW - w)/2), offY = Math.round((padH - h)/2);
+
+    var cacheKey = buildFilteredCacheKey(layer, effLayer, filterStr, w, h) + '|' + padW + 'x' + padH;
+    var cached = filteredContentCache.get(layer);
+    var bufCanvas;
+    if(cached && cached.key === cacheKey){
+      bufCanvas = cached.canvas;
+    } else {
+      bufCanvas = (cached && cached.canvas.width === padW && cached.canvas.height === padH) ? cached.canvas : document.createElement('canvas');
+      bufCanvas.width = padW;
+      bufCanvas.height = padH;
+      var bctx = bufCanvas.getContext('2d');
+      bctx.clearRect(0, 0, padW, padH);
+      bctx.save();
+      bctx.translate(offX, offY);
+      drawLayerContent(effLayer, w, h, bctx);
+      bctx.restore();
+      cached = { key: cacheKey, canvas: bufCanvas, offX: offX, offY: offY };
+      filteredContentCache.set(layer, cached);
+    }
+
     targetCtx.save();
     targetCtx.globalAlpha = (layer.opacity/100) * (animT.opacity/100);
     targetCtx.globalCompositeOperation = layer.blend;
+    applyAnimTransform(targetCtx, animT, w, h);
     targetCtx.filter = filterStr;
-    targetCtx.drawImage(filterBufCanvas, 0, 0);
+    targetCtx.drawImage(bufCanvas, -cached.offX, -cached.offY);
     targetCtx.restore();
   }
 
@@ -4049,13 +4175,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.38';
+  var APP_VERSION = '0.0.39';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.38 -- 2026-09-06\n\n- Added Smooth Playback (Settings menu, on by default): while an animated design is Playing, the app now renders one full loop's frames once and cycles through those cached bitmaps instead of redrawing the entire layer stack 60 times a second. Measured directly: a design with Perlin noise went from 9.5fps to a full 60fps during Play, a blurred layer from 19.3fps to 60fps, a Hex Grid layer from 25.3fps to 60fps, and five stacked Hex Grid layers from 7.4fps to 60fps. The app automatically skips caching for designs that are already fast enough live, so it never makes an already-smooth design slower, and always falls back to a live, pixel-perfect render while a control is actively being edited or if Smooth Playback is turned off. Recording (.webm export) always uses a full-quality live render regardless of this setting, so exported video is unaffected either way.\n- Fixed animation playback silently re-rendering the whole design every single frame even while paused -- a design with any animated layer now truly sits idle (zero extra rendering work) until Play is pressed again.\n- Hex Grid and Sci-Fi HUD Grid patterns are now drawn once into a small repeating tile and stamped across the canvas as a single fill, instead of stroking every individual cell by hand every frame -- noticeably faster for these two pattern types even without Smooth Playback (a single Hex Grid layer went from 25.3fps to a full 60fps during live, uncached playback).\n- Groups no longer allocate a brand-new offscreen canvas on every single render -- their scratch canvas is now reused across frames (nested groups each still get their own, so groups inside groups still render correctly).\n\n## v0.0.37 -- 2026-09-05\n\n- The Layers panel is no longer pinned inside the sidebar -- it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the &times; in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.\n- The rest of the old sidebar (the Copy Link/Code output box, and the Import a Link or Code panel) is hidden for now while the Layers panel above finds its new home -- nothing was removed, it's simply switched off for later.\n- Moved the Layers section's \"Top of the list = top of the stack...\" tip out of the app itself and into Help > Hints & Tips (Layers section), alongside the rest of the reference material.\n\n## v0.0.36 -- 2026-09-05\n\n- Save/Load now stores a design as the same compressed hash format Copy Code already used, instead of pretty-printed JSON -- a multi-layer test design's saved .json file shrank by 77%. Loading still reads older, plain-JSON saves from before this change.\n- Every control in the menu bar (the File/Edit/View/... text buttons, the Settings gear, and the Play/Record icons) now shares one exact height, fixing small inconsistencies that used to show up between text buttons, icon-only buttons, and the Play/Record pair.\n- Removed the duplicate Undo/Redo buttons that used to sit at the top of the sidebar's Layers section -- the Edit menu's Undo/Redo (and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y shortcuts) already cover it.\n- Added keyboard shortcuts for most of the menu bar, matching the closest industry-standard equivalent where one exists: Ctrl/Cmd+S (Save), Ctrl/Cmd+Shift+S (Save As), Ctrl/Cmd+O (Load), Ctrl/Cmd+Shift+E (Export PNG), Ctrl/Cmd+G / Ctrl/Cmd+Shift+G (Group/Ungroup Selected), Ctrl/Cmd+A / Ctrl/Cmd+Shift+A (Select All / Deselect All), Ctrl/Cmd+0 / Ctrl/Cmd+1 (Zoom to Fit / Actual Size), Ctrl/Cmd+= / Ctrl/Cmd+- (Zoom In/Out), Space (Play/Pause Animation), and ? (open this Keyboard Shortcuts list). None of these hijack a text field -- Ctrl+A in the File Name box still selects its text instead of selecting every layer. (Ctrl+N, Ctrl+T/W, and Ctrl+D were left out on purpose -- browsers reserve those for themselves and never let a page override them.)\n\n## v0.0.35 -- 2026-09-05\n\n- The app's title moved from its own heading at the top of the sidebar into the menu bar itself, shortened to \"Image Generator\" in a quiet, low-contrast rounded label (hover it to see the full \"Background Image Generator\" name) -- frees up sidebar space now that the menu bar is the app's actual header.\n- Added File > Save As..., which asks for a new name and saves the design under it immediately, updating the Canvas menu's File Name field to match (so PNG/CSS/Rainmeter exports pick up the new name too).\n\n## v0.0.34 -- 2026-09-05\n\n- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character -- a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.\n\n## v0.0.33 -- 2026-09-05\n\n- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes -- they now share the same fixed 24x24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.\n\n## v0.0.32 -- 2026-09-05\n\n- All of this page's CSS has moved out of an inline &lt;style&gt; block into its own style.css file, linked from main.html's &lt;head&gt;. main.html is noticeably slimmer now; style.css needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.\n\n## v0.0.31 -- 2026-09-05\n\n- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (&#9654;/&#9208; and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.39 -- 2026-09-06\n\n- Added a Frame Metrics switch to the Debug Log (Help menu): off by default, it tracks live rAF frame timing while it's on and shows Avg FPS, Avg Frame, and Worst Frame in the log's stats grid (and in the periodic resource samples and the exported/copied log text). Crash detection and the always-on error/warning log are completely unaffected either way -- Frame Metrics is purely additive, on top of the same Debug Log this version's other performance work made more useful to have open.\n- Perlin/fractal noise layers (Clouds, Turbulence, Marble) now render their noise field into a persistent per-layer bitmap and reuse it across frames instead of re-running the noise math on every single render -- a Pulse, Spin, Orbit, or Custom-on-a-non-noise-property animation no longer touches the noise math at all once the field is cached, since none of those change what the noise itself looks like, only how the finished layer is wrapped (rotated, scaled, moved). A Scroll/Pan-animated Perlin layer, or a Custom animation actually driving one of its own sliders (Scale, Octaves, Roughness, Contrast, Vein Count, Distortion), still recomputes every frame exactly as before, since those genuinely change the field frame to frame. Added a High-Res Cache checkbox to Perlin layers (off by default) that roughly doubles the internal sampling resolution (about 4x the pixel area) before caching, for a sharper look on a close-up or very large canvas at a proportional memory cost for that one layer.\n- Every filtered layer's own content (Blur, Drop Shadow, and the rest of CSS Filters -- everything except a Group, which always re-renders live since its content depends on every descendant) is now rendered once and cached the same way, since Drop Shadow and Blur are the most CPU-demanding effects in the app -- it's only redrawn again when something that actually changes the layer's own look does. A Pulse/Spin/Orbit/Custom-on-a-transform-property animation now reuses that cached image every frame instead of re-running the filter's full-canvas rasterization each time; a Scroll/Pan animation (or a Custom track touching one of the layer's own non-transform properties) still redraws every frame, exactly as before. Rotation needed one more fix to look right with a cached bitmap: a Spin (or Custom-rotate) layer's cached content is now drawn oversized -- big enough to cover a full rotation with no gaps at the corners -- the same trick Hex Grid/HUD Grid already used internally for their own tile angle. One visible, deliberate side effect: since the filter is now baked in before the whole-layer transform instead of after, a Drop Shadow or Blur on a Spin/Pulse/Orbit-animated layer now rotates and scales along with the shape, instead of staying fixed in one screen direction the way it used to.\n\n## v0.0.38 -- 2026-09-06\n\n- Added Smooth Playback (Settings menu, on by default): while an animated design is Playing, the app now renders one full loop's frames once and cycles through those cached bitmaps instead of redrawing the entire layer stack 60 times a second. Measured directly: a design with Perlin noise went from 9.5fps to a full 60fps during Play, a blurred layer from 19.3fps to 60fps, a Hex Grid layer from 25.3fps to 60fps, and five stacked Hex Grid layers from 7.4fps to 60fps. The app automatically skips caching for designs that are already fast enough live, so it never makes an already-smooth design slower, and always falls back to a live, pixel-perfect render while a control is actively being edited or if Smooth Playback is turned off. Recording (.webm export) always uses a full-quality live render regardless of this setting, so exported video is unaffected either way.\n- Fixed animation playback silently re-rendering the whole design every single frame even while paused -- a design with any animated layer now truly sits idle (zero extra rendering work) until Play is pressed again.\n- Hex Grid and Sci-Fi HUD Grid patterns are now drawn once into a small repeating tile and stamped across the canvas as a single fill, instead of stroking every individual cell by hand every frame -- noticeably faster for these two pattern types even without Smooth Playback (a single Hex Grid layer went from 25.3fps to a full 60fps during live, uncached playback).\n- Groups no longer allocate a brand-new offscreen canvas on every single render -- their scratch canvas is now reused across frames (nested groups each still get their own, so groups inside groups still render correctly).\n\n## v0.0.37 -- 2026-09-05\n\n- The Layers panel is no longer pinned inside the sidebar -- it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the &times; in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.\n- The rest of the old sidebar (the Copy Link/Code output box, and the Import a Link or Code panel) is hidden for now while the Layers panel above finds its new home -- nothing was removed, it's simply switched off for later.\n- Moved the Layers section's \"Top of the list = top of the stack...\" tip out of the app itself and into Help > Hints & Tips (Layers section), alongside the rest of the reference material.\n\n## v0.0.36 -- 2026-09-05\n\n- Save/Load now stores a design as the same compressed hash format Copy Code already used, instead of pretty-printed JSON -- a multi-layer test design's saved .json file shrank by 77%. Loading still reads older, plain-JSON saves from before this change.\n- Every control in the menu bar (the File/Edit/View/... text buttons, the Settings gear, and the Play/Record icons) now shares one exact height, fixing small inconsistencies that used to show up between text buttons, icon-only buttons, and the Play/Record pair.\n- Removed the duplicate Undo/Redo buttons that used to sit at the top of the sidebar's Layers section -- the Edit menu's Undo/Redo (and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y shortcuts) already cover it.\n- Added keyboard shortcuts for most of the menu bar, matching the closest industry-standard equivalent where one exists: Ctrl/Cmd+S (Save), Ctrl/Cmd+Shift+S (Save As), Ctrl/Cmd+O (Load), Ctrl/Cmd+Shift+E (Export PNG), Ctrl/Cmd+G / Ctrl/Cmd+Shift+G (Group/Ungroup Selected), Ctrl/Cmd+A / Ctrl/Cmd+Shift+A (Select All / Deselect All), Ctrl/Cmd+0 / Ctrl/Cmd+1 (Zoom to Fit / Actual Size), Ctrl/Cmd+= / Ctrl/Cmd+- (Zoom In/Out), Space (Play/Pause Animation), and ? (open this Keyboard Shortcuts list). None of these hijack a text field -- Ctrl+A in the File Name box still selects its text instead of selecting every layer. (Ctrl+N, Ctrl+T/W, and Ctrl+D were left out on purpose -- browsers reserve those for themselves and never let a page override them.)\n\n## v0.0.35 -- 2026-09-05\n\n- The app's title moved from its own heading at the top of the sidebar into the menu bar itself, shortened to \"Image Generator\" in a quiet, low-contrast rounded label (hover it to see the full \"Background Image Generator\" name) -- frees up sidebar space now that the menu bar is the app's actual header.\n- Added File > Save As..., which asks for a new name and saves the design under it immediately, updating the Canvas menu's File Name field to match (so PNG/CSS/Rainmeter exports pick up the new name too).\n\n## v0.0.34 -- 2026-09-05\n\n- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character -- a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.\n\n## v0.0.33 -- 2026-09-05\n\n- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes -- they now share the same fixed 24x24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.\n\n## v0.0.32 -- 2026-09-05\n\n- All of this page's CSS has moved out of an inline &lt;style&gt; block into its own style.css file, linked from main.html's &lt;head&gt;. main.html is noticeably slimmer now; style.css needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.\n\n## v0.0.31 -- 2026-09-05\n\n- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (&#9654;/&#9208; and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -4109,6 +4235,63 @@
   function openHintsModal(){ $('hintsModal').classList.add('open'); broadcastThemeToHints(); }
   function closeHintsModal(){ $('hintsModal').classList.remove('open'); }
 
+  // ---------- Frame Metrics: optional, opt-in live frame-timing tracker ----------
+  // Off by default. Unlike Logger above (always-on, crash-safe, and
+  // completely unaffected by any of this), Frame Metrics samples real
+  // rAF-to-rAF deltas continuously while switched on -- a small constant
+  // cost (one rAF callback) that there's no reason to pay unless someone is
+  // actively chasing a performance issue. The Debug Log modal's own
+  // "Track Frame Metrics" switch is the only thing that turns it on or off;
+  // it has no effect on error/warning logging, resource sampling, or crash
+  // detection, all of which keep working exactly the same either way.
+  var FRAME_METRICS_WINDOW = 120; // ~2s of samples at 60fps -- smooths out one slow frame without going stale
+  var frameMetrics = { enabled: false, samples: [], lastTs: null, rafId: null };
+  function frameMetricsTick(ts){
+    if(!frameMetrics.enabled){ frameMetrics.rafId = null; return; }
+    if(frameMetrics.lastTs !== null){
+      var dt = ts - frameMetrics.lastTs;
+      // Reject a 0 (duplicate timestamp) or an implausibly large gap (tab
+      // backgrounded/throttled, or the debugger paused execution) -- neither
+      // says anything real about actual render speed, and would only skew
+      // the rolling average.
+      if(dt > 0 && dt < 1000){
+        frameMetrics.samples.push(dt);
+        if(frameMetrics.samples.length > FRAME_METRICS_WINDOW) frameMetrics.samples.shift();
+      }
+    }
+    frameMetrics.lastTs = ts;
+    frameMetrics.rafId = requestAnimationFrame(frameMetricsTick);
+  }
+  function startFrameMetrics(){
+    if(frameMetrics.rafId !== null) return;
+    frameMetrics.lastTs = null;
+    frameMetrics.rafId = requestAnimationFrame(frameMetricsTick);
+  }
+  function stopFrameMetrics(){
+    if(frameMetrics.rafId !== null){ cancelAnimationFrame(frameMetrics.rafId); frameMetrics.rafId = null; }
+    frameMetrics.lastTs = null;
+    frameMetrics.samples = [];
+  }
+  function getFrameMetricsSummary(){
+    var s = frameMetrics.samples;
+    if(!s.length) return null;
+    var sum = 0, worst = 0;
+    for(var i=0;i<s.length;i++){ sum += s[i]; if(s[i] > worst) worst = s[i]; }
+    var avgMs = sum / s.length;
+    return {
+      avgFps: avgMs > 0 ? Math.round((1000/avgMs)*10)/10 : 0,
+      avgFrameMs: Math.round(avgMs*10)/10,
+      worstFrameMs: Math.round(worst*10)/10,
+      sampleCount: s.length
+    };
+  }
+  function toggleFrameMetrics(nextEnabled){
+    frameMetrics.enabled = !!nextEnabled;
+    if(frameMetrics.enabled) startFrameMetrics(); else stopFrameMetrics();
+    saveSettings();
+    renderDebugLog();
+  }
+
   /* ---------- Debug Log modal ---------- */
   function debugLogLevelLabel(level){ return level === 'error' ? 'Error' : (level === 'warn' ? 'Warn' : 'Info'); }
   function formatLogTime(iso){
@@ -4129,6 +4312,13 @@
     lines.push('Background Image Generator -- Debug Log (v' + APP_VERSION + ')');
     lines.push('Exported ' + new Date().toISOString());
     lines.push('Last session end: ' + (Logger.wasCleanShutdown() ? 'clean' : 'UNCLEAN (crash or forced close)'));
+    lines.push('');
+    if(frameMetrics.enabled){
+      var fm = getFrameMetricsSummary();
+      lines.push('Frame Metrics: ' + (fm ? ('avg ' + fm.avgFps + ' fps (' + fm.avgFrameMs + 'ms/frame), worst frame ' + fm.worstFrameMs + 'ms, over ' + fm.sampleCount + ' samples') : 'on, still gathering samples'));
+    } else {
+      lines.push('Frame Metrics: off');
+    }
     lines.push('');
     var stats = Logger.stats();
     if(stats.length){
@@ -4154,18 +4344,31 @@
       banner.style.display = 'none';
     }
 
+    var toggleEl = $('debugFrameMetricsToggle');
+    if(toggleEl) toggleEl.checked = frameMetrics.enabled;
+
     var statsEl = $('debugLogStats');
     var stats = Logger.stats();
     var latest = stats.length ? stats[stats.length-1] : null;
     function statBlock(label, value){ return '<div class="debug-log-stat"><span class="n">'+escAttr(value)+'</span><span class="l">'+escAttr(label)+'</span></div>'; }
+    var frameStatsHtml = '';
+    if(frameMetrics.enabled){
+      var fm = getFrameMetricsSummary();
+      frameStatsHtml =
+        statBlock('Avg FPS', fm ? fm.avgFps : '...') +
+        statBlock('Avg Frame', fm ? fm.avgFrameMs + ' ms' : '...') +
+        statBlock('Worst Frame', fm ? fm.worstFrameMs + ' ms' : '...');
+    }
     if(latest){
-      statsEl.innerHTML =
+      statsEl.innerHTML = frameStatsHtml +
         statBlock('Layers', latest.layers) +
         statBlock('Undo Steps', latest.historyDepth) +
         statBlock('Canvas', latest.canvasW + '×' + latest.canvasH) +
         statBlock('Auto-Save Size', latest.autosaveKB !== null ? latest.autosaveKB + ' KB' : 'n/a') +
         statBlock('JS Heap Used', latest.heapUsedMB !== null ? latest.heapUsedMB + ' MB' : 'n/a') +
         statBlock('JS Heap Limit', latest.heapLimitMB !== null ? latest.heapLimitMB + ' MB' : 'n/a');
+    } else if(frameStatsHtml){
+      statsEl.innerHTML = frameStatsHtml;
     } else {
       statsEl.innerHTML = '<div class="debug-log-empty">No resource samples yet.</div>';
     }
@@ -4246,6 +4449,7 @@
   $('debugLogCopyBtn').addEventListener('click', copyDebugLogToClipboard);
   $('debugLogDownloadBtn').addEventListener('click', downloadDebugLog);
   $('debugLogClearBtn').addEventListener('click', clearDebugLog);
+  $('debugFrameMetricsToggle').addEventListener('change', function(e){ toggleFrameMetrics(e.target.checked); });
   document.addEventListener('keydown', function(e){
     if(e.key !== 'Escape') return;
     if($('changelogModal').classList.contains('open')) closeChangelogModal();
@@ -4290,7 +4494,8 @@
           left: Math.round(parseFloat(layersWin.style.left)) || 0,
           top: Math.round(parseFloat(layersWin.style.top)) || 0
         } : undefined,
-        smoothPlayback: smoothPlaybackEnabled
+        smoothPlayback: smoothPlaybackEnabled,
+        frameMetrics: frameMetrics.enabled
       }));
     } catch(e){ Logger.warn('Could not save settings to this browser (private browsing, or storage is full)', { error: String(e && e.message || e) }); }
   }
@@ -4300,6 +4505,7 @@
   var performanceModeEnabled = savedSettings.performanceMode !== false; // on by default
   var autoSaveEnabled = savedSettings.autoSave !== false; // on by default
   smoothPlaybackEnabled = savedSettings.smoothPlayback !== false; // on by default (declared with the rest of the loop-cache state above)
+  frameMetrics.enabled = savedSettings.frameMetrics === true; // off by default (declared with the rest of the Frame Metrics state above)
   var activePalette = savedSettings.palette || '';
   var stageZoomPct = null; // null = Zoom to Fit (default); a number is an explicit zoom percentage
 
@@ -4436,6 +4642,14 @@
       heapUsedMB: null,
       heapLimitMB: null
     };
+    if(frameMetrics.enabled){
+      var fm = getFrameMetricsSummary();
+      if(fm){
+        sample.avgFps = fm.avgFps;
+        sample.avgFrameMs = fm.avgFrameMs;
+        sample.worstFrameMs = fm.worstFrameMs;
+      }
+    }
     try {
       var raw = localStorage.getItem(AUTOSAVE_KEY);
       if(raw) sample.autosaveKB = Math.round(raw.length / 1024);
@@ -4755,6 +4969,7 @@
   /* ---------- init ---------- */
   Logger.info('App started (v' + APP_VERSION + ')');
   startResourceSampler();
+  if(frameMetrics.enabled) startFrameMetrics(); // restored from a prior session's saved settings
   applyTheme();
   $('menuPerfBtn').classList.toggle('is-on', performanceModeEnabled);
   $('menuSmoothPlaybackBtn').classList.toggle('is-on', smoothPlaybackEnabled);
