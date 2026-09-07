@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" 
+     data-svg-type="filter" 
+     data-svg-name="rough-outline" 
+     style="display: none;">
+  <filter id="rough-outline">
+    <feMorphology id="param-radius" in="SourceAlpha" operator="dilate" radius="4" result="thick" />
+    <feTurbulence id="param-freq" type="fractalNoise" baseFrequency="0.05" numOctaves="3" result="noise" />
+    <feDisplacementMap id="param-scale" in="thick" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" result="rough-thick" />
+    <feFlood id="param-color" flood-color="#ff0055" result="color" />
+    <feComposite in="color" in2="rough-thick" operator="in" result="colored-outline" />
+    <feMerge>
+      <feMergeNode in="colored-outline" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>

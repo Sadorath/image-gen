@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="terminal" viewBox="0 0 256 256" width="256" height="256" fill="currentColor">
+  <!-- example.svg: reserved for future use.
+data-svg-name is the name of the svg
+data-svg-type tells what the svg type is 
+       This file (and its "other" entry in manifest.json) isn't picked up by
+       any feature yet. It's here as a template: drop your own .svg files in
+       this folder (or the icons/ subfolder), give each one an entry in
+       manifest.json with a "type" of "filter", "object", "icon", or "other",
+       and:
+         - "object"  SVGs become pickable, recolorable shapes in the
+                     "+ Add Layer > SVG Shape..." menu.
+         - "icon"    SVGs (place them in icons/, and give the entry a
+                     "role", see the roles already used in manifest.json)
+                     replace the app's own built-in interface icons.
+         - "filter"  SVGs (containing a filter element) become presets
+                     in a layer's Filters panel, next to Custom SVG Filter.
+         - "other"   is never wired up automatically, exactly like this
+                     file, reserved for anything you're not ready to use
+                     yet, or content another tool/script wants to keep
+                     alongside these but that this app should leave alone.
+
+       Note: this folder is only read live (so new files show up without
+       editing any code) when main.html is served over http:// or https://.
+       Opened directly as a file:// page, browsers block that for security,
+       so the app falls back to a built-in copy of just the files it shipped
+       with; everything above still applies once you host it. -->
+  <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H7v-2h8v2zm3-4H6v-2h12v2zm0-4H6V8h12v2z"/>
+</svg>

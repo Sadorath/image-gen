@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" 
+     data-svg-type="filter" 
+     data-svg-name="clean-glow" 
+     style="display: none;">
+  <filter id="clean-glow">
+    <feMorphology id="glow-radius" in="SourceAlpha" operator="dilate" radius="3" result="thick" />
+    <feFlood id="glow-color" flood-color="#00ffcc" result="color" />
+    <feComposite in="color" in2="thick" operator="in" result="colored-outline" />
+    <feGaussianBlur id="glow-blur" in="colored-outline" stdDeviation="4" result="blurred" />
+    <feMerge>
+      <feMergeNode in="blurred" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>

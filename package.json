@@ -1,0 +1,12 @@
+{
+  "name": "background-image-generator",
+  "version": "1.0.0",
+  "description": "Standalone Background Generator",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^44.2.0"
+  }
+}

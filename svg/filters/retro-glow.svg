@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="retro-glow" style="display: none;">
+  <filter id="retro-glow">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
+    <feFlood flood-color="#ff9900" result="amber" />
+    <feComposite in="amber" in2="blur" operator="in" result="colored-blur" />
+    <feMerge>
+      <feMergeNode in="colored-blur" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>

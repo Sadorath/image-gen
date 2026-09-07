@@ -8,7 +8,6 @@
 </head>
 <body>
   <nav class="menubar" id="menubar">
-    <span class="app-title" title="Background Image Generator">Image Generator</span>
     <div class="menu-item-wrap">
       <button class="menu-btn" type="button" data-menu="file" title="New, save/load, import, and export">File</button>
       <div class="menu-dropdown" data-menu-panel="file">
@@ -179,7 +178,7 @@
     <div class="canvas-wrap">
       <canvas id="canvas" width="2560" height="1440"></canvas>
       <canvas id="drawOverlay" width="2560" height="1440"></canvas>
-      <div class="zoom-badge" id="zoomBadge" hidden>100%</div>
+      <div class="zoom-badge pos-right-top" id="zoomBadge" hidden>100%</div>
     </div>
     <div class="stage-footer">
       <span id="resReadout">2560 &times; 1440 px</span>
@@ -223,6 +222,7 @@
           <button data-type="hud" title="A sci-fi HUD-style grid pattern">Sci-Fi HUD Grid</button>
           <button data-type="noise" title="Static grain or smooth Perlin noise texture">Grain / Noise</button>
           <button data-type="image" title="Overlay a picture from your computer">Image Overlay&hellip;</button>
+          <button data-type="svgObject" title="Place a bundled SVG shape as a colorable, recolorable layer">SVG Shape&hellip;</button>
         </div>
       </div>
       <button class="btn-secondary btn-compact" id="groupSelectedBtn" disabled title="Check layers below, then group them into a folder">Group Selected</button>
@@ -247,12 +247,12 @@
     <div class="floating-window-scroll">
       <div class="tool-grid" id="toolGrid">
         <button type="button" class="tool-btn" data-tool="hand" title="Hand: Click and drag to slide the canvas view around."><span class="tool-icon" id="handToolIcon"></span><span class="tool-label">Hand</span></button>
-        <button type="button" class="tool-btn" data-tool="pencil" title="Pencil: Click and drag to draw a freehand line, release to finish."><span class="tool-icon">&#9998;</span><span class="tool-label">Pencil</span></button>
-        <button type="button" class="tool-btn" data-tool="line" title="Line: Click to place the start point, then click again to place the end point."><span class="tool-icon">&#9585;</span><span class="tool-label">Line</span></button>
-        <button type="button" class="tool-btn" data-tool="rect" title="Rectangle: Click to place corner, then next corner."><span class="tool-icon">&#9645;</span><span class="tool-label">Rectangle</span></button>
-        <button type="button" class="tool-btn" data-tool="ellipse" title="Circle: Click the center, then click again to set the radius."><span class="tool-icon">&#9711;</span><span class="tool-label">Circle</span></button>
-        <button type="button" class="tool-btn" data-tool="hex" title="Hexagon: Click the center, then click again to set the radius."><span class="tool-icon">&#11041;</span><span class="tool-label">Hexagon</span></button>
-        <button type="button" class="tool-btn" data-tool="poly" title="Polygon: Click to add each point, double-click to finish (at least 3 points)."><span class="tool-icon">&#11040;</span><span class="tool-label">Polygon</span></button>
+        <button type="button" class="tool-btn" data-tool="pencil" title="Pencil: Click and drag to draw a freehand line, release to finish."><span class="tool-icon" id="pencilToolIcon"></span><span class="tool-label">Pencil</span></button>
+        <button type="button" class="tool-btn" data-tool="line" title="Line: Click to place the start point, then click again to place the end point."><span class="tool-icon" id="lineToolIcon"></span><span class="tool-label">Line</span></button>
+        <button type="button" class="tool-btn" data-tool="rect" title="Rectangle: Click to place corner, then next corner."><span class="tool-icon" id="rectToolIcon"></span><span class="tool-label">Rectangle</span></button>
+        <button type="button" class="tool-btn" data-tool="ellipse" title="Circle: Click the center, then click again to set the radius."><span class="tool-icon" id="ellipseToolIcon"></span><span class="tool-label">Circle</span></button>
+        <button type="button" class="tool-btn" data-tool="hex" title="Hexagon: Click the center, then click again to set the radius."><span class="tool-icon" id="hexToolIcon"></span><span class="tool-label">Hexagon</span></button>
+        <button type="button" class="tool-btn" data-tool="poly" title="Polygon: Click to add each point, double-click to finish (at least 3 points)."><span class="tool-icon" id="polyToolIcon"></span><span class="tool-label">Polygon</span></button>
       </div>
       <div class="tool-hint" id="toolHint">Select a tool above to start drawing on the canvas. Esc cancels at any time.</div>
       <div class="tool-style-section">

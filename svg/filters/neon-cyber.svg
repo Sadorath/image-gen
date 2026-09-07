@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="neon-cyber" style="display: none;">
+  <filter id="neon-cyber">
+    <feMorphology in="SourceAlpha" operator="dilate" radius="2" result="thicken" />
+    <feFlood flood-color="#ff00ff" result="neon-pink" />
+    <feComposite in="neon-pink" in2="thicken" operator="in" result="colored-pink" />
+    <feGaussianBlur in="colored-pink" stdDeviation="3" result="blur1" />
+    <feGaussianBlur in="colored-pink" stdDeviation="8" result="blur2" />
+    <feMerge>
+      <feMergeNode in="blur2" />
+      <feMergeNode in="blur1" />
+      <feMergeNode in="colored-pink" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>

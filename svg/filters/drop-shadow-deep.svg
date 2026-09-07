@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="drop-shadow-deep" style="display: none;">
+  <filter id="drop-shadow-deep">
+    <feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#000000" flood-opacity="0.4" />
+  </filter>
+</svg>
+

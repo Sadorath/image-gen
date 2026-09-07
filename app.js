@@ -150,19 +150,181 @@
   // filled (not just outlined) pupil -- the original size read as a bare
   // dot at this button size, especially the closed variant where the
   // slash line and the thin eye outline visually merged together.
-  var EYE_OPEN_SVG = '<svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.6-5 7-5 7 5 7 5-2.6 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></svg>';
-  var EYE_CLOSED_SVG = '<svg viewBox="0 0 16 16" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5c1.7 2 4 3.3 6 3.3s4.3-1.3 6-3.3"/><line x1="1.3" y1="13.3" x2="14.7" y2="2.7"/></svg>';
+  var EYE_OPEN_SVG = '<svg data-svg-type="icon" data-svg-name="eye-open" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.6-5 7-5 7 5 7 5-2.6 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></g></svg>';
+  var EYE_CLOSED_SVG = '<svg data-svg-type="icon" data-svg-name="eye-closed" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5c1.7 2 4 3.3 6 3.3s4.3-1.3 6-3.3"/><line x1="1.3" y1="13.3" x2="14.7" y2="2.7"/></g></svg>';
   // Hand/pan tool icon: a simple filled palm + four fingers + thumb --
   // solid fill (like the eye icon's pupil) rather than a thin outline, since
   // a thin stroke read as near-invisible at this button size (see the eye
   // icon fix a couple versions back).
-  var HAND_TOOL_SVG = '<svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><rect x="3.1" y="2.1" width="1.6" height="6.6" rx="0.8"/><rect x="5.3" y="1.3" width="1.6" height="7.4" rx="0.8"/><rect x="7.5" y="1.7" width="1.6" height="7" rx="0.8"/><rect x="9.6" y="2.9" width="1.4" height="5.6" rx="0.7"/><rect x="0.6" y="7.7" width="3" height="1.8" rx="0.9" transform="rotate(-28 2.1 8.6)"/><path d="M2.6 8c0-1 .85-1.8 1.9-1.8h6.9c1.7 0 3 1.35 3 3.05v1.85c0 2.55-2.05 4.6-4.6 4.6H7.5c-1.25 0-2.45-.5-3.3-1.4L2.35 12.2c-.65-.7-.6-1.8.1-2.45.65-.6 1.65-.55 2.25.1"/></svg>';
+  var HAND_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="hand" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)"><rect x="3.1" y="2.1" width="1.6" height="6.6" rx="0.8"/><rect x="5.3" y="1.3" width="1.6" height="7.4" rx="0.8"/><rect x="7.5" y="1.7" width="1.6" height="7" rx="0.8"/><rect x="9.6" y="2.9" width="1.4" height="5.6" rx="0.7"/><rect x="0.6" y="7.7" width="3" height="1.8" rx="0.9" transform="rotate(-28 2.1 8.6)"/><path d="M2.6 8c0-1 .85-1.8 1.9-1.8h6.9c1.7 0 3 1.35 3 3.05v1.85c0 2.55-2.05 4.6-4.6 4.6H7.5c-1.25 0-2.45-.5-3.3-1.4L2.35 12.2c-.65-.7-.6-1.8.1-2.45.65-.6 1.65-.55 2.25.1"/></g></svg>';
+  // The 6 shape-tool icons (Pencil/Line/Rectangle/Circle/Hexagon/Polygon) --
+  // originally plain unicode glyphs in the Tools window's markup, converted
+  // to JS-populated <span id="...ToolIcon"> elements (see populateToolIcons
+  // below) matching the Hand tool's existing pattern above, so every tool
+  // icon -- like the eye and hand icons -- can be overridden by the bundled
+  // svg/icons/*.svg files (see initSvgRegistry/applyIconOverrides further
+  // down) instead of only ever being whatever's hardcoded here.
+  var PENCIL_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="pencil" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l1-3.5L10.5 2l3 3L6 12.5 2 14z"/><path d="M9 3.5l3 3"/></g></svg>';
+  var LINE_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="line" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2.5" y1="13.5" x2="13.5" y2="2.5"/></g></svg>';
+  var RECT_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="rect" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="11" height="8" rx="1"/></g></svg>';
+  var ELLIPSE_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="ellipse" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/></g></svg>';
+  var HEX_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="hex" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><polygon points="8,1.5 14,5 14,11 8,14.5 2,11 2,5"/></g></svg>';
+  var POLY_TOOL_SVG = '<svg data-svg-type="icon" data-svg-name="poly" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><polygon points="8,1.5 14.5,6.2 12.2,13.5 3.8,13.5 1.5,6.2"/></g></svg>';
+  function populateToolIcons(){
+    var map = {
+      handToolIcon: HAND_TOOL_SVG, pencilToolIcon: PENCIL_TOOL_SVG, lineToolIcon: LINE_TOOL_SVG,
+      rectToolIcon: RECT_TOOL_SVG, ellipseToolIcon: ELLIPSE_TOOL_SVG, hexToolIcon: HEX_TOOL_SVG, polyToolIcon: POLY_TOOL_SVG
+    };
+    Object.keys(map).forEach(function(id){ var el = $(id); if(el) el.innerHTML = map[id]; });
+  }
+
+  /* ---------- Bundled SVG content (svg/ folder) ----------
+     "Dynamically load any available SVG content" is implemented via
+     svg/manifest.json -- an array of {file, type, name, role?} entries the
+     app fetches at runtime, then fetches each listed file's own current
+     text content. That's genuinely dynamic (add or edit a file there, no
+     code changes) whenever main.html is served over http:// or https://.
+     Opened directly as a file:// page, though, Chromium (and every other
+     browser) blocks fetch()/XHR of local sibling files entirely for
+     security -- there's no way around that from inside the page itself.
+     So a built-in snapshot of the exact same shipped files (FALLBACK_SVG_*
+     below) is applied immediately and synchronously at startup -- same
+     principle as CHANGELOG_FALLBACK_MD elsewhere in this file -- and a live
+     fetch of svg/manifest.json is then attempted in the background; if it
+     succeeds (hosted), its freshly-fetched content REPLACES the fallback
+     everywhere (icons, the SVG Shape layer's picker, Filter presets) and
+     everything currently on screen re-renders to match. If it fails
+     (file://), the fallback already in place just keeps being used --
+     silently, with no error and no flash of missing content.
+     Each entry's "type" decides what it's used for: "icon" (paired with a
+     "role" naming which built-in UI icon it replaces -- see
+     ICON_ROLE_SETTERS) swaps out the app's own eye/hand/tool-shape icons;
+     "object" becomes a pickable, recolorable shape via "+ Add Layer > SVG
+     Shape..."; "filter" (containing an SVG <filter> element) becomes a
+     preset in a layer's Filters panel, feeding the existing Custom SVG
+     Filter mechanism; "other" is a reserved, not-yet-wired catch-all (see
+     example.svg) for future use. */
+  var FALLBACK_SVG_MANIFEST = [
+    { file:'icons/eye-open.svg',   type:'icon', role:'eyeOpen',   name:'Eye (Open)' },
+    { file:'icons/eye-closed.svg', type:'icon', role:'eyeClosed', name:'Eye (Closed)' },
+    { file:'icons/hand.svg',       type:'icon', role:'hand',      name:'Hand Tool' },
+    { file:'icons/pencil.svg',     type:'icon', role:'pencil',    name:'Pencil Tool' },
+    { file:'icons/line.svg',       type:'icon', role:'line',      name:'Line Tool' },
+    { file:'icons/rect.svg',       type:'icon', role:'rect',      name:'Rectangle Tool' },
+    { file:'icons/ellipse.svg',    type:'icon', role:'ellipse',   name:'Circle Tool' },
+    { file:'icons/hex.svg',        type:'icon', role:'hex',       name:'Hexagon Tool' },
+    { file:'icons/poly.svg',       type:'icon', role:'poly',      name:'Polygon Tool' },
+    { file:'icons/star.svg',  type:'object', name:'Star' },
+    { file:'icons/blob.svg',  type:'object', name:'Blob' },
+    { file:'icons/arrow.svg', type:'object', name:'Arrow' },
+    { file:'filters/filter-soft-glow.svg', type:'filter', name:'Soft Glow' },
+    { file:'example.svg', type:'other', name:'Example (reserved for future use)' }
+  ];
+  var FALLBACK_SVG_CONTENT = {
+    'icons/eye-open.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="eye-open" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s2.6-5 7-5 7 5 7 5-2.6 5-7 5-7-5-7-5z"/><circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/></g></svg>',
+    'icons/eye-closed.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="eye-closed" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8.5c1.7 2 4 3.3 6 3.3s4.3-1.3 6-3.3"/><line x1="1.3" y1="13.3" x2="14.7" y2="2.7"/></g></svg>',
+    'icons/hand.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="hand" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)"><rect x="3.1" y="2.1" width="1.6" height="6.6" rx="0.8"/><rect x="5.3" y="1.3" width="1.6" height="7.4" rx="0.8"/><rect x="7.5" y="1.7" width="1.6" height="7" rx="0.8"/><rect x="9.6" y="2.9" width="1.4" height="5.6" rx="0.7"/><rect x="0.6" y="7.7" width="3" height="1.8" rx="0.9" transform="rotate(-28 2.1 8.6)"/><path d="M2.6 8c0-1 .85-1.8 1.9-1.8h6.9c1.7 0 3 1.35 3 3.05v1.85c0 2.55-2.05 4.6-4.6 4.6H7.5c-1.25 0-2.45-.5-3.3-1.4L2.35 12.2c-.65-.7-.6-1.8.1-2.45.65-.6 1.65-.55 2.25.1"/></g></svg>',
+    'icons/pencil.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="pencil" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14l1-3.5L10.5 2l3 3L6 12.5 2 14z"/><path d="M9 3.5l3 3"/></g></svg>',
+    'icons/line.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="line" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><line x1="2.5" y1="13.5" x2="13.5" y2="2.5"/></g></svg>',
+    'icons/rect.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="rect" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2.5" y="4" width="11" height="8" rx="1"/></g></svg>',
+    'icons/ellipse.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="ellipse" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="8" cy="8" r="5.5"/></g></svg>',
+    'icons/hex.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="hex" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><polygon points="8,1.5 14,5 14,11 8,14.5 2,11 2,5"/></g></svg>',
+    'icons/poly.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="icon" data-svg-name="poly" viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><g transform="scale(1.5)" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><polygon points="8,1.5 14.5,6.2 12.2,13.5 3.8,13.5 1.5,6.2"/></g></svg>',
+    'icons/star.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="object" data-svg-name="star" viewBox="0 0 256 256" width="256" height="256" fill="currentColor"><g transform="scale(2.56)"><polygon points="50,4 61.5,37 96.5,37 68,57.5 78.5,90.5 50,70 21.5,90.5 32,57.5 3.5,37 38.5,37"/></g></svg>',
+    'icons/blob.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="object" data-svg-name="blob" viewBox="0 0 256 256" width="256" height="256" fill="currentColor"><g transform="scale(2.56)"><path d="M50 6c17 0 27 12 34 24 7 12 12 24 6 36-6 12-22 16-36 22-14 6-30 10-40 1C4 80-2 61 3 44 8 27 17 14 31 9 37 7 44 6 50 6z"/></g></svg>',
+    'icons/arrow.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="object" data-svg-name="arrow" viewBox="0 0 256 256" width="256" height="256" fill="currentColor"><g transform="scale(2.56)"><path d="M4 38h44V16l48 34-48 34V62H4z"/></g></svg>',
+    'filters/filter-soft-glow.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="soft-glow"><filter id="svgFilterSoftGlow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/><feFlood flood-color="#8fe3ff" flood-opacity="0.85" result="glowColor"/><feComposite in="glowColor" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter></svg>',
+    'example.svg': '<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="other" data-svg-name="example" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#888" stroke-width="2" stroke-dasharray="4 4"/></svg>'
+  };
+  var SVG_REGISTRY = { manifest:[], content:{} };
+  function svgEntriesByType(type){ return SVG_REGISTRY.manifest.filter(function(e){ return e.type === type; }); }
+  function svgContentFor(file){ return SVG_REGISTRY.content[file] || ''; }
+  function svgToDataUri(markup){ return 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(markup))); }
+  // Pulls just the <filter>...</filter> element out of a fetched SVG's raw
+  // text (the file itself is a whole standalone <svg>...</svg> document, for
+  // validity/portability -- but injectCustomFilter, and the same Custom SVG
+  // Filter mechanism a user's own pasted markup goes through, expects only
+  // the <filter> element itself). Reuses whatever id the file's <filter> was
+  // given (or none) -- injectCustomFilter always overwrites it with its own
+  // preferredId regardless, so it doesn't matter here either way.
+  function extractFilterMarkup(svgText){
+    try{
+      var doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+      if(doc.querySelector('parsererror')) return '';
+      var filterEl = doc.querySelector('filter');
+      if(!filterEl) return '';
+      return new XMLSerializer().serializeToString(filterEl);
+    } catch(err){ return ''; }
+  }
+  var ICON_ROLE_SETTERS = {
+    eyeOpen:   function(svg){ EYE_OPEN_SVG = svg; },
+    eyeClosed: function(svg){ EYE_CLOSED_SVG = svg; },
+    hand:      function(svg){ HAND_TOOL_SVG = svg; },
+    pencil:    function(svg){ PENCIL_TOOL_SVG = svg; },
+    line:      function(svg){ LINE_TOOL_SVG = svg; },
+    rect:      function(svg){ RECT_TOOL_SVG = svg; },
+    ellipse:   function(svg){ ELLIPSE_TOOL_SVG = svg; },
+    hex:       function(svg){ HEX_TOOL_SVG = svg; },
+    poly:      function(svg){ POLY_TOOL_SVG = svg; }
+  };
+  function applyIconOverrides(){
+    svgEntriesByType('icon').forEach(function(entry){
+      if(!entry.role || !ICON_ROLE_SETTERS[entry.role]) return;
+      var text = svgContentFor(entry.file);
+      if(text) ICON_ROLE_SETTERS[entry.role](text);
+    });
+    populateToolIcons(); // hand + the 6 shape tools -> their static spans
+  }
+  // Applied once immediately with the built-in fallback (see initSvgRegistry),
+  // then again if/when a live fetch of svg/manifest.json succeeds -- either
+  // way, every already-open bit of UI that depends on this content (icons,
+  // any layer card showing an SVG Shape picker or a Filters panel) is
+  // refreshed to match, and the SVG Shape bitmap cache (keyed by file
+  // content) is dropped so a live update's shapes redraw with the fresh
+  // content instead of a stale cached render of the fallback.
+  function applySvgRegistry(reg){
+    SVG_REGISTRY = reg;
+    applyIconOverrides();
+    svgObjectBitmapCache = {};
+    renderLayersList();
+    scheduleRender();
+  }
+  function initSvgRegistry(){
+    applySvgRegistry({ manifest: FALLBACK_SVG_MANIFEST, content: FALLBACK_SVG_CONTENT });
+    if(typeof fetch !== 'function') return;
+    // A file:// page's fetch() of a local sibling file doesn't just reject --
+    // Chromium (and friends) also logs a CORS/network error straight to the
+    // console itself, outside any try/catch this code could wrap around it.
+    // Skipping the attempt entirely for that one protocol avoids the doomed
+    // request (and the console noise) altogether; every other protocol
+    // (http:, https:) still gets the real, live attempt below.
+    if(location.protocol === 'file:') return;
+    fetch('svg/manifest.json').then(function(res){
+      if(!res.ok) throw new Error('bad status');
+      return res.json();
+    }).then(function(list){
+      if(!Array.isArray(list)) throw new Error('bad manifest');
+      var content = {};
+      return Promise.all(list.map(function(entry){
+        return fetch('svg/' + entry.file).then(function(r){
+          if(!r.ok) throw new Error('missing ' + entry.file);
+          return r.text();
+        }).then(function(text){ content[entry.file] = text; });
+      })).then(function(){ return { manifest:list, content:content }; });
+    }).then(function(reg){
+      applySvgRegistry(reg);
+    }).catch(function(){
+      // Normal when opened via file:// -- fetch() can't read local sibling
+      // files at all (see the block comment above); the fallback applied at
+      // the top of this function is already in place and stays in use.
+    });
+  }
 
   var TYPE_LABELS = {
     solid:'Solid Fill', linear:'Linear Gradient', radial:'Radial Gradient',
     checker:'Diagonal Checker', stripes:'Stripes', dots:'Dots',
     hex:'Hex Grid', hud:'Sci-Fi HUD Grid', noise:'Grain / Noise',
-    image:'Image Overlay', group:'Group', shape:'Drawing'
+    image:'Image Overlay', group:'Group', shape:'Drawing', svgObject:'SVG Shape'
   };
   // A "shape" layer is whatever the Drawing Tools window (Pencil/Line/
   // Rectangle/Circle/Hexagon/Polygon) produced -- one vector path per layer,
@@ -291,6 +453,16 @@
         base.fit = 'contain'; base.scale = 100; base.offsetX = 0; base.offsetY = 0;
         base.flipH = false; base.flipV = false;
         break;
+      case 'svgObject':
+        // svgFile is left blank here -- addLayer() fills in the first
+        // available "object"-type bundled SVG once the layer is actually
+        // added, since newLayer() itself has no reason to know about the
+        // SVG registry otherwise (every other case above is self-contained).
+        base.svgFile = '';
+        base.recolor = true; base.color = makeColor(60,60,60,1);
+        base.scale = 100; base.offsetX = 0; base.offsetY = 0;
+        base.flipH = false; base.flipV = false;
+        break;
       case 'group':
         base.name = 'Group';
         base.children = [];
@@ -372,6 +544,10 @@
 
   function addLayer(type){
     var l = newLayer(type);
+    if(type === 'svgObject'){
+      var firstObj = svgEntriesByType('object')[0];
+      if(firstObj) l.svgFile = firstObj.file;
+    }
     layers.unshift(l);
     renderLayersList();
     scheduleRender();
@@ -775,6 +951,13 @@
       h += '<div class="layer-controls-row"><label title="Color and transparency of the shadow">Shadow Color</label>'+dropShadowColorHTML(ds.color)+'</div>';
     }
 
+    var filterPresets = svgEntriesByType('filter');
+    if(filterPresets.length){
+      h += '<div class="layer-controls-row"><label title="Load one of the bundled SVG filters below into Custom SVG Filter">Filter Preset</label><select data-role="fSvgPreset" style="width:170px" title="Load one of the bundled SVG filters below into Custom SVG Filter">' +
+             '<option value="">Choose a preset&hellip;</option>' +
+             filterPresets.map(function(e){ return '<option value="'+escAttr(e.file)+'">'+escAttr(e.name)+'</option>'; }).join('') +
+           '</select></div>';
+    }
     h += '<div class="layer-controls-row"><label title="Paste your own SVG &amp;lt;filter&amp;gt; markup to apply via url(#id)">Custom SVG Filter</label></div>';
     h += '<textarea class="filter-svg-input" data-role="fCustomSvg" rows="3" title="Paste your own SVG filter markup here" placeholder="Paste an SVG &lt;filter&gt; element, e.g. &lt;filter id=&quot;x&quot;&gt;...&lt;/filter&gt;">'+escAttr(f.customSvg||'')+'</textarea>';
     h += '<small class="hint">Pastes an inline SVG &lt;filter&gt; and applies it via url(#id) &mdash; canvas can&rsquo;t load a filter from a genuinely external file when this page is opened with file://, so the SVG markup is stored right here in the design instead.</small>';
@@ -908,6 +1091,21 @@
       h += '<div class="layer-controls-row"><label title="Horizontal position shift of the image">Offset X</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+layer.offsetX+'" data-role="imgOffsetX" title="Horizontal position shift of the image" />'+valInputHTML('imgOffsetXVal', layer.offsetX, '%')+'</div></div>';
       h += '<div class="layer-controls-row"><label title="Vertical position shift of the image">Offset Y</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+layer.offsetY+'" data-role="imgOffsetY" title="Vertical position shift of the image" />'+valInputHTML('imgOffsetYVal', layer.offsetY, '%')+'</div></div>';
       h += '<div class="layer-controls-row"><label title="Mirror the image horizontally"><input type="checkbox" data-role="imgFlipH"'+(layer.flipH?' checked':'')+' /> Flip H</label><label title="Mirror the image vertically"><input type="checkbox" data-role="imgFlipV"'+(layer.flipV?' checked':'')+' /> Flip V</label></div>';
+    } else if(layer.type === 'svgObject'){
+      var objEntries = svgEntriesByType('object');
+      h += '<div class="layer-controls-row"><label title="Which bundled SVG shape to use">Shape</label><select data-role="svgFile" style="width:170px" title="Which bundled SVG shape to use"'+(objEntries.length?'':' disabled')+'>' +
+             (objEntries.length
+               ? objEntries.map(function(e){ return '<option value="'+escAttr(e.file)+'"'+(layer.svgFile===e.file?' selected':'')+'>'+escAttr(e.name)+'</option>'; }).join('')
+               : '<option value="">No bundled shapes available</option>') +
+           '</select></div>';
+      h += '<div class="layer-controls-row">' +
+             '<label class="mask-toggle" title="Tint the whole shape with the color below instead of showing its own built-in colors"><input type="checkbox" data-role="svgRecolor"'+(layer.recolor?' checked':'')+' /> Recolor</label>' +
+             (layer.recolor ? colorAlphaControlHTML(layer.color) : '') +
+           '</div>';
+      h += '<div class="layer-controls-row"><label title="Size of the shape, as a percentage of its fitted size">Scale</label><div class="slidewrap"><input type="range" min="10" max="400" value="'+layer.scale+'" data-role="svgScale" title="Size of the shape, as a percentage of its fitted size" />'+valInputHTML('svgScaleVal', layer.scale, '%')+'</div></div>';
+      h += '<div class="layer-controls-row"><label title="Horizontal position shift of the shape">Offset X</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+layer.offsetX+'" data-role="svgOffsetX" title="Horizontal position shift of the shape" />'+valInputHTML('svgOffsetXVal', layer.offsetX, '%')+'</div></div>';
+      h += '<div class="layer-controls-row"><label title="Vertical position shift of the shape">Offset Y</label><div class="slidewrap"><input type="range" min="-50" max="50" value="'+layer.offsetY+'" data-role="svgOffsetY" title="Vertical position shift of the shape" />'+valInputHTML('svgOffsetYVal', layer.offsetY, '%')+'</div></div>';
+      h += '<div class="layer-controls-row"><label title="Mirror the shape horizontally"><input type="checkbox" data-role="svgFlipH"'+(layer.flipH?' checked':'')+' /> Flip H</label><label title="Mirror the shape vertically"><input type="checkbox" data-role="svgFlipV"'+(layer.flipV?' checked':'')+' /> Flip V</label></div>';
     } else if(layer.type === 'group'){
       h += '<div class="layer-controls-row"><button class="btn-secondary" data-role="ungroup" type="button" style="flex:1;" title="Break this group back into individual layers">Ungroup</button></div>';
       h += '<small class="hint">Opacity and blend here apply to the whole folder as one flattened unit, on top of however the layers inside it already blend with each other.</small>';
@@ -956,6 +1154,7 @@
               ? '<span class="mask-badge" title="Cuts a hole through the layer below">&#9670; INVERTED MASK</span>'
               : '<span class="mask-badge" title="Masks the layer below">&#9670; MASK</span>') : '') +
           '</div>' +
+          '<button class="icon-btn" data-role="duplicate" title="Duplicate layer">&#10697;</button>' +
           '<button class="icon-btn danger" data-role="delete" title="Delete layer">&times;</button>' +
         '</div>' +
         '<div class="layer-body'+(layer.expanded?' open':'')+'" data-role="body">' + bodyHTML(layer) + '</div>' +
@@ -963,7 +1162,6 @@
           '<button class="icon-btn" data-role="moveUp" title="Move up"'+(idx===0?' disabled':'')+'>&uarr;</button>' +
           '<button class="icon-btn" data-role="moveDown" title="Move down"'+(idx===list.length-1?' disabled':'')+'>&darr;</button>' +
           '<label class="footer-select" title="Select for grouping"><input type="checkbox" class="select-checkbox" data-role="select"'+(selectedLayerIds[layer.id]?' checked':'')+' /> Group</label>' +
-          '<button class="icon-btn" data-role="duplicate" title="Duplicate layer">&#10697;</button>' +
         '</div>' +
       '</div>'
     );
@@ -1041,10 +1239,34 @@
     });
   }
 
+  // A layer card can contain OTHER full layer cards nested inside it (a
+  // Group's .layer-children holds each child's complete cardHTML() output,
+  // footer/Animate/Filters sections and all) -- so a plain cardEl.querySelector()
+  // for a data-role that also appears on every card (moveUp, the Animate
+  // toggle, the Filters toggle, ...) can silently return a NESTED CHILD's
+  // element instead of this card's own, whenever that data-role happens to
+  // sit later in this card's own markup than its children list does (the
+  // Group's own footer, Animate, and Filters sections all render AFTER
+  // .layer-children, so for a Group specifically, this used to wire up a
+  // child's controls instead of the group's own -- the "Animate/Filters
+  // don't work on grouped layers" bug). ownQuery finds the first match whose
+  // nearest .layer-card ancestor is truly cardEl itself, skipping any match
+  // that actually belongs to a nested child card. Used throughout
+  // wireLayerCard/wireAnimateControls/wireFilterControls in place of a bare
+  // cardEl.querySelector() -- for a non-Group card (no nested cards at all)
+  // it behaves identically to a plain querySelector.
+  function ownQuery(cardEl, selector){
+    var matches = cardEl.querySelectorAll(selector);
+    for(var i=0; i<matches.length; i++){
+      if(matches[i].closest('.layer-card') === cardEl) return matches[i];
+    }
+    return null;
+  }
+
   function wireLayerCard(cardEl, layer){
-    cardEl.querySelector('[data-role="moveUp"]').addEventListener('click', function(){ moveLayer(layer.id, -1); });
-    cardEl.querySelector('[data-role="moveDown"]').addEventListener('click', function(){ moveLayer(layer.id, 1); });
-    cardEl.querySelector('[data-role="visible"]').addEventListener('click', function(e){
+    ownQuery(cardEl, '[data-role="moveUp"]').addEventListener('click', function(){ moveLayer(layer.id, -1); });
+    ownQuery(cardEl, '[data-role="moveDown"]').addEventListener('click', function(){ moveLayer(layer.id, 1); });
+    ownQuery(cardEl, '[data-role="visible"]').addEventListener('click', function(e){
       layer.visible = !layer.visible;
       var btn = e.currentTarget;
       btn.innerHTML = layer.visible ? EYE_OPEN_SVG : EYE_CLOSED_SVG;
@@ -1052,22 +1274,22 @@
       cardEl.classList.toggle('hidden-layer', !layer.visible);
       scheduleRender();
     });
-    cardEl.querySelector('[data-role="toggleExpand"]').addEventListener('click', function(){
+    ownQuery(cardEl, '[data-role="toggleExpand"]').addEventListener('click', function(){
       layer.expanded = !layer.expanded;
-      cardEl.querySelector('[data-role="body"]').classList.toggle('open', layer.expanded);
-      cardEl.querySelector('[data-role="chevron"]').classList.toggle('open', layer.expanded);
+      ownQuery(cardEl, '[data-role="body"]').classList.toggle('open', layer.expanded);
+      ownQuery(cardEl, '[data-role="chevron"]').classList.toggle('open', layer.expanded);
     });
-    cardEl.querySelector('[data-role="name"]').addEventListener('input', function(e){ layer.name = e.target.value; });
-    cardEl.querySelector('[data-role="duplicate"]').addEventListener('click', function(){ duplicateLayer(layer.id); });
-    cardEl.querySelector('[data-role="delete"]').addEventListener('click', function(){ deleteLayer(layer.id); });
+    ownQuery(cardEl, '[data-role="name"]').addEventListener('input', function(e){ layer.name = e.target.value; });
+    ownQuery(cardEl, '[data-role="duplicate"]').addEventListener('click', function(){ duplicateLayer(layer.id); });
+    ownQuery(cardEl, '[data-role="delete"]').addEventListener('click', function(){ deleteLayer(layer.id); });
 
-    cardEl.querySelector('[data-role="select"]').addEventListener('change', function(e){
+    ownQuery(cardEl, '[data-role="select"]').addEventListener('change', function(e){
       if(e.target.checked) selectedLayerIds[layer.id] = true; else delete selectedLayerIds[layer.id];
       updateGroupButtonState();
     });
 
-    var opacityInput = cardEl.querySelector('[data-role="opacity"]');
-    var opacityVal = cardEl.querySelector('[data-role="opacityVal"]');
+    var opacityInput = ownQuery(cardEl, '[data-role="opacity"]');
+    var opacityVal = ownQuery(cardEl, '[data-role="opacityVal"]');
     opacityInput.addEventListener('input', function(){
       layer.opacity = +opacityInput.value;
       opacityVal.value = opacityInput.value + '%';
@@ -1075,13 +1297,13 @@
     });
     wireEditableValue(opacityVal, opacityInput);
 
-    cardEl.querySelector('[data-role="isMask"]').addEventListener('change', function(e){
+    ownQuery(cardEl, '[data-role="isMask"]').addEventListener('change', function(e){
       layer.isMask = e.target.checked;
       renderLayersList(); // structural: reveals/hides Blend row + mask-mode dropdown, restyles neighboring cards
       scheduleRender();
     });
 
-    var maskModeSelect = cardEl.querySelector('[data-role="maskMode"]');
+    var maskModeSelect = ownQuery(cardEl, '[data-role="maskMode"]');
     if(maskModeSelect){
       maskModeSelect.addEventListener('change', function(){
         layer.isInvertedMask = (maskModeSelect.value === 'inverted');
@@ -1090,17 +1312,17 @@
       });
     }
 
-    var blendSelect = cardEl.querySelector('[data-role="blend"]');
+    var blendSelect = ownQuery(cardEl, '[data-role="blend"]');
     if(blendSelect){
       blendSelect.addEventListener('change', function(){ layer.blend = blendSelect.value; scheduleRender(); });
     }
 
     if(layer.type === 'solid'){
-      wireColorAlphaControl(cardEl.querySelector('[data-color-control]'), layer.color, scheduleRender);
+      wireColorAlphaControl(ownQuery(cardEl, '[data-color-control]'), layer.color, scheduleRender);
     } else if(layer.type === 'linear' || layer.type === 'radial'){
       if(layer.type === 'linear'){
-        var angleInput = cardEl.querySelector('[data-role="angle"]');
-        var angleVal = cardEl.querySelector('[data-role="angleVal"]');
+        var angleInput = ownQuery(cardEl, '[data-role="angle"]');
+        var angleVal = ownQuery(cardEl, '[data-role="angleVal"]');
         angleInput.addEventListener('input', function(){
           layer.angle = +angleInput.value;
           angleVal.value = angleInput.value + '°';
@@ -1109,8 +1331,8 @@
         wireEditableValue(angleVal, angleInput);
       } else {
         ['cx','cy'].forEach(function(key){
-          var input = cardEl.querySelector('[data-role="'+key+'"]');
-          var valEl = cardEl.querySelector('[data-role="'+key+'Val"]');
+          var input = ownQuery(cardEl, '[data-role="'+key+'"]');
+          var valEl = ownQuery(cardEl, '[data-role="'+key+'Val"]');
           input.addEventListener('input', function(){
             layer[key] = +input.value;
             valEl.value = input.value + '%';
@@ -1120,7 +1342,7 @@
         });
       }
       wireStopsRows(cardEl, layer.stops, '[data-role="stopsList"]');
-      var addStopBtn = cardEl.querySelector('[data-role="addStop"]');
+      var addStopBtn = ownQuery(cardEl, '[data-role="addStop"]');
       if(addStopBtn){
         addStopBtn.addEventListener('click', function(){
           layer.stops.push({ pos:50, color: makeColor(255,255,255,1) });
@@ -1129,7 +1351,7 @@
         });
       }
     } else if(GEOM_TYPES.indexOf(layer.type) !== -1){
-      var fillModeSelect = cardEl.querySelector('[data-role="fillMode"]');
+      var fillModeSelect = ownQuery(cardEl, '[data-role="fillMode"]');
       fillModeSelect.addEventListener('change', function(){
         layer.fillMode = fillModeSelect.value;
         renderLayersList();
@@ -1138,7 +1360,7 @@
 
       if(layer.fillMode === 'gradient'){
         var pg = layer.patternGradient;
-        var gradKindSelect = cardEl.querySelector('[data-role="gradKind"]');
+        var gradKindSelect = ownQuery(cardEl, '[data-role="gradKind"]');
         gradKindSelect.addEventListener('change', function(){
           pg.kind = gradKindSelect.value;
           renderLayersList();
@@ -1146,8 +1368,8 @@
         });
         if(pg.kind === 'radial'){
           ['cx','cy'].forEach(function(key){
-            var input = cardEl.querySelector('[data-role="grad'+key.toUpperCase()[0]+key.slice(1)+'"]');
-            var valEl = cardEl.querySelector('[data-role="grad'+key.toUpperCase()[0]+key.slice(1)+'Val"]');
+            var input = ownQuery(cardEl, '[data-role="grad'+key.toUpperCase()[0]+key.slice(1)+'"]');
+            var valEl = ownQuery(cardEl, '[data-role="grad'+key.toUpperCase()[0]+key.slice(1)+'Val"]');
             input.addEventListener('input', function(){
               pg[key] = +input.value;
               valEl.value = input.value + '%';
@@ -1156,8 +1378,8 @@
             wireEditableValue(valEl, input);
           });
         } else {
-          var gAngleInput = cardEl.querySelector('[data-role="gradAngle"]');
-          var gAngleVal = cardEl.querySelector('[data-role="gradAngleVal"]');
+          var gAngleInput = ownQuery(cardEl, '[data-role="gradAngle"]');
+          var gAngleVal = ownQuery(cardEl, '[data-role="gradAngleVal"]');
           gAngleInput.addEventListener('input', function(){
             pg.angle = +gAngleInput.value;
             gAngleVal.value = gAngleInput.value + '°';
@@ -1166,7 +1388,7 @@
           wireEditableValue(gAngleVal, gAngleInput);
         }
         wireStopsRows(cardEl, pg.stops, '[data-role="patternStopsList"]');
-        var addPatternStopBtn = cardEl.querySelector('[data-role="addPatternStop"]');
+        var addPatternStopBtn = ownQuery(cardEl, '[data-role="addPatternStop"]');
         if(addPatternStopBtn){
           addPatternStopBtn.addEventListener('click', function(){
             pg.stops.push({ pos:50, color: makeColor(255,255,255,1) });
@@ -1175,12 +1397,12 @@
           });
         }
       } else {
-        wireColorAlphaControl(cardEl.querySelector('[data-color-control]'), layer.color, scheduleRender);
+        wireColorAlphaControl(ownQuery(cardEl, '[data-color-control]'), layer.color, scheduleRender);
       }
 
       ['angle','size','fill'].forEach(function(key){
-        var input = cardEl.querySelector('[data-role="'+key+'"]');
-        var valEl = cardEl.querySelector('[data-role="'+key+'Val"]');
+        var input = ownQuery(cardEl, '[data-role="'+key+'"]');
+        var valEl = ownQuery(cardEl, '[data-role="'+key+'Val"]');
         var suffix = key === 'angle' ? '°' : (key === 'size' ? 'px' : '%');
         input.addEventListener('input', function(){
           layer[key] = +input.value;
@@ -1190,7 +1412,7 @@
         wireEditableValue(valEl, input);
       });
     } else if(layer.type === 'noise'){
-      var noiseTypeSelect = cardEl.querySelector('[data-role="noiseType"]');
+      var noiseTypeSelect = ownQuery(cardEl, '[data-role="noiseType"]');
       noiseTypeSelect.addEventListener('change', function(){
         layer.noiseType = noiseTypeSelect.value;
         renderLayersList();
@@ -1199,7 +1421,7 @@
 
       if(layer.noiseType === 'perlin'){
         var pl = layer.perlin;
-        var styleSelect = cardEl.querySelector('[data-role="perlinStyle"]');
+        var styleSelect = ownQuery(cardEl, '[data-role="perlinStyle"]');
         styleSelect.addEventListener('change', function(){
           pl.style = styleSelect.value;
           renderLayersList(); // marble reveals extra controls
@@ -1207,8 +1429,8 @@
         });
 
         [['perlinScale','scale','px'], ['perlinOctaves','octaves',''], ['perlinContrast','contrast','%']].forEach(function(spec){
-          var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
-          var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+          var input = ownQuery(cardEl, '[data-role="'+spec[0]+'"]');
+          var valEl = ownQuery(cardEl, '[data-role="'+spec[0]+'Val"]');
           input.addEventListener('input', function(){
             pl[spec[1]] = +input.value;
             if(valEl) valEl.value = input.value + spec[2];
@@ -1217,8 +1439,8 @@
           if(valEl) wireEditableValue(valEl, input);
         });
 
-        var roughnessInput = cardEl.querySelector('[data-role="perlinRoughness"]');
-        var roughnessVal = cardEl.querySelector('[data-role="perlinRoughnessVal"]');
+        var roughnessInput = ownQuery(cardEl, '[data-role="perlinRoughness"]');
+        var roughnessVal = ownQuery(cardEl, '[data-role="perlinRoughnessVal"]');
         roughnessInput.addEventListener('input', function(){
           pl.roughness = (+roughnessInput.value)/100;
           roughnessVal.value = roughnessInput.value + '%';
@@ -1229,8 +1451,8 @@
         if(pl.style === 'marble'){
           ['perlinVeinFreq','perlinPower'].forEach(function(role){
             var key = role === 'perlinVeinFreq' ? 'veinFreq' : 'power';
-            var input = cardEl.querySelector('[data-role="'+role+'"]');
-            var valEl = cardEl.querySelector('[data-role="'+role+'Val"]');
+            var input = ownQuery(cardEl, '[data-role="'+role+'"]');
+            var valEl = ownQuery(cardEl, '[data-role="'+role+'Val"]');
             input.addEventListener('input', function(){
               pl[key] = +input.value;
               valEl.value = input.value;
@@ -1240,23 +1462,23 @@
           });
         }
 
-        var seedInput = cardEl.querySelector('[data-role="perlinSeed"]');
+        var seedInput = ownQuery(cardEl, '[data-role="perlinSeed"]');
         seedInput.addEventListener('input', function(){
           pl.seed = Math.floor(+seedInput.value) || 0;
           scheduleRender();
         });
-        cardEl.querySelector('[data-role="perlinReseed"]').addEventListener('click', function(){
+        ownQuery(cardEl, '[data-role="perlinReseed"]').addEventListener('click', function(){
           pl.seed = Math.floor(Math.random()*1000000000);
           seedInput.value = pl.seed;
           scheduleRender();
         });
-        cardEl.querySelector('[data-role="perlinHighResCache"]').addEventListener('change', function(e){
+        ownQuery(cardEl, '[data-role="perlinHighResCache"]').addEventListener('change', function(e){
           pl.highResCache = e.target.checked;
           scheduleRender();
         });
 
         wireStopsRows(cardEl, layer.noiseGradient.stops, '[data-role="noiseStopsList"]');
-        var addNoiseStopBtn = cardEl.querySelector('[data-role="addNoiseStop"]');
+        var addNoiseStopBtn = ownQuery(cardEl, '[data-role="addNoiseStop"]');
         if(addNoiseStopBtn){
           addNoiseStopBtn.addEventListener('click', function(){
             layer.noiseGradient.stops.push({ pos:50, color: makeColor(255,255,255,1) });
@@ -1265,22 +1487,22 @@
           });
         }
       } else {
-        var intensityInput = cardEl.querySelector('[data-role="intensity"]');
-        var intensityVal = cardEl.querySelector('[data-role="intensityVal"]');
+        var intensityInput = ownQuery(cardEl, '[data-role="intensity"]');
+        var intensityVal = ownQuery(cardEl, '[data-role="intensityVal"]');
         intensityInput.addEventListener('input', function(){
           layer.intensity = +intensityInput.value;
           intensityVal.value = intensityInput.value + '%';
           scheduleRender();
         });
         wireEditableValue(intensityVal, intensityInput);
-        cardEl.querySelector('[data-role="mono"]').addEventListener('change', function(e){
+        ownQuery(cardEl, '[data-role="mono"]').addEventListener('change', function(e){
           layer.mono = e.target.checked;
           scheduleRender();
         });
       }
     } else if(layer.type === 'image'){
-      var fileInput = cardEl.querySelector('[data-role="imgFile"]');
-      cardEl.querySelector('[data-role="imgPick"]').addEventListener('click', function(){ fileInput.click(); });
+      var fileInput = ownQuery(cardEl, '[data-role="imgFile"]');
+      ownQuery(cardEl, '[data-role="imgPick"]').addEventListener('click', function(){ fileInput.click(); });
       fileInput.addEventListener('change', function(){
         var file = fileInput.files && fileInput.files[0];
         if(!file) return;
@@ -1294,12 +1516,12 @@
         reader.readAsDataURL(file);
       });
 
-      var fitSelect = cardEl.querySelector('[data-role="imgFit"]');
+      var fitSelect = ownQuery(cardEl, '[data-role="imgFit"]');
       fitSelect.addEventListener('change', function(){ layer.fit = fitSelect.value; scheduleRender(); });
 
       [['imgScale','scale','%'], ['imgOffsetX','offsetX','%'], ['imgOffsetY','offsetY','%']].forEach(function(spec){
-        var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
-        var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+        var input = ownQuery(cardEl, '[data-role="'+spec[0]+'"]');
+        var valEl = ownQuery(cardEl, '[data-role="'+spec[0]+'Val"]');
         input.addEventListener('input', function(){
           layer[spec[1]] = +input.value;
           if(valEl) valEl.value = input.value + spec[2];
@@ -1308,23 +1530,51 @@
         if(valEl) wireEditableValue(valEl, input);
       });
 
-      var flipHInput = cardEl.querySelector('[data-role="imgFlipH"]');
-      var flipVInput = cardEl.querySelector('[data-role="imgFlipV"]');
+      var flipHInput = ownQuery(cardEl, '[data-role="imgFlipH"]');
+      var flipVInput = ownQuery(cardEl, '[data-role="imgFlipV"]');
       flipHInput.addEventListener('change', function(e){ layer.flipH = e.target.checked; scheduleRender(); });
       flipVInput.addEventListener('change', function(e){ layer.flipV = e.target.checked; scheduleRender(); });
+    } else if(layer.type === 'svgObject'){
+      var svgFileSelect = ownQuery(cardEl, '[data-role="svgFile"]');
+      if(svgFileSelect) svgFileSelect.addEventListener('change', function(){ layer.svgFile = svgFileSelect.value; scheduleRender(); });
+
+      ownQuery(cardEl, '[data-role="svgRecolor"]').addEventListener('change', function(e){
+        layer.recolor = e.target.checked;
+        renderLayersList(); // structural: reveals/hides the color swatch row
+        scheduleRender();
+      });
+      if(layer.recolor){
+        wireColorAlphaControl(ownQuery(cardEl, '[data-color-control]'), layer.color, scheduleRender);
+      }
+
+      [['svgScale','scale','%'], ['svgOffsetX','offsetX','%'], ['svgOffsetY','offsetY','%']].forEach(function(spec){
+        var input = ownQuery(cardEl, '[data-role="'+spec[0]+'"]');
+        var valEl = ownQuery(cardEl, '[data-role="'+spec[0]+'Val"]');
+        input.addEventListener('input', function(){
+          layer[spec[1]] = +input.value;
+          if(valEl) valEl.value = input.value + spec[2];
+          scheduleRender();
+        });
+        if(valEl) wireEditableValue(valEl, input);
+      });
+
+      var svgFlipHInput = ownQuery(cardEl, '[data-role="svgFlipH"]');
+      var svgFlipVInput = ownQuery(cardEl, '[data-role="svgFlipV"]');
+      svgFlipHInput.addEventListener('change', function(e){ layer.flipH = e.target.checked; scheduleRender(); });
+      svgFlipVInput.addEventListener('change', function(e){ layer.flipV = e.target.checked; scheduleRender(); });
     } else if(layer.type === 'group'){
-      cardEl.querySelector('[data-role="ungroup"]').addEventListener('click', function(){ ungroupLayer(layer.id); });
+      ownQuery(cardEl, '[data-role="ungroup"]').addEventListener('click', function(){ ungroupLayer(layer.id); });
     } else if(layer.type === 'shape'){
       var sh = layer.shape;
-      cardEl.querySelector('[data-role="shapeStrokeEnabled"]').addEventListener('change', function(e){
+      ownQuery(cardEl, '[data-role="shapeStrokeEnabled"]').addEventListener('change', function(e){
         sh.stroke.enabled = e.target.checked;
         renderLayersList(); // structural: reveals/hides the color+width rows
         scheduleRender();
       });
       if(sh.stroke.enabled){
         wirePrefixedColorAlphaControl(cardEl, 'shapeStroke', sh.stroke.color, scheduleRender);
-        var swInput = cardEl.querySelector('[data-role="shapeStrokeWidth"]');
-        var swVal = cardEl.querySelector('[data-role="shapeStrokeWidthVal"]');
+        var swInput = ownQuery(cardEl, '[data-role="shapeStrokeWidth"]');
+        var swVal = ownQuery(cardEl, '[data-role="shapeStrokeWidthVal"]');
         swInput.addEventListener('input', function(){
           sh.stroke.width = +swInput.value;
           swVal.value = swInput.value + 'px';
@@ -1332,7 +1582,7 @@
         });
         wireEditableValue(swVal, swInput);
       }
-      cardEl.querySelector('[data-role="shapeFillEnabled"]').addEventListener('change', function(e){
+      ownQuery(cardEl, '[data-role="shapeFillEnabled"]').addEventListener('change', function(e){
         sh.fill.enabled = e.target.checked;
         renderLayersList(); // structural: reveals/hides the fill color row
         scheduleRender();
@@ -1351,17 +1601,17 @@
   // rows (Style, Amplitude, Custom) actually exist in the DOM depends on the
   // layer's current style, per animateControlsHTML().
   function wireAnimateControls(cardEl, layer){
-    var enabledInput = cardEl.querySelector('[data-role="animateEnabled"]');
+    var enabledInput = ownQuery(cardEl, '[data-role="animateEnabled"]');
     if(!enabledInput) return;
     var a = layer.animate;
-    var panel = cardEl.querySelector('[data-role="animatePanel"]');
+    var panel = ownQuery(cardEl, '[data-role="animatePanel"]');
     enabledInput.addEventListener('change', function(e){
       a.enabled = e.target.checked;
       panel.style.display = a.enabled ? 'block' : 'none';
       syncAnimationLoopState();
       scheduleRender();
     });
-    var styleSelect = cardEl.querySelector('[data-role="animateStyle"]');
+    var styleSelect = ownQuery(cardEl, '[data-role="animateStyle"]');
     if(styleSelect){
       styleSelect.addEventListener('change', function(){
         a.style = styleSelect.value;
@@ -1371,9 +1621,9 @@
         scheduleRender();
       });
     }
-    var cyclesInput = cardEl.querySelector('[data-role="animateCycles"]');
-    var cyclesVal = cardEl.querySelector('[data-role="animateCyclesVal"]');
-    var cyclesHintEl = cardEl.querySelector('[data-role="animateCyclesHint"]');
+    var cyclesInput = ownQuery(cardEl, '[data-role="animateCycles"]');
+    var cyclesVal = ownQuery(cardEl, '[data-role="animateCyclesVal"]');
+    var cyclesHintEl = ownQuery(cardEl, '[data-role="animateCyclesHint"]');
     cyclesInput.addEventListener('input', function(){
       a.cycles = Math.max(1, Math.round(+cyclesInput.value));
       cyclesVal.value = String(a.cycles);
@@ -1381,9 +1631,9 @@
       scheduleRender();
     });
     wireEditableValue(cyclesVal, cyclesInput);
-    var ampInput = cardEl.querySelector('[data-role="animateAmplitude"]');
+    var ampInput = ownQuery(cardEl, '[data-role="animateAmplitude"]');
     if(ampInput){
-      var ampVal = cardEl.querySelector('[data-role="animateAmplitudeVal"]');
+      var ampVal = ownQuery(cardEl, '[data-role="animateAmplitudeVal"]');
       ampInput.addEventListener('input', function(){
         a.amplitude = +ampInput.value;
         ampVal.value = ampInput.value + '%';
@@ -1391,7 +1641,7 @@
       });
       wireEditableValue(ampVal, ampInput);
     }
-    var customInput = cardEl.querySelector('[data-role="animateCustom"]');
+    var customInput = ownQuery(cardEl, '[data-role="animateCustom"]');
     if(customInput){
       customInput.addEventListener('change', function(){
         a.custom = customInput.value;
@@ -1404,8 +1654,8 @@
   // layer card, regardless of layer type.
   function wireFilterControls(cardEl, layer){
     var f = layer.filters;
-    var enabledInput = cardEl.querySelector('[data-role="filtersEnabled"]');
-    var panel = cardEl.querySelector('[data-role="filtersPanel"]');
+    var enabledInput = ownQuery(cardEl, '[data-role="filtersEnabled"]');
+    var panel = ownQuery(cardEl, '[data-role="filtersPanel"]');
     enabledInput.addEventListener('change', function(e){
       f.enabled = e.target.checked;
       panel.style.display = f.enabled ? 'block' : 'none';
@@ -1417,8 +1667,8 @@
       ['fGrayscale','grayscale','%'], ['fHueRotate','hueRotate','°'], ['fInvert','invert','%'],
       ['fOpacity','opacity','%'], ['fSaturate','saturate','%'], ['fSepia','sepia','%']
     ].forEach(function(spec){
-      var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
-      var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+      var input = ownQuery(cardEl, '[data-role="'+spec[0]+'"]');
+      var valEl = ownQuery(cardEl, '[data-role="'+spec[0]+'Val"]');
       if(!input) return;
       input.addEventListener('input', function(){
         f[spec[1]] = +input.value;
@@ -1428,7 +1678,7 @@
       if(valEl) wireEditableValue(valEl, input);
     });
 
-    var dsEnabledInput = cardEl.querySelector('[data-role="fDropShadowEnabled"]');
+    var dsEnabledInput = ownQuery(cardEl, '[data-role="fDropShadowEnabled"]');
     if(dsEnabledInput){
       dsEnabledInput.addEventListener('change', function(e){
         f.dropShadow.enabled = e.target.checked;
@@ -1439,8 +1689,8 @@
 
     if(f.dropShadow.enabled){
       [['fDsX','x','px'], ['fDsY','y','px'], ['fDsBlur','blur','px']].forEach(function(spec){
-        var input = cardEl.querySelector('[data-role="'+spec[0]+'"]');
-        var valEl = cardEl.querySelector('[data-role="'+spec[0]+'Val"]');
+        var input = ownQuery(cardEl, '[data-role="'+spec[0]+'"]');
+        var valEl = ownQuery(cardEl, '[data-role="'+spec[0]+'Val"]');
         if(!input) return;
         input.addEventListener('input', function(){
           f.dropShadow[spec[1]] = +input.value;
@@ -1450,10 +1700,10 @@
         if(valEl) wireEditableValue(valEl, input);
       });
 
-      var dsHex = cardEl.querySelector('[data-role="fDsColorHex"]');
-      var dsAlpha = cardEl.querySelector('[data-role="fDsColorAlpha"]');
-      var dsAlphaVal = cardEl.querySelector('[data-role="fDsColorAlphaVal"]');
-      var dsPreview = cardEl.querySelector('[data-role="fDsAlphaPreview"]');
+      var dsHex = ownQuery(cardEl, '[data-role="fDsColorHex"]');
+      var dsAlpha = ownQuery(cardEl, '[data-role="fDsColorAlpha"]');
+      var dsAlphaVal = ownQuery(cardEl, '[data-role="fDsColorAlphaVal"]');
+      var dsPreview = ownQuery(cardEl, '[data-role="fDsAlphaPreview"]');
       if(dsHex){
         dsHex.addEventListener('input', function(){
           var rgb = rgbFromHex(dsHex.value, f.dropShadow.color.a);
@@ -1471,12 +1721,27 @@
       }
     }
 
-    var customSvgInput = cardEl.querySelector('[data-role="fCustomSvg"]');
+    var customSvgInput = ownQuery(cardEl, '[data-role="fCustomSvg"]');
     if(customSvgInput){
       customSvgInput.addEventListener('change', function(){
         f.customSvg = customSvgInput.value.trim();
         f.customSvgId = ''; // force re-injection with fresh markup next render
         scheduleRender();
+      });
+    }
+
+    var presetSelect = ownQuery(cardEl, '[data-role="fSvgPreset"]');
+    if(presetSelect){
+      presetSelect.addEventListener('change', function(){
+        var file = presetSelect.value;
+        if(!file) return;
+        var markup = extractFilterMarkup(svgContentFor(file));
+        if(markup){
+          f.customSvg = markup;
+          f.customSvgId = ''; // force re-injection with fresh markup next render
+          renderLayersList(); // structural: refreshes the Custom SVG Filter textarea's content
+          scheduleRender();
+        }
       });
     }
   }
@@ -2877,6 +3142,73 @@
     targetCtx.restore();
   }
 
+  /* ---------- SVG object layer (a bundled, recolorable shape) ---------- */
+  // Keyed by file + a fingerprint of the recolor tint (or 'raw' when showing
+  // the SVG's own built-in colors) -- the same bundled shape can be reused
+  // by many layers, each independently recolored, so the tint has to be part
+  // of the cache key rather than baked in once. Entries are dropped whenever
+  // the SVG registry changes (see applySvgRegistry) so a live-fetched update
+  // to a bundled file doesn't keep showing a stale render of the fallback.
+  // The source image is loaded from a data: URI built from the SVG's own
+  // markup (never a bare "svg/xxx.svg" path) specifically because drawing a
+  // file://-sourced image taints the canvas -- permanently blocking PNG
+  // export for the whole design -- while a data: URI never does, exactly
+  // like the Image Overlay layer's own data-URL imgSrc above.
+  var svgObjectBitmapCache = {};
+  function getSvgObjectBitmap(file, recolor, color){
+    if(!file) return null;
+    var svgText = svgContentFor(file);
+    if(!svgText) return null;
+    var key = file + (recolor ? ('|r' + color.r + ',' + color.g + ',' + color.b + ',' + color.a) : '|raw');
+    var cached = svgObjectBitmapCache[key];
+    if(cached) return cached;
+    var entry = { loaded:false, canvas:null, w:0, h:0 };
+    svgObjectBitmapCache[key] = entry;
+    var img = new Image();
+    img.onload = function(){
+      var iw = img.naturalWidth || 100, ih = img.naturalHeight || 100;
+      var c = document.createElement('canvas');
+      c.width = iw; c.height = ih;
+      var cctx = c.getContext('2d');
+      cctx.drawImage(img, 0, 0, iw, ih);
+      if(recolor){
+        // Standard "icon tinting" trick: source-in keeps only the new
+        // fillStyle wherever the shape already had any opacity, so every
+        // opaque pixel becomes the tint color (alpha and all) while fully
+        // transparent areas stay transparent.
+        cctx.globalCompositeOperation = 'source-in';
+        cctx.fillStyle = rgbaCss(color);
+        cctx.fillRect(0, 0, iw, ih);
+      }
+      entry.canvas = c; entry.w = iw; entry.h = ih; entry.loaded = true;
+      scheduleRender();
+    };
+    img.src = svgToDataUri(svgText);
+    return entry;
+  }
+  function drawSvgObjectLayer(layer, w, h, targetCtx){
+    var entry = getSvgObjectBitmap(layer.svgFile, layer.recolor, layer.color);
+    if(!entry || !entry.loaded) return; // decoding (or no shape picked) -- scheduleRender() fires again on load
+    var iw = entry.w, ih = entry.h;
+    var scale = Math.max(0.05, layer.scale/100);
+    var offX = (layer.offsetX/100) * w;
+    var offY = (layer.offsetY/100) * h;
+    var flipX = layer.flipH ? -1 : 1;
+    var flipY = layer.flipV ? -1 : 1;
+    // Always fits fully inside the canvas, centered -- an icon-like shape
+    // reads better this way by default than Image Overlay's photo-oriented
+    // cover/stretch/tile choices, so there's no separate Fit dropdown here.
+    var sIn = Math.min(w/iw, h/ih) * scale;
+    var drawW = iw*sIn, drawH = ih*sIn;
+    var cx = w/2 + offX, cy = h/2 + offY;
+    targetCtx.save();
+    targetCtx.translate(cx, cy);
+    targetCtx.scale(flipX, flipY);
+    targetCtx.imageSmoothingEnabled = true;
+    targetCtx.drawImage(entry.canvas, -drawW/2, -drawH/2, drawW, drawH);
+    targetCtx.restore();
+  }
+
   // Persistent hidden <svg><defs> host for pasted custom filters, so a
   // canvas filter: url(#id) has something in the document to point at.
   // Self-healing: re-created if it's ever missing from the DOM, so it
@@ -3033,7 +3365,11 @@
     // -- Image overlay --
     imgscale:     { min:10, max:400, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.scale; }, set:function(e,v){ e.scale = clampNum(v,10,400); } },
     imgoffsetx:   { min:-50, max:50, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.offsetX; }, set:function(e,v){ e.offsetX = clampNum(v,-50,50); } },
-    imgoffsety:   { min:-50, max:50, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.offsetY; }, set:function(e,v){ e.offsetY = clampNum(v,-50,50); } }
+    imgoffsety:   { min:-50, max:50, applicable:function(l){ return l.type==='image'; }, get:function(l){ return l.offsetY; }, set:function(e,v){ e.offsetY = clampNum(v,-50,50); } },
+    // -- SVG Shape (colorr/colorg/colorb/coloralpha above already cover its recolor tint, since those just key off l.color) --
+    svgscale:     { min:10, max:400, applicable:function(l){ return l.type==='svgObject'; }, get:function(l){ return l.scale; }, set:function(e,v){ e.scale = clampNum(v,10,400); } },
+    svgoffsetx:   { min:-50, max:50, applicable:function(l){ return l.type==='svgObject'; }, get:function(l){ return l.offsetX; }, set:function(e,v){ e.offsetX = clampNum(v,-50,50); } },
+    svgoffsety:   { min:-50, max:50, applicable:function(l){ return l.type==='svgObject'; }, get:function(l){ return l.offsetY; }, set:function(e,v){ e.offsetY = clampNum(v,-50,50); } }
   };
   // Builds a shallow-cloned "effective" layer with this frame's Custom-animated
   // extra values applied, for use ONLY as the thing that gets drawn -- the
@@ -3535,6 +3871,9 @@
         break;
       case 'image':
         drawImageLayer(layer, w, h, targetCtx);
+        break;
+      case 'svgObject':
+        drawSvgObjectLayer(layer, w, h, targetCtx);
         break;
       case 'group':
         drawGroupLayer(layer, w, h, targetCtx);
@@ -4104,6 +4443,13 @@
           layer.offsetX = Math.floor(Math.random()*60) - 30;
           layer.offsetY = Math.floor(Math.random()*60) - 30;
         }
+      } else if(layer.type === 'svgObject'){
+        if(doLayers){
+          layer.scale = 60 + Math.floor(Math.random()*180);
+          layer.offsetX = Math.floor(Math.random()*60) - 30;
+          layer.offsetY = Math.floor(Math.random()*60) - 30;
+        }
+        if(doPalette && layer.recolor) layer.color = randomColor();
       } else if(layer.type === 'noise'){
         if(layer.noiseType === 'perlin'){
           var pl = layer.perlin;
@@ -4276,13 +4622,13 @@
   });
 
   /* ---------- version / changelog ---------- */
-  var APP_VERSION = '0.0.45';
+  var APP_VERSION = '0.0.47';
 
   // Same content as CHANGELOG.md, kept here so the "What's New" panel still
   // works when the app is opened straight from a local file (see below --
   // fetch() of a plain file:// path is blocked by CORS in most browsers).
   // Update both places together when a new version ships.
-  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.45 -- 2026-09-07\n\n- Each layer card is now split into a compact header (drag handle, visibility eye, name, delete) and a new footer row underneath its controls holding Move Up/Down, the Group select-box, and Duplicate -- the header's own padding shrank to match. The Layers window's \"+ Add Layer\" and \"Group Selected\" now live side by side in a footer toolbar pinned to the bottom of the window (left of the native resize handle), instead of a strip above the list.\n- File > New Workspace, and the very first time the app is ever opened with no autosave present, now starts from a single plain white \"Blank\" Solid Fill layer instead of a pre-styled preset.\n- The Tools window's default Stroke color is now black and default Fill color is now grey (previously both a bright teal), for a more neutral starting point on the next shape you draw.\n- Floating-window body padding is now a flat 5px all around (was a roomier 12px).\n- Shift + mouse wheel over the canvas now zooms in/out, the same as View > Zoom In/Out.\n- Every menu item across the whole menu bar now shows a quiet, low-contrast keyboard-shortcut hint on its right edge -- commands that already had one (Save, Undo, Zoom, ...) show their existing shortcut, and every command that didn't gets a newly invented Ctrl/Cmd+Alt(+Shift) combination so the whole menu bar doubles as its own reference (see Help > Keyboard Shortcuts for the full list).\n- Added an Ultra Tight Compact UI toggle (Settings menu): an even smaller padding mode for the Layers/Tools/History windows and their buttons, for the tightest possible footprint.\n- This page's JavaScript has moved out of main.html's inline &lt;script&gt; block into its own app.js file, linked from main.html, the same way style.css already is -- app.js needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to work.\n\n## v0.0.44 -- 2026-09-07\n\n- The Layers window's \"+ Add Layer\" and \"Group Selected\" buttons now sit in their own compact strip pinned above the layer list, so they stay visible no matter how far you've scrolled down a long list of layers -- they used to scroll away with everything else.\n- The Drawing Tools window is now just called Tools (View > Show Tools), and has a new Hand tool: click and drag anywhere on the canvas to slide the view around, without changing zoom or touching Undo/Redo (it's purely a viewing aid, the same as scrolling around a document).\n- Reworked Zoom: the canvas area's own size on screen no longer changes as you zoom in or out -- only the image inside it does, panning and clipping within that fixed frame (drag it around with the new Hand tool once zoomed in). A small badge in the canvas area's corner shows the current zoom percentage whenever you're away from Zoom to Fit. The canvas's aspect ratio always matches whatever resolution is currently selected, at every zoom level.\n- Fixed dragging a floating window's resize handle (bottom-right corner) sometimes landing on a scrollbar's down-arrow instead when the window's list was scrolled -- there's now a small gap between the scrollable area and the window's edge on the Layers, Tools, and History windows, so the resize handle is never covered.\n- Shrank the header bar (titlebar) padding on every floating window (Layers, Tools, History) for a slightly more compact look.\n\n## v0.0.43 -- 2026-09-07\n\n- Fixed the per-layer visibility eye icon rendering almost invisibly small (a sliver a couple pixels wide, easy to mistake for a period) -- a Chromium quirk specific to an SVG placed directly inside a &lt;button&gt;'s own flex layout was shrinking its width despite the icon's explicit size. The eye icon (both open and closed/hidden states) is now bigger, bolder, and renders at its intended size.\n\n## v0.0.42 -- 2026-09-07\n\n- Drawing Tools buttons are now compact 20x20 icon-only squares that pack next to each other and wrap onto a new row once a row runs out of space, instead of a fixed two-column grid with visible text labels -- shrinking or widening the Drawing Tools window reflows them live. Each tool's full description now shows as a combined \"Name: how to use it.\" tooltip on hover (e.g. \"Rectangle: Click to place corner, then next corner.\") in place of the text that used to sit on the button itself.\n- The Layers, Drawing Tools, and History windows can now be resized by dragging their bottom-right corner, each with its own minimum size for readability: Drawing Tools can't go below 153px, Layers can't go below 400px, and History can't go below 175px (applied to both width and height). A resized window remembers its new size the next time you open the app, the same way its position and open/closed state already did.\n- Each layer's Show/Hide control is now an eye icon -- open when the layer is visible, closed (with a slash) when it's hidden -- instead of a plain checkbox.\n- The History window's list now sits inside its own padded, bordered box nested in the window, instead of loose against the window's own edge.\n\n## v0.0.41 -- 2026-09-07\n\n- Added a Drawing Tools window (View > Show Drawing Tools): Pencil, Line, Rectangle, Circle, Hexagon, and Polygon. Pick a tool, then draw right on the canvas -- Pencil is a click-and-drag freehand stroke; Line/Rectangle/Circle/Hexagon are two clicks (first point, then the second); Polygon is any number of clicks, finished with a double-click (Esc cancels any of them at any point, and a dashed live preview tracks the mouse while you're placing points). Finishing a shape adds it as a new layer -- a Shape layer -- exactly the way \"+ Add Layer\" does: it gets its own Stroke and Fill (color, alpha, and stroke width) plus everything every other layer type already has for free -- Opacity, Blend, CSS Filters, and Animate (Pulse/Spin/Orbit/Custom) -- and shows up in Undo/Redo like any other structural change. The Drawing Tools window also holds the stroke/fill color and width used for the *next* shape drawn; each shape's own Stroke/Fill can still be changed afterward from its own layer card. Like Solid Fill, Gradient, and Image layers, a Shape layer only gets the Spin/rotation gap coverage from a few versions back -- Orbit or Custom x/y drift on a filtered Shape can still show a thin gap at the trailing edge, the same disclosed limitation as those other types.\n- Added a History window (View > Show History): the same undo/redo stack the Edit menu's Undo/Redo already drives, now visible as a list -- one row per saved step, each auto-labeled (\"Added 'Hex Grid'\", \"Edited 'Backdrop'\", \"Reordered layers\", ...) by comparing it to the step right before it, since the stack itself only ever stores full snapshots rather than a description of what changed. Click any row to jump straight to that point; two small icon buttons above the list do Undo/Redo without leaving the window.\n- The Layers, Drawing Tools, and History windows can each be shown or hidden from the View menu (\"Show Layers\" / \"Show Drawing Tools\" / \"Show History\"), and the two new ones remember their own position and open/closed state the same way Layers already did.\n\n## v0.0.40 -- 2026-09-07\n\n- Extended last version's filtered-layer caching to also cover Orbit and Custom-driven x/y movement, not just Spin rotation: a pattern (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer that's both filtered and animated with Orbit, or a Custom track driving x/y, now renders its cached bitmap oversized enough to drift without exposing a gap at the trailing edge -- Orbit's margin is computed exactly from its drift radius, while Custom's x/y range (which has no fixed bound the way Orbit does) uses a generous fixed safety margin instead, since an expression could in principle send it anywhere. This is scoped to pattern and Perlin layers specifically, since their content is defined in absolute pixels and can simply be generated across the larger area -- a Solid Fill, Gradient, or Image layer positions its content relative to the canvas's own width/height (gradient stops, image fit/offset, ...), so rendering those any larger would shift or rescale them; those types keep only the Spin/rotation coverage from last version, and can still show a thin gap at the trailing edge under Orbit or Custom x/y with a filter enabled.\n\n## v0.0.39 -- 2026-09-06\n\n- Added a Frame Metrics switch to the Debug Log (Help menu): off by default, it tracks live rAF frame timing while it's on and shows Avg FPS, Avg Frame, and Worst Frame in the log's stats grid (and in the periodic resource samples and the exported/copied log text). Crash detection and the always-on error/warning log are completely unaffected either way -- Frame Metrics is purely additive, on top of the same Debug Log this version's other performance work made more useful to have open.\n- Perlin/fractal noise layers (Clouds, Turbulence, Marble) now render their noise field into a persistent per-layer bitmap and reuse it across frames instead of re-running the noise math on every single render -- a Pulse, Spin, Orbit, or Custom-on-a-non-noise-property animation no longer touches the noise math at all once the field is cached, since none of those change what the noise itself looks like, only how the finished layer is wrapped (rotated, scaled, moved). A Scroll/Pan-animated Perlin layer, or a Custom animation actually driving one of its own sliders (Scale, Octaves, Roughness, Contrast, Vein Count, Distortion), still recomputes every frame exactly as before, since those genuinely change the field frame to frame. Added a High-Res Cache checkbox to Perlin layers (off by default) that roughly doubles the internal sampling resolution (about 4x the pixel area) before caching, for a sharper look on a close-up or very large canvas at a proportional memory cost for that one layer.\n- Every filtered layer's own content (Blur, Drop Shadow, and the rest of CSS Filters -- everything except a Group, which always re-renders live since its content depends on every descendant) is now rendered once and cached the same way, since Drop Shadow and Blur are the most CPU-demanding effects in the app -- it's only redrawn again when something that actually changes the layer's own look does. A Pulse/Spin/Orbit/Custom-on-a-transform-property animation now reuses that cached image every frame instead of re-running the filter's full-canvas rasterization each time; a Scroll/Pan animation (or a Custom track touching one of the layer's own non-transform properties) still redraws every frame, exactly as before. Rotation needed one more fix to look right with a cached bitmap: a Spin (or Custom-rotate) layer's cached content is now drawn oversized -- big enough to cover a full rotation with no gaps at the corners -- the same trick Hex Grid/HUD Grid already used internally for their own tile angle. One visible, deliberate side effect: since the filter is now baked in before the whole-layer transform instead of after, a Drop Shadow or Blur on a Spin/Pulse/Orbit-animated layer now rotates and scales along with the shape, instead of staying fixed in one screen direction the way it used to.\n\n## v0.0.38 -- 2026-09-06\n\n- Added Smooth Playback (Settings menu, on by default): while an animated design is Playing, the app now renders one full loop's frames once and cycles through those cached bitmaps instead of redrawing the entire layer stack 60 times a second. Measured directly: a design with Perlin noise went from 9.5fps to a full 60fps during Play, a blurred layer from 19.3fps to 60fps, a Hex Grid layer from 25.3fps to 60fps, and five stacked Hex Grid layers from 7.4fps to 60fps. The app automatically skips caching for designs that are already fast enough live, so it never makes an already-smooth design slower, and always falls back to a live, pixel-perfect render while a control is actively being edited or if Smooth Playback is turned off. Recording (.webm export) always uses a full-quality live render regardless of this setting, so exported video is unaffected either way.\n- Fixed animation playback silently re-rendering the whole design every single frame even while paused -- a design with any animated layer now truly sits idle (zero extra rendering work) until Play is pressed again.\n- Hex Grid and Sci-Fi HUD Grid patterns are now drawn once into a small repeating tile and stamped across the canvas as a single fill, instead of stroking every individual cell by hand every frame -- noticeably faster for these two pattern types even without Smooth Playback (a single Hex Grid layer went from 25.3fps to a full 60fps during live, uncached playback).\n- Groups no longer allocate a brand-new offscreen canvas on every single render -- their scratch canvas is now reused across frames (nested groups each still get their own, so groups inside groups still render correctly).\n\n## v0.0.37 -- 2026-09-05\n\n- The Layers panel is no longer pinned inside the sidebar -- it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the &times; in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.\n- The rest of the old sidebar (the Copy Link/Code output box, and the Import a Link or Code panel) is hidden for now while the Layers panel above finds its new home -- nothing was removed, it's simply switched off for later.\n- Moved the Layers section's \"Top of the list = top of the stack...\" tip out of the app itself and into Help > Hints & Tips (Layers section), alongside the rest of the reference material.\n\n## v0.0.36 -- 2026-09-05\n\n- Save/Load now stores a design as the same compressed hash format Copy Code already used, instead of pretty-printed JSON -- a multi-layer test design's saved .json file shrank by 77%. Loading still reads older, plain-JSON saves from before this change.\n- Every control in the menu bar (the File/Edit/View/... text buttons, the Settings gear, and the Play/Record icons) now shares one exact height, fixing small inconsistencies that used to show up between text buttons, icon-only buttons, and the Play/Record pair.\n- Removed the duplicate Undo/Redo buttons that used to sit at the top of the sidebar's Layers section -- the Edit menu's Undo/Redo (and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y shortcuts) already cover it.\n- Added keyboard shortcuts for most of the menu bar, matching the closest industry-standard equivalent where one exists: Ctrl/Cmd+S (Save), Ctrl/Cmd+Shift+S (Save As), Ctrl/Cmd+O (Load), Ctrl/Cmd+Shift+E (Export PNG), Ctrl/Cmd+G / Ctrl/Cmd+Shift+G (Group/Ungroup Selected), Ctrl/Cmd+A / Ctrl/Cmd+Shift+A (Select All / Deselect All), Ctrl/Cmd+0 / Ctrl/Cmd+1 (Zoom to Fit / Actual Size), Ctrl/Cmd+= / Ctrl/Cmd+- (Zoom In/Out), Space (Play/Pause Animation), and ? (open this Keyboard Shortcuts list). None of these hijack a text field -- Ctrl+A in the File Name box still selects its text instead of selecting every layer. (Ctrl+N, Ctrl+T/W, and Ctrl+D were left out on purpose -- browsers reserve those for themselves and never let a page override them.)\n\n## v0.0.35 -- 2026-09-05\n\n- The app's title moved from its own heading at the top of the sidebar into the menu bar itself, shortened to \"Image Generator\" in a quiet, low-contrast rounded label (hover it to see the full \"Background Image Generator\" name) -- frees up sidebar space now that the menu bar is the app's actual header.\n- Added File > Save As..., which asks for a new name and saves the design under it immediately, updating the Canvas menu's File Name field to match (so PNG/CSS/Rainmeter exports pick up the new name too).\n\n## v0.0.34 -- 2026-09-05\n\n- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character -- a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.\n\n## v0.0.33 -- 2026-09-05\n\n- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes -- they now share the same fixed 24x24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.\n\n## v0.0.32 -- 2026-09-05\n\n- All of this page's CSS has moved out of an inline &lt;style&gt; block into its own style.css file, linked from main.html's &lt;head&gt;. main.html is noticeably slimmer now; style.css needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.\n\n## v0.0.31 -- 2026-09-05\n\n- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (&#9654;/&#9208; and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
+  var CHANGELOG_FALLBACK_MD = "# Changelog\n\nAll notable changes to this project are documented here.\n\n> These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date -- the ordering itself (oldest at the bottom, newest at the top) is accurate.\n\n## v0.0.47 -- 2026-09-07\n\n- Every bundled icon and object SVG's root `<svg>` tag now starts with `data-svg-type` (`icon`, `object`, `filter`, or `other`) and `data-svg-name` (the shape's own name), purely as metadata for anyone editing these files by hand -- the app itself still only ever reads `svg/manifest.json`, unchanged. Icon SVGs (`svg/icons/*.svg`) are now built at 24x24 (was 16x16) and object SVGs -- also now living in `svg/icons/`, alongside the icons rather than loose in `svg/` -- are now built at 256x256 (was 100x100), fixing visible pixelation on a Star/Blob/Arrow SVG Shape layer once it's scaled up to fill the canvas. `svg/filter-soft-glow.svg` moved into a new `svg/filters/` subfolder. Existing custom `svg/manifest.json` entries pointing at the old `star.svg`/`blob.svg`/`arrow.svg`/`filter-soft-glow.svg` paths need updating to `icons/star.svg`, `icons/blob.svg`, `icons/arrow.svg`, and `filters/filter-soft-glow.svg` respectively.\n- The Duplicate button on each layer card moved back up into the header, immediately to the left of the delete (&times;) button; its footer now holds only Move Up/Down and the Group checkbox, which is left-aligned instead of centered.\n- Ultra Tight Compact UI (Settings menu) tightened further: floating-window body padding is now 3px (was 2px), and the Layers window's Group-select row, plus the History window's list box, its rows, and its toolbar, now all get their own denser compact-mode spacing.\n\n## v0.0.46 -- 2026-09-07\n\n- Fixed grouped layers' Animate and CSS Filters controls (and, it turned out, their footer's Move Up/Down, group-select checkbox, and Duplicate button) silently not working -- a group's own controls were being shadowed by an identically-tagged control belonging to one of its nested children, since a group's `<div class=\"layer-children\">` renders before its own footer/Animate/Filters sections in the card's markup. Every control inside a layer card is now scoped to that exact card, never a nested child's.\n- In compact mode: `input[type=\"color\"]` swatches and the checkerboard alpha preview (`.swatch-checker`) are now 17x17px (was 26x22 / 24x24), the gap between the two color-alpha controls is now 2px (was 7px), and the menu bar's padding is now a tighter 0px 4px (was 6px 14px). Also removed the \"Image Generator\" title pill from the menu bar itself (the browser tab's own title is unaffected).\n- The zoom-percentage badge in the canvas area's corner now automatically moves out of the way of the Layers/Tools/History windows: it tries the top-left, top-right (its usual spot), bottom-left, bottom-right, then finally top-center corner of the canvas area, landing on the first one no currently-open floating window is covering.\n- Added a `svg/` folder alongside main.html, with a `manifest.json` listing its contents and a few sample files (see `svg/example.svg` for the format, reserved for future use): `svg/icons/*.svg` now supply the app's own eye/hand/tool-shape interface icons (customize the app's look just by editing these files); `+ Add Layer > SVG Shape...` places one of the bundled shapes (Star, Blob, Arrow) as a new colorable, recolorable layer; and a layer's Filters panel gets a Filter Preset dropdown (currently just Soft Glow) that loads a bundled SVG `<filter>` into Custom SVG Filter. This is genuinely dynamic -- add or edit a file in `svg/` and it's picked up live -- whenever main.html is served over http:// or https://; opened directly as a file:// page, browsers block a page from reading its own sibling files this way, so the app falls back to a built-in copy of exactly the files it shipped with instead.\n\n## v0.0.45 -- 2026-09-07\n\n- Each layer card is now split into a compact header (drag handle, visibility eye, name, delete) and a new footer row underneath its controls holding Move Up/Down, the Group select-box, and Duplicate -- the header's own padding shrank to match. The Layers window's \"+ Add Layer\" and \"Group Selected\" now live side by side in a footer toolbar pinned to the bottom of the window (left of the native resize handle), instead of a strip above the list.\n- File > New Workspace, and the very first time the app is ever opened with no autosave present, now starts from a single plain white \"Blank\" Solid Fill layer instead of a pre-styled preset.\n- The Tools window's default Stroke color is now black and default Fill color is now grey (previously both a bright teal), for a more neutral starting point on the next shape you draw.\n- Floating-window body padding is now a flat 5px all around (was a roomier 12px).\n- Shift + mouse wheel over the canvas now zooms in/out, the same as View > Zoom In/Out.\n- Every menu item across the whole menu bar now shows a quiet, low-contrast keyboard-shortcut hint on its right edge -- commands that already had one (Save, Undo, Zoom, ...) show their existing shortcut, and every command that didn't gets a newly invented Ctrl/Cmd+Alt(+Shift) combination so the whole menu bar doubles as its own reference (see Help > Keyboard Shortcuts for the full list).\n- Added an Ultra Tight Compact UI toggle (Settings menu): an even smaller padding mode for the Layers/Tools/History windows and their buttons, for the tightest possible footprint.\n- This page's JavaScript has moved out of main.html's inline &lt;script&gt; block into its own app.js file, linked from main.html, the same way style.css already is -- app.js needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to work.\n\n## v0.0.44 -- 2026-09-07\n\n- The Layers window's \"+ Add Layer\" and \"Group Selected\" buttons now sit in their own compact strip pinned above the layer list, so they stay visible no matter how far you've scrolled down a long list of layers -- they used to scroll away with everything else.\n- The Drawing Tools window is now just called Tools (View > Show Tools), and has a new Hand tool: click and drag anywhere on the canvas to slide the view around, without changing zoom or touching Undo/Redo (it's purely a viewing aid, the same as scrolling around a document).\n- Reworked Zoom: the canvas area's own size on screen no longer changes as you zoom in or out -- only the image inside it does, panning and clipping within that fixed frame (drag it around with the new Hand tool once zoomed in). A small badge in the canvas area's corner shows the current zoom percentage whenever you're away from Zoom to Fit. The canvas's aspect ratio always matches whatever resolution is currently selected, at every zoom level.\n- Fixed dragging a floating window's resize handle (bottom-right corner) sometimes landing on a scrollbar's down-arrow instead when the window's list was scrolled -- there's now a small gap between the scrollable area and the window's edge on the Layers, Tools, and History windows, so the resize handle is never covered.\n- Shrank the header bar (titlebar) padding on every floating window (Layers, Tools, History) for a slightly more compact look.\n\n## v0.0.43 -- 2026-09-07\n\n- Fixed the per-layer visibility eye icon rendering almost invisibly small (a sliver a couple pixels wide, easy to mistake for a period) -- a Chromium quirk specific to an SVG placed directly inside a &lt;button&gt;'s own flex layout was shrinking its width despite the icon's explicit size. The eye icon (both open and closed/hidden states) is now bigger, bolder, and renders at its intended size.\n\n## v0.0.42 -- 2026-09-07\n\n- Drawing Tools buttons are now compact 20x20 icon-only squares that pack next to each other and wrap onto a new row once a row runs out of space, instead of a fixed two-column grid with visible text labels -- shrinking or widening the Drawing Tools window reflows them live. Each tool's full description now shows as a combined \"Name: how to use it.\" tooltip on hover (e.g. \"Rectangle: Click to place corner, then next corner.\") in place of the text that used to sit on the button itself.\n- The Layers, Drawing Tools, and History windows can now be resized by dragging their bottom-right corner, each with its own minimum size for readability: Drawing Tools can't go below 153px, Layers can't go below 400px, and History can't go below 175px (applied to both width and height). A resized window remembers its new size the next time you open the app, the same way its position and open/closed state already did.\n- Each layer's Show/Hide control is now an eye icon -- open when the layer is visible, closed (with a slash) when it's hidden -- instead of a plain checkbox.\n- The History window's list now sits inside its own padded, bordered box nested in the window, instead of loose against the window's own edge.\n\n## v0.0.41 -- 2026-09-07\n\n- Added a Drawing Tools window (View > Show Drawing Tools): Pencil, Line, Rectangle, Circle, Hexagon, and Polygon. Pick a tool, then draw right on the canvas -- Pencil is a click-and-drag freehand stroke; Line/Rectangle/Circle/Hexagon are two clicks (first point, then the second); Polygon is any number of clicks, finished with a double-click (Esc cancels any of them at any point, and a dashed live preview tracks the mouse while you're placing points). Finishing a shape adds it as a new layer -- a Shape layer -- exactly the way \"+ Add Layer\" does: it gets its own Stroke and Fill (color, alpha, and stroke width) plus everything every other layer type already has for free -- Opacity, Blend, CSS Filters, and Animate (Pulse/Spin/Orbit/Custom) -- and shows up in Undo/Redo like any other structural change. The Drawing Tools window also holds the stroke/fill color and width used for the *next* shape drawn; each shape's own Stroke/Fill can still be changed afterward from its own layer card. Like Solid Fill, Gradient, and Image layers, a Shape layer only gets the Spin/rotation gap coverage from a few versions back -- Orbit or Custom x/y drift on a filtered Shape can still show a thin gap at the trailing edge, the same disclosed limitation as those other types.\n- Added a History window (View > Show History): the same undo/redo stack the Edit menu's Undo/Redo already drives, now visible as a list -- one row per saved step, each auto-labeled (\"Added 'Hex Grid'\", \"Edited 'Backdrop'\", \"Reordered layers\", ...) by comparing it to the step right before it, since the stack itself only ever stores full snapshots rather than a description of what changed. Click any row to jump straight to that point; two small icon buttons above the list do Undo/Redo without leaving the window.\n- The Layers, Drawing Tools, and History windows can each be shown or hidden from the View menu (\"Show Layers\" / \"Show Drawing Tools\" / \"Show History\"), and the two new ones remember their own position and open/closed state the same way Layers already did.\n\n## v0.0.40 -- 2026-09-07\n\n- Extended last version's filtered-layer caching to also cover Orbit and Custom-driven x/y movement, not just Spin rotation: a pattern (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer that's both filtered and animated with Orbit, or a Custom track driving x/y, now renders its cached bitmap oversized enough to drift without exposing a gap at the trailing edge -- Orbit's margin is computed exactly from its drift radius, while Custom's x/y range (which has no fixed bound the way Orbit does) uses a generous fixed safety margin instead, since an expression could in principle send it anywhere. This is scoped to pattern and Perlin layers specifically, since their content is defined in absolute pixels and can simply be generated across the larger area -- a Solid Fill, Gradient, or Image layer positions its content relative to the canvas's own width/height (gradient stops, image fit/offset, ...), so rendering those any larger would shift or rescale them; those types keep only the Spin/rotation coverage from last version, and can still show a thin gap at the trailing edge under Orbit or Custom x/y with a filter enabled.\n\n## v0.0.39 -- 2026-09-06\n\n- Added a Frame Metrics switch to the Debug Log (Help menu): off by default, it tracks live rAF frame timing while it's on and shows Avg FPS, Avg Frame, and Worst Frame in the log's stats grid (and in the periodic resource samples and the exported/copied log text). Crash detection and the always-on error/warning log are completely unaffected either way -- Frame Metrics is purely additive, on top of the same Debug Log this version's other performance work made more useful to have open.\n- Perlin/fractal noise layers (Clouds, Turbulence, Marble) now render their noise field into a persistent per-layer bitmap and reuse it across frames instead of re-running the noise math on every single render -- a Pulse, Spin, Orbit, or Custom-on-a-non-noise-property animation no longer touches the noise math at all once the field is cached, since none of those change what the noise itself looks like, only how the finished layer is wrapped (rotated, scaled, moved). A Scroll/Pan-animated Perlin layer, or a Custom animation actually driving one of its own sliders (Scale, Octaves, Roughness, Contrast, Vein Count, Distortion), still recomputes every frame exactly as before, since those genuinely change the field frame to frame. Added a High-Res Cache checkbox to Perlin layers (off by default) that roughly doubles the internal sampling resolution (about 4x the pixel area) before caching, for a sharper look on a close-up or very large canvas at a proportional memory cost for that one layer.\n- Every filtered layer's own content (Blur, Drop Shadow, and the rest of CSS Filters -- everything except a Group, which always re-renders live since its content depends on every descendant) is now rendered once and cached the same way, since Drop Shadow and Blur are the most CPU-demanding effects in the app -- it's only redrawn again when something that actually changes the layer's own look does. A Pulse/Spin/Orbit/Custom-on-a-transform-property animation now reuses that cached image every frame instead of re-running the filter's full-canvas rasterization each time; a Scroll/Pan animation (or a Custom track touching one of the layer's own non-transform properties) still redraws every frame, exactly as before. Rotation needed one more fix to look right with a cached bitmap: a Spin (or Custom-rotate) layer's cached content is now drawn oversized -- big enough to cover a full rotation with no gaps at the corners -- the same trick Hex Grid/HUD Grid already used internally for their own tile angle. One visible, deliberate side effect: since the filter is now baked in before the whole-layer transform instead of after, a Drop Shadow or Blur on a Spin/Pulse/Orbit-animated layer now rotates and scales along with the shape, instead of staying fixed in one screen direction the way it used to.\n\n## v0.0.38 -- 2026-09-06\n\n- Added Smooth Playback (Settings menu, on by default): while an animated design is Playing, the app now renders one full loop's frames once and cycles through those cached bitmaps instead of redrawing the entire layer stack 60 times a second. Measured directly: a design with Perlin noise went from 9.5fps to a full 60fps during Play, a blurred layer from 19.3fps to 60fps, a Hex Grid layer from 25.3fps to 60fps, and five stacked Hex Grid layers from 7.4fps to 60fps. The app automatically skips caching for designs that are already fast enough live, so it never makes an already-smooth design slower, and always falls back to a live, pixel-perfect render while a control is actively being edited or if Smooth Playback is turned off. Recording (.webm export) always uses a full-quality live render regardless of this setting, so exported video is unaffected either way.\n- Fixed animation playback silently re-rendering the whole design every single frame even while paused -- a design with any animated layer now truly sits idle (zero extra rendering work) until Play is pressed again.\n- Hex Grid and Sci-Fi HUD Grid patterns are now drawn once into a small repeating tile and stamped across the canvas as a single fill, instead of stroking every individual cell by hand every frame -- noticeably faster for these two pattern types even without Smooth Playback (a single Hex Grid layer went from 25.3fps to a full 60fps during live, uncached playback).\n- Groups no longer allocate a brand-new offscreen canvas on every single render -- their scratch canvas is now reused across frames (nested groups each still get their own, so groups inside groups still render correctly).\n\n## v0.0.37 -- 2026-09-05\n\n- The Layers panel is no longer pinned inside the sidebar -- it's now its own small window that floats over the canvas and can be dragged anywhere by its titlebar (never outside the app's own window). Closing it (the &times; in its corner) only ever hides it; bring it back from View > Show Layers, which shows a checkmark whenever it's open. Its position and open/closed state are both remembered next time you open the app.\n- The rest of the old sidebar (the Copy Link/Code output box, and the Import a Link or Code panel) is hidden for now while the Layers panel above finds its new home -- nothing was removed, it's simply switched off for later.\n- Moved the Layers section's \"Top of the list = top of the stack...\" tip out of the app itself and into Help > Hints & Tips (Layers section), alongside the rest of the reference material.\n\n## v0.0.36 -- 2026-09-05\n\n- Save/Load now stores a design as the same compressed hash format Copy Code already used, instead of pretty-printed JSON -- a multi-layer test design's saved .json file shrank by 77%. Loading still reads older, plain-JSON saves from before this change.\n- Every control in the menu bar (the File/Edit/View/... text buttons, the Settings gear, and the Play/Record icons) now shares one exact height, fixing small inconsistencies that used to show up between text buttons, icon-only buttons, and the Play/Record pair.\n- Removed the duplicate Undo/Redo buttons that used to sit at the top of the sidebar's Layers section -- the Edit menu's Undo/Redo (and the Ctrl+Z/Ctrl+Shift+Z/Ctrl+Y shortcuts) already cover it.\n- Added keyboard shortcuts for most of the menu bar, matching the closest industry-standard equivalent where one exists: Ctrl/Cmd+S (Save), Ctrl/Cmd+Shift+S (Save As), Ctrl/Cmd+O (Load), Ctrl/Cmd+Shift+E (Export PNG), Ctrl/Cmd+G / Ctrl/Cmd+Shift+G (Group/Ungroup Selected), Ctrl/Cmd+A / Ctrl/Cmd+Shift+A (Select All / Deselect All), Ctrl/Cmd+0 / Ctrl/Cmd+1 (Zoom to Fit / Actual Size), Ctrl/Cmd+= / Ctrl/Cmd+- (Zoom In/Out), Space (Play/Pause Animation), and ? (open this Keyboard Shortcuts list). None of these hijack a text field -- Ctrl+A in the File Name box still selects its text instead of selecting every layer. (Ctrl+N, Ctrl+T/W, and Ctrl+D were left out on purpose -- browsers reserve those for themselves and never let a page override them.)\n\n## v0.0.35 -- 2026-09-05\n\n- The app's title moved from its own heading at the top of the sidebar into the menu bar itself, shortened to \"Image Generator\" in a quiet, low-contrast rounded label (hover it to see the full \"Background Image Generator\" name) -- frees up sidebar space now that the menu bar is the app's actual header.\n- Added File > Save As..., which asks for a new name and saves the design under it immediately, updating the Canvas menu's File Name field to match (so PNG/CSS/Rainmeter exports pick up the new name too).\n\n## v0.0.34 -- 2026-09-05\n\n- The Record button's dot is now a plain CSS-drawn circle instead of a Unicode character -- a filled-circle glyph's vertical centering varies too much between fonts/systems to ever pin down reliably with font-size/padding tweaks, so it's drawn directly instead, which lines it up cleanly with the Play button and the rest of the menu bar everywhere.\n\n## v0.0.33 -- 2026-09-05\n\n- Fixed the Play and Record icon buttons (next to the Animation menu) rendering at visually mismatched sizes -- they now share the same fixed 24x24 box, with the record dot scaled down slightly so the two read as a matched pair instead of one looking bigger than the other.\n\n## v0.0.32 -- 2026-09-05\n\n- All of this page's CSS has moved out of an inline &lt;style&gt; block into its own style.css file, linked from main.html's &lt;head&gt;. main.html is noticeably slimmer now; style.css needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to look right.\n\n## v0.0.31 -- 2026-09-05\n\n- Play/Pause and Record moved out of the Animation and File menus and into two small icon buttons (&#9654;/&#9208; and a plain dot) that sit right next to the Animation menu itself, one click away instead of two. Playback now starts paused by default in a normal editing session (a share link or embedded live background still starts playing immediately, since there's no menu bar to press Play from there). The Record button is a dim, muted dot normally and turns bright red with a soft glow the moment a recording is actually in progress.\n\n## v0.0.30 -- 2026-09-05\n\n- The menu bar (File | Edit | View | ... | Help) is now a full-width header running across the very top of the whole app, above the sidebar, instead of sitting inside it -- the sidebar and live preview both now start below it, and it stays compact so it doesn't eat into either one's space.\n- Fixed the Settings gear icon sitting slightly out of vertical alignment with the File/Edit/View/... text buttons next to it -- both now share the same vertical center.\n- The sidebar's right edge can now be dragged to resize it narrower or wider; its width is remembered the next time you open the app.\n- Reworked canvas scaling into a proper Zoom system in the View menu: Zoom to Fit (shrinks to fit the available space, the previous behavior and still the default), Zoom to Actual Size (exactly 100%), and Zoom In/Zoom Out, which step through preset percentages from whatever the preview is currently showing. The View menu always shows the current zoom level.\n- Elements below the new header are laid out so the sidebar and live preview each scroll internally when their own content doesn't fit, instead of the whole page growing an outer scrollbar -- and a genuine layout overflow is never silently hidden, so if one ever shows up it'll still be visible rather than clipped away.\n\n## v0.0.29 -- 2026-09-05\n\n- Moved the Animation controls out of the sidebar and into a new Animation menu in the top menu bar (next to Canvas): Loop Length and Play/Pause now live there, inline, the same way the Canvas menu already holds its Width/Height fields. Record Animation (.webm) stays exactly where it already was, in the File menu -- nothing duplicated. The sidebar now holds only the Layers section.\n\n## v0.0.28 -- 2026-09-05\n\n- Custom animate can now drive every numeric property a layer has, not just opacity/scale/rotate/x/y -- CSS Filters (blur, brightness, contrast, grayscale, hue rotate, invert, filter opacity, saturate, sepia, drop shadow x/y/blur), fill color (R/G/B/alpha), pattern and gradient geometry (angle, tile size, fill amount, radial center, gradient angle), Perlin/grain noise settings, and image overlay scale/offset -- whichever apply to the layer's own type. Both keyframes and expressions accept these the same way as the original five (e.g. `50% { opacity: 60; blur: 12; }` or `blur: 10+5*sin(t*6.283);`), and animating them never touches the saved design, undo history, or exported JSON -- only what's drawn for that frame. Unrecognized property names are ignored rather than breaking the animation (see Debug Log below).\n- Added a Debug Log (Help menu): a small, always-on, purely-local tool built after running into an out-of-memory crash with no way to see what led up to it. It quietly keeps a capped log of warnings and errors (including any uncaught JavaScript error or unhandled promise rejection), plus a periodic snapshot of resource use -- layer count, undo history depth, canvas size, auto-save size, and this browser's JS memory use where it's exposed. If the app doesn't shut down cleanly (a crash, an out-of-memory kill, a force-closed tab), the log from right before that is carried over and flagged at the top of the next session's Debug Log automatically. The log can be copied, downloaded as a .txt file, or cleared from its own window.\n- Fixed a potential memory leak the Custom-animate work above could otherwise have introduced: animating a layer's own Custom SVG Filter alongside any other filter property now reuses the one injected `<filter>` element across every frame instead of injecting a brand-new one into the page each time.\n\n## v0.0.27 -- 2026-09-05\n\n- The app's actual file is now main.html (renamed from index.html); index.html is now a tiny loader that immediately forwards here, appending a cache-busting value so a browser or host that aggressively caches \"index.html\" specifically can't hold back an update -- every visit fetches a genuinely fresh copy of main.html. A share link, kiosk-mode link, or bookmark pointed at index.html still opens the exact same design as before; it's just forwarded along.\n- The Hints & Tips guide (help.html) now matches this page's own Light/Dark theme choice live, instead of only guessing from your OS-level light/dark setting -- it updates instantly if you switch themes while the guide is open.\n\n## v0.0.26 -- 2026-09-05\n\n- The sidebar's themed scrollbar (thin, colored to match the current Light/Dark theme) now applies everywhere a scrollbar can show up, not just the sidebar itself -- modal windows, text boxes, and any other scrolling area now match instead of falling back to the browser's plain default look.\n\n## v0.0.25 -- 2026-09-05\n\n- Dropped the question mark from the \"Use as Mask\" label, matching the rest of the sidebar's controls.\n- Added hover tooltips to nearly every control in the sidebar -- sliders, dropdowns, checkboxes, and buttons -- each with a short, plain-language explanation of what it does. Meant to make the interface learnable just by hovering around, no manual required.\n- Added a Hints & Tips window (Help menu): a built-in guide covering Getting Started, Layers, Masks, Filters, Animation, Export & Share, Keyboard Shortcuts, and Tips & Tricks, loaded from a new companion file (help.html) that sits alongside this one.\n\n## v0.0.24 -- 2026-09-05\n\n- Standardized capitalization across every label, button, menu item, and dropdown option in the sidebar to title case (each significant word capitalized -- small joining words like \"with\", \"as\", and \"to\" stay lowercase), for a more consistent, polished look throughout.\n\n## v0.0.23 -- 2026-09-05\n\n- Mask layers can now be Inverted: the \"Use as mask?\" checkbox now has a Standard / Inverted dropdown next to it. Standard is the existing behavior (keep only where the mask and the layer below overlap); Inverted does the opposite -- it punches a hole through the layer below wherever the mask is opaque, and leaves everything else alone. The layer list's MASK badge reads INVERTED MASK when that mode is on, and older saved designs load in as Standard by default.\n\n## v0.0.22 -- 2026-09-05\n\n- Added a Canvas menu (next to View) holding Resolution presets, the Width/Height fields for a custom size, and the File name field -- all three moved out of the \"Canvas & Export\" box that used to sit at the top of the sidebar, which has been removed now that everything it held lives in this menu instead.\n\n## v0.0.21 -- 2026-09-05\n\n- Fixed a slider's track becoming completely invisible when it sat inside a box sharing the same background color -- most noticeably a gradient/pattern color stop's own position slider, which sits inside a shaded row that happened to be the exact same color as the slider's track. Every slider now has a thin, always-visible outline around its track regardless of what it's sitting on.\n- Changed the slider drag knob from a round ball to a small vertical bar, and made its outline color follow the current Light/Dark theme instead of always being a fixed dark ring (which used to look like a mismatched dark smudge in Light Theme).\n\n## v0.0.20 -- 2026-09-05\n\n- Moved Randomize off its own standalone button at the bottom of the sidebar and into Edit > Effects, as three separate options instead of one all-or-nothing reroll: Randomize: Palette (colors only -- fills, gradient and noise stops, the noise monochrome toggle -- leaving every layer's opacity, blend mode, angle, size, and position untouched), Randomize: Layers (the mirror image: opacity, blend mode, angles, sizes, positions, and noise shape settings reroll, colors stay put), and Randomize: All (everything at once, the same as the old button did).\n\n## v0.0.19 -- 2026-09-05\n\n- Cycles has always needed to be a whole number -- it's what guarantees a loop closes perfectly with no jump -- but that wasn't explained anywhere, so it could look like a bug (or like decimals should work but didn't). The real, shared speed control is Loop length, and its range was too cramped to actually feel like one: raised its ceiling from 60 seconds to 10 minutes, and each layer's Animate section now shows a live \"Repeats every Xs\" readout under its Cycles slider that updates instantly as you change either Cycles or the shared Loop length, so the relationship between the two is obvious at a glance instead of something you have to do math for.\n- Fixed the .webm recorder still occasionally producing a truncated, near-empty file in some browsers even after last version's fix. The previous fix waited a couple of frames for things to settle before starting capture, which helped but didn't fully close the gap; recording now drives the video track manually (requesting each frame right when it's rendered, instead of relying on the browser to notice the canvas changed on its own timer), which removes the race at its root rather than just narrowing the window for it.\n\n## v0.0.18 -- 2026-09-05\n\n- Cycles now goes up to 200 (was 10), for fast flicker/glitch-style motion on short loops.\n- Added a Motion style dropdown to the Animate section: besides Scroll/Pan, every layer (including whole groups -- not just patterns and Perlin noise) can now Pulse (scale + opacity breathing), Spin (rotate a full turn per cycle), or Orbit (drift in a small circle), applied as a transform around the layer's normal output so it works uniformly for solids, gradients, images, and static grain too.\n- Added a Custom motion style with two ways to hand-author motion: percent keyframes (`0% { opacity: 100; scale: 100; } 50% { opacity: 60; scale: 130; } 100% { opacity: 100; scale: 100; }`, matching CSS @keyframes) targeting opacity/scale/rotate/x/y, or -- with no `%` stops -- one `property: expression;` per line using `t` (0-1 progress through a cycle) and `cycles`, e.g. `rotate: t*360;`. As with every other motion style, the loop is only ever driven by an integer Cycles count, so a Custom animation still loops seamlessly as long as its own values agree at 0% and 100%.\n- Fixed the .webm recorder occasionally capturing a truncated, near-empty file when Record was clicked immediately after a layer-list change (adding/toggling a layer, switching Motion style, etc.); it now waits two animation frames for that change to fully settle before it starts capturing, which is never noticeable but makes every recording reliable.\n\n## v0.0.17 -- 2026-09-05\n\n- Share links and Copy Code now compress the design data before encoding it, so links stay short even with embedded images baked in -- a JSON-heavy 10-layer test design measured 88% smaller. (This uses the browser's own built-in gzip support rather than a bundled compression library; a design dominated by embedded images won't shrink nearly as much, since image data is already close to its own size limit.) Older uncompressed links and codes still open normally.\n- Layers can now be reordered by dragging their handle (the ⋮⋮ at the left of each layer's header) up or down the list, in addition to the existing arrow buttons. Dragging only reorders within the same group, same as the arrows.\n- Added Animate: any pattern layer (Diagonal Checker, Stripes, Dots, Hex Grid, Sci-Fi HUD Grid) or Perlin noise layer can now animate in a seamless, exactly-looping cycle -- set a loop length and a Cycles count in the new Animation section, and pattern layers scroll while Perlin noise drifts, always ending each loop exactly where it began. Play/Pause controls the live preview, and \"Record .webm\" captures exactly one loop to a video file that repeats with no visible seam. Opening a shared link or share code with an animated layer starts playback automatically, so it works as a genuinely live background -- including embedded in an iframe or a Rainmeter WebView -- not just a static render.\n\n## v0.0.16 -- 2026-09-05\n\n- Perlin noise layers now reuse their pixel buffer and gradient lookup table across renders instead of reallocating them every frame, cutting garbage-collection pauses while a slider is dragged or a numeric field is typed into.\n- Typing a custom canvas width/height no longer resizes and re-renders on every keystroke -- it settles briefly after you stop typing, while the resolution readout still updates instantly. Exporting immediately after typing a new size always uses the size you just typed, never a stale one.\n- Editing one layer's controls while some other structural change happens elsewhere in the stack (adding/deleting a layer, toggling a mask, etc.) no longer kicks your cursor out of the field you were typing in -- focus and text selection now survive the sidebar's redraw.\n\n## v0.0.15 -- 2026-09-05\n\n- Performance Mode is now on by default (it can still be turned off from the Settings menu).\n- The sidebar's scrollbar is now themed to match the current Light/Dark theme instead of using the browser's plain default look.\n- Added CSS Filters: every layer now has its own Filters section with Blur, Brightness, Contrast, Grayscale, Hue Rotate, Invert, Filter Opacity, Saturate, Sepia, and a Drop Shadow (offset, blur, color) -- plus a Custom SVG Filter box for pasting your own SVG `<filter>` markup, applied via `url(#id)`. Filters apply to groups and masked layers as a single flattened effect, and round-trip through Save/Load, Copy Code/Copy Link, and Undo/Redo. Note: since this page is often opened straight from a local file, a filter can't be loaded from a genuinely external SVG file -- the SVG `<filter>` markup itself is stored right in the design instead.\n\n## v0.0.14 -- 2026-09-05\n\n- Added a full application menu bar (File, Edit, View, Settings, Help) at the top of the sidebar, replacing several standalone buttons and freeing up sidebar space.\n- File menu: New Workspace, Save/Load a design as a local .json file, Import a Link or Code, Export PNG, Export CSS (bakes the design into a background-image data URI), Export as a Rainmeter .ini Image meter (paired with its PNG), Copy Share Link, Copy Code.\n- Edit menu: Undo/Redo, Group Selected/Ungroup Selected, Select All/Deselect All, and Purge History (frees the memory held by old undo snapshots -- useful with large embedded images).\n- View menu: Toggle Kiosk Mode on demand (Esc exits it), a Fit to Screen / Actual Size canvas view toggle, and Palette Presets (Spectrum HUD, Industrial Automation, Neon) that constrain the colors Randomize picks.\n- Settings menu: a Light Theme toggle, Performance Mode (pauses live rendering while a slider is being dragged, for smoother interaction with heavy Perlin noise layers), and an Auto-Save toggle that continuously backs up the current design to this browser so an accidental refresh doesn't lose it.\n- Help menu: a Keyboard Shortcuts reference, and What's New (Changelog) moved here from the old floating version badge, which has been removed.\n\n## v0.0.13 -- 2026-09-05\n\n- \"Copy Link\" no longer rewrites the page's own address bar with the share hash -- copying a link or code just copies it, without changing the URL you're currently looking at.\n- The copied link/code box now hides itself automatically as soon as you change anything else in the design, so it can't be mistaken for still matching the current state.\n- The share link/code box now uses the same dark background, border, and font as the File name field, instead of its own separate monospace look.\n- The File name field now shows \"Background\" as a dimmed placeholder until you actually type a name; typed text appears in the normal, lighter color.\n\n## v0.0.12\n\n- Added a small version badge in the bottom-left corner of the app (e.g. \"v0.0.12\"). Clicking it opens a \"What's New\" panel showing this changelog.\n- Added this `CHANGELOG.md` file. The app tries to load it directly (so edits to this file show up in the app automatically); if that's blocked, such as when running the app straight from a local file, it falls back to a built-in copy of the same text.\n\n## v0.0.11 -- 2026-09-04\n\n- Renamed the app's main file from `background-generator.html` to `index.html`.\n- New layers now default to Normal blend mode. Previously a few pattern layer types (Diagonal Checker, Hex Grid, Sci-Fi HUD Grid, Grain/Noise) defaulted to something else, which could be confusing on first add.\n- Added a \"live background\" (kiosk) mode: opening the app from a share link (see v0.0.9/v0.0.10) now hides the entire sidebar and editor UI and stretches the canvas to fill the window, showing only the generated image. This also works when the page is embedded in an `<iframe>` with a share code in its `src` -- the iframe renders just the live image, so nobody needs to download a PNG to use a design as a background.\n\n## v0.0.10 -- 2026-09-04\n\n- Added a \"Copy Code\" button that copies just the design data as a short, portable text string -- no URL or file path baked in, so it works no matter where the recipient has the app saved.\n- Added an \"Import a Link or Code\" panel: paste either a full share link or a bare design code to load someone else's design.\n- Share links and design codes now use URL-safe encoding (no `+`, `/`, or `=` characters), so they survive being pasted into chat apps, emails, and auto-linkers without getting mangled.\n\n## v0.0.9 -- 2026-09-04\n\n- Added shareable designs: a \"Copy Link\" button encodes the entire layer stack -- including any embedded images -- into the page's URL, so sending that link to someone opens your exact design.\n\n## v0.0.8 -- 2026-09-03\n\n- Fixed a horizontal scrollbar that could appear under the sidebar. The root cause was a browser default on `<fieldset>` elements that let a crowded layer card force the whole sidebar wider than intended.\n- Increased the sidebar width from 340px to 400px.\n\n## v0.0.7 -- 2026-09-03\n\n- Added layer grouping: select multiple layers and combine them into a folder with its own shared opacity and blend mode. Groups can be nested, duplicated, and ungrouped.\n\n## v0.0.6 -- 2026-09-02\n\n- Every slider now has an editable numeric field next to it, styled as plain underlined text -- type an exact value instead of only dragging.\n\n## v0.0.5\n\n- Added Undo / Redo (Ctrl+Z / Ctrl+Shift+Z), with a 50-step history.\n- Added Randomize and Reset buttons.\n\n## v0.0.4\n\n- Added layer masking: any layer can be marked \"use as mask,\" clipping the layer directly beneath it to its shape instead of drawing normally.\n- Added per-layer blend modes (Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion).\n\n## v0.0.3\n\n- Added an Image Overlay layer: pick a local image and control its fit, scale, offset, and flip.\n- Added Hex Grid and Sci-Fi HUD Grid pattern layers.\n- Pattern layers (Diagonal Checker, Stripes, Dots, Hex Grid, HUD Grid) can now be filled with a gradient instead of a flat color.\n\n## v0.0.2\n\n- Added a Grain / Noise layer, including a full Perlin/fractal noise engine with Clouds, Turbulence, and Marble styles.\n\n## v0.0.1\n\n- Initial release: a layered canvas background generator with Solid Fill, Linear Gradient, Radial Gradient, Diagonal Checker, Stripes, and Dots layers.\n- Resolution presets (1080p, 1440p, 4K, ultrawide, mobile, custom) and PNG export.\n";
 
   // Tiny markdown-ish -> HTML renderer, just enough for this changelog's own
   // shape (## headings, a > note, - bullet lists, **bold**, blank-line-
@@ -4929,6 +5275,47 @@
       badge.hidden = stageZoomPct === null;
       if(stageZoomPct !== null) badge.textContent = stageZoomPct + '%';
     }
+    repositionZoomBadge();
+  }
+
+  // The zoom badge normally sits in the canvas area's top-right corner, but
+  // a floating window (Layers/Tools/History) can end up parked right on top
+  // of it. repositionZoomBadge() tries a fixed priority order of spots --
+  // left-top, right-top (the default), left-bottom, right-bottom, then
+  // top-center as a last resort -- and lands on the first one no currently
+  // VISIBLE floating window's own bounding box overlaps. Cheap enough
+  // (a handful of getBoundingClientRect calls) to call freely: on every
+  // zoom change (via updateZoomReadout above), and wherever a window might
+  // move, resize, or show/hide -- see the drag/resize/toggle call sites.
+  var ZOOM_BADGE_POSITIONS = ['left-top', 'right-top', 'left-bottom', 'right-bottom', 'top-center'];
+  function repositionZoomBadge(){
+    var badge = $('zoomBadge');
+    var wrap = document.querySelector('.canvas-wrap');
+    if(!badge || !wrap || badge.hidden) return;
+    var wrapRect = wrap.getBoundingClientRect();
+    var badgeW = badge.offsetWidth || 60, badgeH = badge.offsetHeight || 22;
+    var margin = 8;
+    var candidates = {
+      'left-top':     { left: wrapRect.left + margin, top: wrapRect.top + margin },
+      'right-top':    { left: wrapRect.right - margin - badgeW, top: wrapRect.top + margin },
+      'left-bottom':  { left: wrapRect.left + margin, top: wrapRect.bottom - margin - badgeH },
+      'right-bottom': { left: wrapRect.right - margin - badgeW, top: wrapRect.bottom - margin - badgeH },
+      'top-center':   { left: wrapRect.left + (wrapRect.width - badgeW)/2, top: wrapRect.top + margin }
+    };
+    var windowRects = ['layersWindow','toolsWindow','historyWindow'].map(function(id){ return $(id); })
+      .filter(function(w){ return w && !w.hidden; })
+      .map(function(w){ return w.getBoundingClientRect(); });
+    function overlaps(c, wr){
+      return !(c.left + badgeW <= wr.left || c.left >= wr.right || c.top + badgeH <= wr.top || c.top >= wr.bottom);
+    }
+    var chosen = ZOOM_BADGE_POSITIONS[ZOOM_BADGE_POSITIONS.length - 1]; // top-center: last-resort fallback if every spot is covered
+    for(var i=0; i<ZOOM_BADGE_POSITIONS.length; i++){
+      var key = ZOOM_BADGE_POSITIONS[i];
+      var blocked = windowRects.some(function(wr){ return overlaps(candidates[key], wr); });
+      if(!blocked){ chosen = key; break; }
+    }
+    ZOOM_BADGE_POSITIONS.forEach(function(key){ badge.classList.remove('pos-'+key); });
+    badge.classList.add('pos-'+chosen);
   }
   function setZoomPct(pct){
     stageZoomPct = clampZoom(pct);
@@ -4950,7 +5337,7 @@
   (function(){
     var stageEl = document.querySelector('.stage');
     if(!stageEl || typeof ResizeObserver === 'undefined') return;
-    var ro = new ResizeObserver(function(){ applyStageZoom(); });
+    var ro = new ResizeObserver(function(){ applyStageZoom(); repositionZoomBadge(); });
     ro.observe(stageEl);
   })();
 
@@ -4998,6 +5385,7 @@
     if(open) clampLayersWindowPosition();
     updateViewMenuChecks();
     saveSettings();
+    repositionZoomBadge();
   }
   function toggleLayersWindow(){ setLayersWindowOpen(!isLayersWindowOpen()); }
 
@@ -5026,6 +5414,7 @@
     else cancelDrawMode(); // can't see the tool buttons anymore -- don't leave one silently armed
     updateViewMenuChecks();
     saveSettings();
+    repositionZoomBadge();
   }
   function toggleToolsWindow(){ setToolsWindowOpen(!isToolsWindowOpen()); }
 
@@ -5048,6 +5437,7 @@
     if(open){ clampHistoryWindowPosition(); renderHistoryWindow(); }
     updateViewMenuChecks();
     saveSettings();
+    repositionZoomBadge();
   }
   function toggleHistoryWindow(){ setHistoryWindowOpen(!isHistoryWindowOpen()); }
 
@@ -5228,6 +5618,7 @@
       nextTop = Math.min(Math.max(nextTop, appRect.top), maxTop);
       win.style.left = nextLeft + 'px';
       win.style.top = nextTop + 'px';
+      repositionZoomBadge();
     });
     window.addEventListener('mouseup', function(){
       if(!dragging) return;
@@ -5240,7 +5631,7 @@
     // A viewport resize can leave a previously-valid position outside the
     // (now smaller) app area -- pull it back in bounds rather than letting
     // it hang off-screen or behind the menu bar.
-    window.addEventListener('resize', clampLayersWindowPosition);
+    window.addEventListener('resize', function(){ clampLayersWindowPosition(); repositionZoomBadge(); });
   })();
   (function(){
     var win = $('layersWindow');
@@ -5299,6 +5690,7 @@
       nextTop = Math.min(Math.max(nextTop, appRect.top), maxTop);
       win.style.left = nextLeft + 'px';
       win.style.top = nextTop + 'px';
+      repositionZoomBadge();
     });
     window.addEventListener('mouseup', function(){
       if(!dragging) return;
@@ -5307,8 +5699,8 @@
       document.body.style.userSelect = '';
       saveSettings();
     });
-    closeBtn.addEventListener('click', function(){ closeFn(); });
-    window.addEventListener('resize', clampFn);
+    closeBtn.addEventListener('click', function(){ closeFn(); repositionZoomBadge(); });
+    window.addEventListener('resize', function(){ clampFn(); repositionZoomBadge(); });
   }
   function restoreFloatingWindowPosition(winId, settingsKey, defaultLeft, clampFn){
     var win = $(winId);
@@ -5347,6 +5739,7 @@
     var ro = new ResizeObserver(function(){
       if(!skippedFirst){ skippedFirst = true; return; }
       saveSettings();
+      repositionZoomBadge();
     });
     ro.observe(win);
   }
@@ -5558,8 +5951,7 @@
     else cancelDrawMode();
   });
 
-  var handToolIconEl = $('handToolIcon');
-  if(handToolIconEl) handToolIconEl.innerHTML = HAND_TOOL_SVG;
+  populateToolIcons();
   document.querySelectorAll('#toolGrid .tool-btn').forEach(function(btn){
     btn.addEventListener('click', function(){ setDrawMode(btn.getAttribute('data-tool')); });
   });
@@ -5622,6 +6014,7 @@
     handlePresetChange();
     resizeCanvasToTarget();
     scheduleRender();
+    initSvgRegistry(); // applies the built-in SVG fallback immediately, then tries a live svg/manifest.json fetch in the background (see its own comment)
   });
 
 })();

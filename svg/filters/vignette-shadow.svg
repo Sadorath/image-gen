@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="vignette-shadow" style="display: none;">
+  <filter id="vignette-shadow">
+    <feOffset in="SourceAlpha" dx="0" dy="0" result="off" />
+    <feGaussianBlur in="off" stdDeviation="15" result="blur" />
+    <feComponentTransfer in="blur" result="darken">
+      <feFuncA type="linear" slope="0.7" />
+    </feComponentTransfer>
+    <feComposite in="darken" in2="SourceAlpha" operator="out" result="vignette" />
+    <feFlood flood-color="#000000" result="color" />
+    <feComposite in="color" in2="vignette" operator="in" result="shadow" />
+    <feMerge>
+      <feMergeNode in="SourceGraphic" />
+      <feMergeNode in="shadow" />
+    </feMerge>
+  </filter>
+</svg>

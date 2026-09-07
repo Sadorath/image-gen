@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="emboss-hard" style="display: none;">
+  <filter id="emboss-hard">
+    <feConvolveMatrix order="3,3" kernelMatrix="1 1 1  1 -7 1  1 1 1" result="embossed" />
+    <feColorMatrix type="matrix" values="0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0.33 0.33 0.33 0 0  0 0 0 1 0" result="grayscale" />
+    <feBlend mode="overlay" in="SourceGraphic" in2="grayscale" />
+  </filter>
+</svg>

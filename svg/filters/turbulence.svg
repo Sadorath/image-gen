@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="pixel-grid" style="display: none;">
+  <filter id="pixel-grid" x="0%" y="0%" width="100%" height="100%">
+    <feTurbulence type="turbulence" baseFrequency="0.9" numOctaves="1" result="noise" />
+    <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.08 0" result="grid" />
+    <feComposite in="SourceGraphic" in2="grid" operator="in" />
+  </filter>
+</svg>

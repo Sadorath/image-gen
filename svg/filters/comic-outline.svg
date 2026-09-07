@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" data-svg-type="filter" data-svg-name="comic-outline" style="display: none;">
+  <filter id="comic-outline">
+    <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="thick" />
+    <feFlood flood-color="#000000" result="black" />
+    <feComposite in="black" in2="thick" operator="in" result="outline" />
+    <feMerge>
+      <feMergeNode in="outline" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>
