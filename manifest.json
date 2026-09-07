@@ -2,214 +2,231 @@
     "version":  "1.0.0",
     "assets":  [
                    {
+                       "file":  "svg/icons/cloud.svg",
                        "type":  "icon",
-                       "name":  "user",
-                       "path":  "svg/icons/user.svg"
+                       "name":  "Cloud",
+                       "role":  ""
                    },
                    {
+                       "file":  "svg/icons/code.svg",
                        "type":  "icon",
-                       "name":  "gear",
-                       "path":  "svg/icons/gear.svg"
+                       "name":  "Code",
+                       "role":  ""
                    },
                    {
+                       "file":  "svg/icons/cpu.svg",
+                       "type":  "icon",
+                       "name":  "Cpu",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/database.svg",
+                       "type":  "icon",
+                       "name":  "Database",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/ellipse.svg",
+                       "type":  "icon",
+                       "name":  "Ellipse",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/eye-closed.svg",
+                       "type":  "icon",
+                       "name":  "Eye Closed",
+                       "role":  "eyeClosed"
+                   },
+                   {
+                       "file":  "svg/icons/eye-open.svg",
+                       "type":  "icon",
+                       "name":  "Eye Open",
+                       "role":  "eyeOpen"
+                   },
+                   {
+                       "file":  "svg/icons/folder.svg",
+                       "type":  "icon",
+                       "name":  "Folder",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/gear.svg",
+                       "type":  "icon",
+                       "name":  "Gear",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/hand.svg",
+                       "type":  "icon",
+                       "name":  "Hand",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/hex.svg",
+                       "type":  "icon",
+                       "name":  "Hex",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/line.svg",
+                       "type":  "icon",
+                       "name":  "Line",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/pencil.svg",
+                       "type":  "icon",
+                       "name":  "Pencil",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/poly.svg",
+                       "type":  "icon",
+                       "name":  "Poly",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/rect.svg",
+                       "type":  "icon",
+                       "name":  "Rect",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/example.svg",
+                       "type":  "icon",
+                       "name":  "Terminal",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/user.svg",
+                       "type":  "icon",
+                       "name":  "User",
+                       "role":  ""
+                   },
+                   {
+                       "file":  "svg/icons/arrow.svg",
                        "type":  "object",
-                       "name":  "terminal",
-                       "path":  "svg/icons/terminal.svg"
+                       "name":  "Arrow"
                    },
                    {
-                       "type":  "icon",
-                       "name":  "cpu",
-                       "path":  "svg/icons/cpu.svg"
-                   },
-                   {
+                       "file":  "svg/icons/blob.svg",
                        "type":  "object",
-                       "name":  "arrow",
-                       "path":  "svg/icons/arrow.svg"
+                       "name":  "Blob"
                    },
                    {
+                       "file":  "svg/icons/star.svg",
                        "type":  "object",
-                       "name":  "blob",
-                       "path":  "svg/icons/blob.svg"
+                       "name":  "Star"
                    },
                    {
-                       "type":  "icon",
-                       "name":  "ellipse",
-                       "path":  "svg/icons/ellipse.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "terminal",
-                       "path":  "svg/icons/example.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "eye-closed",
-                       "path":  "svg/icons/eye-closed.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "eye-open",
-                       "path":  "svg/icons/eye-open.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "hand",
-                       "path":  "svg/icons/hand.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "hex",
-                       "path":  "svg/icons/hex.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "line",
-                       "path":  "svg/icons/line.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "pencil",
-                       "path":  "svg/icons/pencil.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "poly",
-                       "path":  "svg/icons/poly.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "rect",
-                       "path":  "svg/icons/rect.svg"
-                   },
-                   {
+                       "file":  "svg/icons/terminal.svg",
                        "type":  "object",
-                       "name":  "star",
-                       "path":  "svg/icons/star.svg"
+                       "name":  "Terminal"
                    },
                    {
-                       "type":  "icon",
-                       "name":  "folder",
-                       "path":  "svg/icons/folder.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "code",
-                       "path":  "svg/icons/code.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "database",
-                       "path":  "svg/icons/database.svg"
-                   },
-                   {
-                       "type":  "icon",
-                       "name":  "cloud",
-                       "path":  "svg/icons/cloud.svg"
-                   },
-                   {
+                       "file":  "svg/filters/clean-glow.svg",
                        "type":  "filter",
-                       "name":  "clean-glow",
-                       "path":  "svg/filters/clean-glow.svg"
+                       "name":  "Clean Glow"
                    },
                    {
+                       "file":  "svg/filters/comic-outline.svg",
                        "type":  "filter",
-                       "name":  "comic-outline",
-                       "path":  "svg/filters/comic-outline.svg"
+                       "name":  "Comic Outline"
                    },
                    {
+                       "file":  "svg/filters/drop-shadow-deep.svg",
                        "type":  "filter",
-                       "name":  "drop-shadow-deep",
-                       "path":  "svg/filters/drop-shadow-deep.svg"
+                       "name":  "Drop Shadow Deep"
                    },
                    {
+                       "file":  "svg/filters/duotone-matrix.svg",
                        "type":  "filter",
-                       "name":  "duotone-matrix",
-                       "path":  "svg/filters/duotone-matrix.svg"
+                       "name":  "Duotone Matrix"
                    },
                    {
+                       "file":  "svg/filters/emboss-hard.svg",
                        "type":  "filter",
-                       "name":  "emboss-hard",
-                       "path":  "svg/filters/emboss-hard.svg"
+                       "name":  "Emboss Hard"
                    },
                    {
+                       "file":  "svg/filters/frosted-glass.svg",
                        "type":  "filter",
-                       "name":  "soft-glow",
-                       "path":  "svg/filters/filter-soft-glow.svg"
+                       "name":  "Frosted Glass"
                    },
                    {
+                       "file":  "svg/filters/glitch-shift.svg",
                        "type":  "filter",
-                       "name":  "frosted-glass",
-                       "path":  "svg/filters/frosted-glass.svg"
+                       "name":  "Glitch Shift"
                    },
                    {
+                       "file":  "svg/filters/halftone-dots.svg",
                        "type":  "filter",
-                       "name":  "glitch-shift",
-                       "path":  "svg/filters/glitch-shift.svg"
+                       "name":  "Halftone Dots"
                    },
                    {
+                       "file":  "svg/filters/inner-shadow.svg",
                        "type":  "filter",
-                       "name":  "neon-cyber",
-                       "path":  "svg/filters/neon-cyber.svg"
+                       "name":  "Inner Shadow"
                    },
                    {
+                       "file":  "svg/filters/long-shadow.svg",
                        "type":  "filter",
-                       "name":  "outline",
-                       "path":  "svg/filters/outline.svg"
+                       "name":  "Long Shadow"
                    },
                    {
+                       "file":  "svg/filters/neon-cyber.svg",
                        "type":  "filter",
-                       "name":  "paper-texture",
-                       "path":  "svg/filters/paper-texture.svg"
+                       "name":  "Neon Cyber"
                    },
                    {
+                       "file":  "svg/filters/outline.svg",
                        "type":  "filter",
-                       "name":  "retro-glow",
-                       "path":  "svg/filters/retro-glow.svg"
+                       "name":  "Outline"
                    },
                    {
+                       "file":  "svg/filters/paper-texture.svg",
                        "type":  "filter",
-                       "name":  "rough-outline",
-                       "path":  "svg/filters/rough-outline.svg"
+                       "name":  "Paper Texture"
                    },
                    {
+                       "file":  "svg/filters/turbulence.svg",
                        "type":  "filter",
-                       "name":  "scanlines-crt",
-                       "path":  "svg/filters/scanlines-crt.svg"
+                       "name":  "Pixel Grid"
                    },
                    {
+                       "file":  "svg/filters/retro-glow.svg",
                        "type":  "filter",
-                       "name":  "pixel-grid",
-                       "path":  "svg/filters/turbulence.svg"
+                       "name":  "Retro Glow"
                    },
                    {
+                       "file":  "svg/filters/rough-outline.svg",
                        "type":  "filter",
-                       "name":  "vignette-shadow",
-                       "path":  "svg/filters/vignette-shadow.svg"
+                       "name":  "Rough Outline"
                    },
                    {
+                       "file":  "svg/filters/scanlines-crt.svg",
                        "type":  "filter",
-                       "name":  "halftone-dots",
-                       "path":  "svg/filters/halftone-dots.svg"
+                       "name":  "Scanlines Crt"
                    },
                    {
+                       "file":  "svg/filters/sepia-vintage.svg",
                        "type":  "filter",
-                       "name":  "thermal-vision",
-                       "path":  "svg/filters/thermal-vision.svg"
+                       "name":  "Sepia Vintage"
                    },
                    {
+                       "file":  "svg/filters/filter-soft-glow.svg",
                        "type":  "filter",
-                       "name":  "long-shadow",
-                       "path":  "svg/filters/long-shadow.svg"
+                       "name":  "Soft Glow"
                    },
                    {
+                       "file":  "svg/filters/thermal-vision.svg",
                        "type":  "filter",
-                       "name":  "inner-shadow",
-                       "path":  "svg/filters/inner-shadow.svg"
+                       "name":  "Thermal Vision"
                    },
                    {
+                       "file":  "svg/filters/vignette-shadow.svg",
                        "type":  "filter",
-                       "name":  "sepia-vintage",
-                       "path":  "svg/filters/sepia-vintage.svg"
+                       "name":  "Vignette Shadow"
                    }
                ]
 }

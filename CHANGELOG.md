@@ -4,6 +4,19 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.50 — 2026-09-07
+
+- Fixed `svg/manifest.json` entries silently failing to load whenever a `file` path already included a leading `svg/` (e.g. `svg/icons/cloud.svg`, which some external asset-sync tooling writes when it computes paths relative to the app's own folder rather than relative to `svg/` itself) — that redundant prefix used to get doubled up (`svg/svg/icons/cloud.svg`), 404ing on *every single entry* and, because a manifest update only applies once at least one entry loads successfully, silently discarding the whole live update and falling back to the last-known bundled copy instead of just that one broken entry. A leading `svg/` (or `svg\`) is now stripped automatically, so a manifest generated either way works.
+- An icon-type manifest entry with a blank or missing `role` now has one guessed from its file name (matching the app's own built-in icon-role names, e.g. `hand.svg` → `hand`, `eye-open.svg` → `eyeOpen`) and applied automatically if it matches a real built-in icon slot, instead of silently doing nothing.
+- SVG Shape layers' Scale control now ranges from 0% to 600% (was 10% to 400%), including for Custom-animate.
+
+## v0.0.49 — 2026-09-07
+
+- Renamed the "CSS Filters" toggle on every layer card to just "Filter".
+- SVG Shape layers now have a Rotation control (alongside Scale, Offset X/Y, and Flip H/V), and can be Custom-animated with it via `svgrotation`. Older saved/shared designs with an SVG Shape layer load in at 0deg rotation, exactly as they looked before.
+- Fixed `svg/manifest.json` entries silently failing to load whenever any single one used a `path` key instead of `file` (as some external asset-sync tooling writes) — both keys are now accepted, and a manifest.json is genuinely more fault-tolerant besides: one missing or broken entry now only drops that one asset (logged as a Debug Log warning) instead of taking the *entire* live manifest update down with it and silently falling back to the last-known bundled copy.
+- A layer's Filter section now scans whatever's currently in Custom SVG Filter (loaded from a Filter Preset, or pasted by hand) for a handful of common, adjustable filter primitives — a Gaussian blur amount, a flood color and opacity, an offset — and shows matching Filter Parameters sliders/color swatch for any it finds, so a quick tweak (like the bundled Soft Glow's blur radius or glow color) no longer requires hand-editing the raw SVG text. Works for any filter built from the same primitives, not just the bundled presets.
+
 ## v0.0.48 — 2026-09-07
 
 - `svg/manifest.json` now wraps its file list in `{ "version": "1.0.0", "assets": [ ...same entries as before... ] }`, instead of the array sitting at the top level — makes room for a version number the format itself can carry going forward. A hand-edited manifest.json still using the old bare-array shape keeps working (it's detected and used the same way), so no action's needed unless you want to adopt the new wrapper.
