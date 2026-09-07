@@ -96,7 +96,7 @@
     <a href="#getting-started">Getting Started</a>
     <a href="#layout">View &amp; Layout</a>
     <a href="#layers">Layers</a>
-    <a href="#drawing">Drawing Tools</a>
+    <a href="#drawing">Tools</a>
     <a href="#history">History</a>
     <a href="#masks">Masks</a>
     <a href="#filters">Filters</a>
@@ -113,20 +113,22 @@
       <h2>Getting Started</h2>
       <p>The canvas behind everything shows a live, constantly-updating preview of your design. Everything you change in the Layers window &mdash; layers, colors, filters, animation &mdash; renders instantly, so there's no separate "preview" step.</p>
       <p>A design is built from <strong>layers</strong>, stacked from bottom to top just like Photoshop or GIMP. Start with the <strong>Canvas</strong> menu to pick a resolution (or type a custom width/height), then use <strong>+ Add Layer</strong> in the Layers window to build up your background one layer at a time.</p>
+      <p>The very first time you open the app (and every time you pick <strong>File &gt; New Workspace</strong>) it starts you off with one plain white <strong>Blank</strong> Solid Fill layer &mdash; a clean canvas rather than a pre-styled preset design.</p>
       <p>Hover over almost anything in the Layers window &mdash; labels, sliders, buttons, dropdowns &mdash; and a short tooltip will explain what it does. That's the fastest way to learn the interface hands-on.</p>
       <div class="tip"><strong>Tip:</strong> Nothing you do here is destructive until you export. Feel free to experiment &mdash; Undo (<kbd>Ctrl/Cmd+Z</kbd>) covers the last 50 changes.</div>
     </section>
 
     <section id="layout">
       <h2>View &amp; Layout</h2>
-      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is the live preview (the <strong>stage</strong>), with the <strong>Layers</strong>, <strong>Drawing Tools</strong>, and <strong>History</strong> windows floating on top of it.</p>
-      <p>Each of these three windows can be dragged anywhere by its titlebar &mdash; each is constrained so it can never be dragged outside the app's own window, so its titlebar (and your way to move it back) is never out of reach. Click the <strong>&times;</strong> in a window's corner to close it; this only ever hides it, nothing is lost. Bring any of them back from the <strong>View</strong> menu (<strong>Show Layers</strong> / <strong>Show Drawing Tools</strong> / <strong>Show History</strong>), which shows a checkmark next to whichever are currently open. Each window's position and open/closed state are remembered the next time you open the app &mdash; Layers defaults to open, since it's core to building a design; Drawing Tools and History both default to closed until you open them.</p>
-      <p>Use the <strong>View</strong> menu to control how the preview is scaled: <strong>Zoom to Fit</strong> shrinks it to fit the available space (the default), <strong>Zoom to Actual Size</strong> shows it at exactly 100% (one image pixel per screen pixel), and <strong>Zoom In</strong> / <strong>Zoom Out</strong> step through preset percentages &mdash; the current zoom level is always shown in the menu. None of this changes the canvas's actual resolution, only how large it's displayed.</p>
+      <p>The menu bar (<strong>File | Edit | View | ... | Help</strong>) runs full-width across the very top of the window. Everything below it is the live preview (the <strong>stage</strong>), with the <strong>Layers</strong>, <strong>Tools</strong>, and <strong>History</strong> windows floating on top of it.</p>
+      <p>Each of these three windows can be dragged anywhere by its titlebar &mdash; each is constrained so it can never be dragged outside the app's own window, so its titlebar (and your way to move it back) is never out of reach. Each window can also be resized by dragging its bottom-right corner, down to a minimum size that keeps it readable: <strong>Tools</strong> won't go below 153px, <strong>Layers</strong> won't go below 400px, and <strong>History</strong> won't go below 175px. Click the <strong>&times;</strong> in a window's corner to close it; this only ever hides it, nothing is lost. Bring any of them back from the <strong>View</strong> menu (<strong>Show Layers</strong> / <strong>Show Tools</strong> / <strong>Show History</strong>), which shows a checkmark next to whichever are currently open. Each window's position, size, and open/closed state are all remembered the next time you open the app &mdash; Layers defaults to open, since it's core to building a design; Tools and History both default to closed until you open them.</p>
+      <p>Use the <strong>View</strong> menu to control how the preview is scaled: <strong>Zoom to Fit</strong> shrinks it to fit the available space (the default), <strong>Zoom to Actual Size</strong> shows it at exactly 100% (one image pixel per screen pixel), and <strong>Zoom In</strong> / <strong>Zoom Out</strong> step through preset percentages. Holding <strong>Shift</strong> and scrolling the mouse wheel over the canvas does the same thing, one step per notch, without needing the menu at all. The visible stage area itself never changes size or grows a scrollbar when you zoom in &mdash; instead, a small badge appears over the top-right corner of the canvas showing the current zoom level whenever it isn't Fit, and if the zoomed-in image no longer fits, use the <strong>Hand</strong> tool (in the <a href="#drawing">Tools window</a>) to drag the view around inside that same fixed frame. The canvas's own aspect ratio always matches whatever resolution is selected in the Canvas menu, no matter the zoom level -- zooming only changes how large it's displayed, never its proportions or its actual resolution.</p>
+      <p>Every menu item shows a quiet, low-contrast keyboard-shortcut hint on its right edge, so the whole menu bar doubles as its own reference &mdash; see <a href="#shortcuts">Keyboard Shortcuts</a> for the full list, including a few less-common combinations invented for commands that don't have an industry-standard one.</p>
     </section>
 
     <section id="layers">
       <h2>Layers</h2>
-      <p>Every layer type lives behind the <strong>+ Add Layer</strong> button:</p>
+      <p><strong>+ Add Layer</strong> and <strong>Group Selected</strong> sit side by side in a small toolbar pinned to the bottom of the Layers window, below the scrolling layer list -- they stay reachable no matter how far down a long list you've scrolled. Every layer type lives behind + Add Layer:</p>
       <ul>
         <li><strong>Solid Fill</strong> &mdash; a single flat color.</li>
         <li><strong>Linear / Radial Gradient</strong> &mdash; a smooth color blend, with up to 6 color stops.</li>
@@ -135,25 +137,26 @@
         <li><strong>Image Overlay</strong> &mdash; a picture from your computer, with control over fit, scale, offset, and flip.</li>
         <li><strong>Group</strong> &mdash; a folder that holds other layers and applies one shared opacity/blend mode on top of them.</li>
       </ul>
-      <p>There's one more layer type, <strong>Shape</strong>, but it doesn't live behind + Add Layer &mdash; it's created by drawing on the canvas with the <a href="#drawing">Drawing Tools window</a> instead. See that section for how it works.</p>
-      <p>Each layer card has a header with quick controls: the <strong>&#8942;&#8942;</strong> handle drags it to reorder (or use the &uarr;/&darr; arrows), the eye checkbox shows/hides it, and the &times; deletes it. Click the layer name area to expand or collapse its full controls.</p>
+      <p>There's one more layer type, <strong>Shape</strong>, but it doesn't live behind + Add Layer &mdash; it's created by drawing on the canvas with the <a href="#drawing">Tools window</a> instead. See that section for how it works.</p>
+      <p>Each layer card has a compact header with the essentials: the <strong>&#8942;&#8942;</strong> handle drags it to reorder, the eye icon toggles it open (visible) or closed (hidden), and the &times; deletes it. Click the layer name area to expand or collapse its full controls. A second row &mdash; the card's <strong>footer</strong>, below its full controls when expanded &mdash; holds the rest: the &uarr;/&darr; move buttons, the <strong>Group</strong> select-box (check it to include this layer the next time you click Group Selected), and a duplicate button.</p>
       <p>Every layer also has an <strong>Opacity</strong> slider and a <strong>Blend</strong> mode (Normal, Overlay, Multiply, Screen, Difference, Color Dodge/Burn, Hard/Soft Light, Exclusion) that controls how it combines with whatever is beneath it.</p>
       <h3>Grouping</h3>
-      <p>Check the small select-boxes on two or more layers, then click <strong>Group Selected</strong> to fold them into a folder. Groups can be nested, duplicated, and ungrouped again at any time.</p>
+      <p>Check the small <strong>Group</strong> select-box in two or more layers' footers, then click <strong>Group Selected</strong> to fold them into a folder. Groups can be nested, duplicated, and ungrouped again at any time.</p>
       <div class="tip"><strong>Tip:</strong> Top of the list = top of the stack. Use the arrows to reorder, the eye to hide, and blend mode + opacity to control how each layer combines with the ones below it. Turn on a layer's "Use as Mask" toggle to clip the layer directly beneath it to this layer's shape instead &mdash; switch its mode to Inverted to punch a hole through that layer instead of clipping to it. Check the box on any layers to group them into a folder with its own shared opacity and blend.</div>
     </section>
 
     <section id="drawing">
-      <h2>Drawing Tools</h2>
-      <p>Open the <strong>Drawing Tools</strong> window (View &gt; Show Drawing Tools) for six basic shape tools: <strong>Pencil, Line, Rectangle, Circle, Hexagon,</strong> and <strong>Polygon</strong>. Click one to arm it, then draw right on the canvas:</p>
+      <h2>Tools</h2>
+      <p>Open the <strong>Tools</strong> window (View &gt; Show Tools) for a <strong>Hand</strong> tool plus six basic shape tools: <strong>Pencil, Line, Rectangle, Circle, Hexagon,</strong> and <strong>Polygon</strong>, shown as small icon-only buttons that pack next to each other and wrap onto a new row as the window is resized narrower or wider. Hover any button to see its name and how to use it (e.g. "Rectangle: Click to place corner, then next corner."). Click one to arm it, then use it right on the canvas:</p>
       <ul>
+        <li><strong>Hand</strong> &mdash; click and drag to slide the canvas view around, for when a zoomed-in image no longer fully fits the stage. Doesn't draw or change the design at all.</li>
         <li><strong>Pencil</strong> &mdash; click and drag to draw a freehand line, release the mouse to finish.</li>
         <li><strong>Line, Rectangle, Circle, Hexagon</strong> &mdash; two clicks each: the first places the start point (for Line), a corner (Rectangle), or the center (Circle/Hexagon); the second finishes it (the opposite corner for Rectangle, or a point on the edge that sets the radius for Circle/Hexagon).</li>
         <li><strong>Polygon</strong> &mdash; click to place as many points as you like, then double-click to finish (at least 3 points).</li>
       </ul>
       <p>A dashed outline previews the shape as you go. Press <kbd>Esc</kbd> at any point to cancel the current tool without adding anything &mdash; clicking an armed tool's button again does the same.</p>
       <p>Finishing a shape adds it to the top of the Layers stack as a new <strong>Shape</strong> layer, exactly the way + Add Layer works for every other type: it gets its own <strong>Opacity</strong>, <strong>Blend</strong>, <strong>CSS Filters</strong>, and <strong>Animate</strong> (Pulse, Spin, Orbit, Custom) for free, and shows up in <a href="#history">History</a>/Undo like any other structural change. Each Shape layer also has its own <strong>Stroke</strong> (color, alpha, and width) and <strong>Fill</strong> (color and alpha), editable from its layer card the same as any other color control.</p>
-      <p>The color/width controls in the Drawing Tools window itself set the Stroke and Fill used for the <em>next</em> shape you draw &mdash; changing them doesn't affect shapes already on the canvas, but a shape's own Stroke/Fill can always be adjusted afterward from its layer card.</p>
+      <p>The color/width controls in the Tools window itself set the Stroke and Fill used for the <em>next</em> shape you draw (black stroke and grey fill to start) &mdash; changing them doesn't affect shapes already on the canvas, but a shape's own Stroke/Fill can always be adjusted afterward from its layer card.</p>
       <div class="tip"><strong>Tip:</strong> A Shape layer is a plain vector outline positioned by the same absolute canvas coordinates every time it's drawn, but like Solid Fill, Gradient, and Image layers, it only gets the Spin/rotation gap coverage described in <a href="#filters">Filters</a> &mdash; giving a filtered Shape layer Orbit or Custom x/y drift can still show a thin gap at its trailing edge.</div>
     </section>
 
@@ -226,12 +229,19 @@
 
     <section id="shortcuts">
       <h2>Keyboard Shortcuts</h2>
+      <p>Every shortcut below also shows as a quiet hint on its menu item, so you never have to memorize this list to use it.</p>
       <table>
         <tr><th>Action</th><th>Shortcut</th></tr>
+        <tr><td>New Workspace</td><td><kbd>Ctrl/Cmd + Alt + N</kbd></td></tr>
         <tr><td>Save</td><td><kbd>Ctrl/Cmd + S</kbd></td></tr>
         <tr><td>Save As</td><td><kbd>Ctrl/Cmd + Shift + S</kbd></td></tr>
         <tr><td>Load</td><td><kbd>Ctrl/Cmd + O</kbd></td></tr>
+        <tr><td>Import a Link or Code</td><td><kbd>Ctrl/Cmd + Alt + I</kbd></td></tr>
         <tr><td>Export PNG</td><td><kbd>Ctrl/Cmd + Shift + E</kbd></td></tr>
+        <tr><td>Export CSS</td><td><kbd>Ctrl/Cmd + Alt + C</kbd></td></tr>
+        <tr><td>Export Rainmeter .ini</td><td><kbd>Ctrl/Cmd + Alt + R</kbd></td></tr>
+        <tr><td>Copy Share Link</td><td><kbd>Ctrl/Cmd + Alt + K</kbd></td></tr>
+        <tr><td>Copy Code</td><td><kbd>Ctrl/Cmd + Alt + D</kbd></td></tr>
         <tr><td>Undo</td><td><kbd>Ctrl/Cmd + Z</kbd></td></tr>
         <tr><td>Redo</td><td><kbd>Ctrl/Cmd + Shift + Z</kbd></td></tr>
         <tr><td>Redo (alternate)</td><td><kbd>Ctrl/Cmd + Y</kbd></td></tr>
@@ -239,17 +249,37 @@
         <tr><td>Ungroup Selected</td><td><kbd>Ctrl/Cmd + Shift + G</kbd></td></tr>
         <tr><td>Select All</td><td><kbd>Ctrl/Cmd + A</kbd></td></tr>
         <tr><td>Deselect All</td><td><kbd>Ctrl/Cmd + Shift + A</kbd></td></tr>
-        <tr><td>Zoom In</td><td><kbd>Ctrl/Cmd + =</kbd></td></tr>
-        <tr><td>Zoom Out</td><td><kbd>Ctrl/Cmd + -</kbd></td></tr>
+        <tr><td>Randomize: Palette</td><td><kbd>Ctrl/Cmd + Alt + 1</kbd></td></tr>
+        <tr><td>Randomize: Layers</td><td><kbd>Ctrl/Cmd + Alt + 2</kbd></td></tr>
+        <tr><td>Randomize: All</td><td><kbd>Ctrl/Cmd + Alt + 3</kbd></td></tr>
+        <tr><td>Purge History</td><td><kbd>Ctrl/Cmd + Alt + P</kbd></td></tr>
+        <tr><td>Toggle Kiosk Mode</td><td><kbd>Ctrl/Cmd + Alt + M</kbd></td></tr>
+        <tr><td>Show Layers</td><td><kbd>Ctrl/Cmd + Alt + Y</kbd></td></tr>
+        <tr><td>Show Tools</td><td><kbd>Ctrl/Cmd + Alt + X</kbd></td></tr>
+        <tr><td>Show History</td><td><kbd>Ctrl/Cmd + Alt + H</kbd></td></tr>
+        <tr><td>Zoom In</td><td><kbd>Ctrl/Cmd + =</kbd> <span class="placeholder">(or Shift + mouse wheel up over the canvas)</span></td></tr>
+        <tr><td>Zoom Out</td><td><kbd>Ctrl/Cmd + -</kbd> <span class="placeholder">(or Shift + mouse wheel down over the canvas)</span></td></tr>
         <tr><td>Zoom to Fit</td><td><kbd>Ctrl/Cmd + 0</kbd></td></tr>
         <tr><td>Zoom to Actual Size</td><td><kbd>Ctrl/Cmd + 1</kbd></td></tr>
+        <tr><td>Palette Preset: Random (Default)</td><td><kbd>Ctrl/Cmd + Alt + Shift + 0</kbd></td></tr>
+        <tr><td>Palette Preset: Spectrum HUD</td><td><kbd>Ctrl/Cmd + Alt + Shift + 1</kbd></td></tr>
+        <tr><td>Palette Preset: Industrial Automation</td><td><kbd>Ctrl/Cmd + Alt + Shift + 2</kbd></td></tr>
+        <tr><td>Palette Preset: Neon</td><td><kbd>Ctrl/Cmd + Alt + Shift + 3</kbd></td></tr>
+        <tr><td>Light Theme</td><td><kbd>Ctrl/Cmd + Alt + G</kbd></td></tr>
+        <tr><td>Performance Mode</td><td><kbd>Ctrl/Cmd + Alt + O</kbd></td></tr>
+        <tr><td>Smooth Playback</td><td><kbd>Ctrl/Cmd + Alt + B</kbd></td></tr>
+        <tr><td>Auto-Save</td><td><kbd>Ctrl/Cmd + Alt + A</kbd></td></tr>
+        <tr><td>Ultra Tight Compact UI</td><td><kbd>Ctrl/Cmd + Alt + U</kbd></td></tr>
+        <tr><td>Hints &amp; Tips</td><td><kbd>Ctrl/Cmd + Alt + J</kbd></td></tr>
+        <tr><td>Debug Log</td><td><kbd>Ctrl/Cmd + Alt + V</kbd></td></tr>
+        <tr><td>What&rsquo;s New</td><td><kbd>Ctrl/Cmd + Alt + W</kbd></td></tr>
         <tr><td>Play / Pause Animation</td><td><kbd>Space</kbd></td></tr>
         <tr><td>Open This Shortcuts List</td><td><kbd>?</kbd></td></tr>
         <tr><td>Exit Kiosk Mode</td><td><kbd>Esc</kbd></td></tr>
         <tr><td>Close any open dialog</td><td><kbd>Esc</kbd></td></tr>
         <tr><td>Cancel the active drawing tool</td><td><kbd>Esc</kbd></td></tr>
       </table>
-      <div class="tip"><strong>Tip:</strong> none of these fire while you're typing in a text field &mdash; <kbd>Ctrl/Cmd+A</kbd> in the File Name box still selects that field's text instead of selecting every layer.</div>
+      <div class="tip"><strong>Tip:</strong> none of these fire while you're typing in a text field &mdash; <kbd>Ctrl/Cmd+A</kbd> in the File Name box still selects that field's text instead of selecting every layer. The <kbd>Ctrl/Cmd+Alt(+Shift)</kbd> combinations are ones this app invented for commands that don't have an existing industry-standard shortcut &mdash; some may already be claimed by your browser or operating system for something else, in which case that key wins and the menu item is still just a click away.</div>
     </section>
 
     <section id="tips">
@@ -261,8 +291,9 @@
         <li>Layer a low-opacity Grain/Noise layer with Normal or Overlay blend on top of a flat gradient for an instant subtle texture.</li>
         <li>Turn on <strong>Performance Mode</strong> (Settings menu) if the canvas feels sluggish while dragging a slider on a heavy Perlin noise layer.</li>
         <li><strong>Auto-Save</strong> (Settings menu) continuously backs up your current design to this browser, so an accidental refresh doesn't lose your work.</li>
+        <li>Working on a small screen, or just want the Layers/Tools/History windows out of the way as much as possible? Turn on <strong>Ultra Tight Compact UI</strong> (Settings menu) for an even tighter padding mode across all three.</li>
         <li>The Debug Log's <strong>Track Frame Metrics</strong> switch (Help &gt; Debug Log) is off by default; turn it on to see a live Avg FPS / Avg Frame / Worst Frame reading while you track down a slow design, then switch it back off &mdash; it costs a small, constant amount of overhead while it runs. Crash detection and error/warning logging stay on either way, switch or no switch.</li>
-        <li>Sketch a rough shape with the <strong>Pencil</strong> tool, then turn on its Fill (from the layer card, or the Drawing Tools window before drawing the next one) and give it a Blur or Drop Shadow filter for a soft, painterly blob &mdash; much faster than trying to build the same shape out of a gradient or pattern layer.</li>
+        <li>Sketch a rough shape with the <strong>Pencil</strong> tool, then turn on its Fill (from the layer card, or the Tools window before drawing the next one) and give it a Blur or Drop Shadow filter for a soft, painterly blob &mdash; much faster than trying to build the same shape out of a gradient or pattern layer.</li>
         <li>Lost track of a change you're not sure you meant to make? Open <strong>View &gt; Show History</strong> and click back through the list until the preview looks right again, instead of hitting Undo over and over and hoping to land on the right step.</li>
       </ul>
     </section>

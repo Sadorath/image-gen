@@ -1,0 +1,16 @@
+<svg style="display: none;">
+  <filter id="outline-filter">
+    <!-- Offset the graphic in all 4 directions to create the outline thickness -->
+    <feMorphology in="SourceAlpha" operator="dilate" radius="3" result="thick" />
+    
+    <!-- Color the expanded shape -->
+    <feFlood flood-color="#ff0055" result="color" />
+    <feComposite in="color" in2="thick" operator="in" result="colored-outline" />
+    
+    <!-- Merge the outline behind the original element -->
+    <feMerge>
+      <feMergeNode in="colored-outline" />
+      <feMergeNode in="SourceGraphic" />
+    </feMerge>
+  </filter>
+</svg>

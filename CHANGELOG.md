@@ -4,6 +4,36 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.45 — 2026-09-07
+
+- Each layer card is now split into a compact header (drag handle, visibility eye, name, delete) and a new footer row underneath its controls holding Move Up/Down, the Group select-box, and Duplicate — the header's own padding shrank to match. The Layers window's "+ Add Layer" and "Group Selected" now live side by side in a footer toolbar pinned to the bottom of the window (left of the native resize handle), instead of a strip above the list.
+- File > New Workspace, and the very first time the app is ever opened with no autosave present, now starts from a single plain white "Blank" Solid Fill layer instead of a pre-styled preset.
+- The Tools window's default Stroke color is now black and default Fill color is now grey (previously both a bright teal), for a more neutral starting point on the next shape you draw.
+- Floating-window body padding is now a flat 5px all around (was a roomier 12px).
+- Shift + mouse wheel over the canvas now zooms in/out, the same as View > Zoom In/Out.
+- Every menu item across the whole menu bar now shows a quiet, low-contrast keyboard-shortcut hint on its right edge — commands that already had one (Save, Undo, Zoom, ...) show their existing shortcut, and every command that didn't gets a newly invented Ctrl/Cmd+Alt(+Shift) combination so the whole menu bar doubles as its own reference (see Help > Keyboard Shortcuts for the full list).
+- Added an Ultra Tight Compact UI toggle (Settings menu): an even smaller padding mode for the Layers/Tools/History windows and their buttons, for the tightest possible footprint.
+- This page's JavaScript has moved out of main.html's inline `<script>` block into its own `app.js` file, linked from main.html, the same way `style.css` already is — app.js needs to stay in the same folder as main.html (and travel with it whenever it's copied or shared) for the app to work.
+
+## v0.0.44 — 2026-09-07
+
+- The Layers window's "+ Add Layer" and "Group Selected" buttons now sit in their own compact strip pinned above the layer list, so they stay visible no matter how far you've scrolled down a long list of layers — they used to scroll away with everything else.
+- The Drawing Tools window is now just called Tools (View > Show Tools), and has a new Hand tool: click and drag anywhere on the canvas to slide the view around, without changing zoom or touching Undo/Redo (it's purely a viewing aid, the same as scrolling around a document).
+- Reworked Zoom: the canvas area's own size on screen no longer changes as you zoom in or out — only the image inside it does, panning and clipping within that fixed frame (drag it around with the new Hand tool once zoomed in). A small badge in the canvas area's corner shows the current zoom percentage whenever you're away from Zoom to Fit. The canvas's aspect ratio always matches whatever resolution is currently selected, at every zoom level.
+- Fixed dragging a floating window's resize handle (bottom-right corner) sometimes landing on a scrollbar's down-arrow instead when the window's list was scrolled — there's now a small gap between the scrollable area and the window's edge on the Layers, Tools, and History windows, so the resize handle is never covered.
+- Shrank the header bar (titlebar) padding on every floating window (Layers, Tools, History) for a slightly more compact look.
+
+## v0.0.43 — 2026-09-07
+
+- Fixed the per-layer visibility eye icon rendering almost invisibly small (a sliver a couple pixels wide, easy to mistake for a period) — a Chromium quirk specific to an SVG placed directly inside a &lt;button&gt;'s own flex layout was shrinking its width despite the icon's explicit size. The eye icon (both open and closed/hidden states) is now bigger, bolder, and renders at its intended size.
+
+## v0.0.42 — 2026-09-07
+
+- Drawing Tools buttons are now compact 20x20 icon-only squares that pack next to each other and wrap onto a new row once a row runs out of space, instead of a fixed two-column grid with visible text labels — shrinking or widening the Drawing Tools window reflows them live. Each tool's full description now shows as a combined "Name: how to use it." tooltip on hover (e.g. "Rectangle: Click to place corner, then next corner.") in place of the text that used to sit on the button itself.
+- The Layers, Drawing Tools, and History windows can now be resized by dragging their bottom-right corner, each with its own minimum size for readability: Drawing Tools can't go below 153px, Layers can't go below 400px, and History can't go below 175px (applied to both width and height). A resized window remembers its new size the next time you open the app, the same way its position and open/closed state already did.
+- Each layer's Show/Hide control is now an eye icon — open when the layer is visible, closed (with a slash) when it's hidden — instead of a plain checkbox.
+- The History window's list now sits inside its own padded, bordered box nested in the window, instead of loose against the window's own edge.
+
 ## v0.0.41 — 2026-09-07
 
 - Added a Drawing Tools window (View > Show Drawing Tools): Pencil, Line, Rectangle, Circle, Hexagon, and Polygon. Pick a tool, then draw right on the canvas — Pencil is a click-and-drag freehand stroke; Line/Rectangle/Circle/Hexagon are two clicks (first point, then the second); Polygon is any number of clicks, finished with a double-click (Esc cancels any of them at any point, and a dashed live preview tracks the mouse while you're placing points). Finishing a shape adds it as a new layer — a Shape layer — exactly the way "+ Add Layer" does: it gets its own Stroke and Fill (color, alpha, and stroke width) plus everything every other layer type already has for free — Opacity, Blend, CSS Filters, and Animate (Pulse/Spin/Orbit/Custom) — and shows up in Undo/Redo like any other structural change. The Drawing Tools window also holds the stroke/fill color and width used for the *next* shape drawn; each shape's own Stroke/Fill can still be changed afterward from its own layer card. Like Solid Fill, Gradient, and Image layers, a Shape layer only gets the Spin/rotation gap coverage from a few versions back — Orbit or Custom x/y drift on a filtered Shape can still show a thin gap at the trailing edge, the same disclosed limitation as those other types.
