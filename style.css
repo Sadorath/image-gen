@@ -207,6 +207,10 @@
     display:flex; flex-direction:column; gap:2px;
   }
   .ultra-compact .history-toolbar{ display:flex; gap:8px; margin-bottom:3px; flex:0 0 auto; }
+  /* Ultra Compact also lowers the Layers window's own min-width floor (see
+     #layersWindow above) -- its default first-run size in this mode
+     (373px, set in app.js) is narrower than the normal-mode 400px floor. */
+  .ultra-compact #layersWindow{ min-width:250px; min-height:400px; }
 
   /* ---------------- Tools (drawing) window ---------------- */
   /* Compact icon-only buttons, packed left-to-right and wrapping to a new
@@ -512,6 +516,23 @@
   .add-menu button + button{ border-top:1px solid var(--border); }
   .add-menu button.add-group-btn{ color:#e0bd6b; font-weight:600; }
   .add-menu button.add-group-btn:hover{ background:var(--btn-2); color:#f0cd7d; }
+  /* Categorized flyouts (Fills & Gradients / Patterns / Textures & Media) --
+     there are too many pattern types now for one flat list, so they're
+     grouped and tucked away until hovered or clicked. Expands DOWNWARD in
+     place (reusing .submenu-inline, the same mechanism as the header menu
+     bar's Effects/Palette Presets submenus) rather than flying out to the
+     side: .add-menu already clips horizontal overflow (see the comment on
+     .add-menu above), so a right-flying panel would just get cut off. */
+  .add-menu-category{ position:relative; border-top:1px solid var(--border); }
+  .add-menu-category:first-child{ border-top:none; }
+  .add-menu-cat{ font-weight:500; }
+  .add-menu-category:hover > .add-menu-flyout{ display:block; }
+  .add-menu-flyout button{ padding-left:26px; font-size:11.5px; }
+  .add-menu-section-label{
+    padding:7px 12px 3px 26px; font-size:9px; text-transform:uppercase;
+    letter-spacing:.4px; color:var(--text-dim); opacity:.8;
+  }
+  .add-menu-section-label:first-child{ padding-top:9px; }
   .layers-empty{ color:var(--text-dim); font-size:11.5px; text-align:center; padding:16px 6px; border:1px dashed var(--border); border-radius:8px; }
 
   .layer-card{ background:var(--bg-3); border:1px solid var(--border); border-radius:7px; margin-bottom:8px; overflow:hidden; }
@@ -563,15 +584,27 @@
     padding:2px 5px; text-transform:uppercase; letter-spacing:.4px; white-space:nowrap; flex:0 0 auto;
   }
   /* When the tag is a real <select> (every type except Group/Drawing/Image
-     Overlay/SVG Shape -- see swappableLayerTypes()), strip every bit of the
-     browser's native select chrome so it still looks exactly like the plain
-     span version, just clickable. */
+     Overlay/SVG Shape -- see swappableLayerTypes()), it's shrunk down to a
+     plain 20px "v" arrow button instead of a full text badge -- there's no
+     reason for a menu trigger to be as wide as the type name it opens.
+     .layer-type-tag-wrap is the small visible pill (background + arrow);
+     the <select> itself is stretched invisibly over the whole pill so the
+     native dropdown, keyboard access, and click target are unchanged --
+     only how it looks shrank. */
+  .layer-type-tag-wrap{
+    position:relative; display:inline-flex; align-items:center; justify-content:center;
+    width:20px; height:20px; border-radius:4px; background:var(--input-bg);
+    flex:0 0 auto; color:var(--text-dim);
+  }
+  .layer-type-tag-wrap::after{
+    content:"\25BE"; font-size:9px; line-height:1; pointer-events:none;
+  }
   select.layer-type-tag{
     appearance:none; -webkit-appearance:none; -moz-appearance:none;
-    border:none; margin:0; font:inherit; font-size:9px; text-transform:uppercase;
-    letter-spacing:.4px; cursor:pointer;
+    position:absolute; inset:0; width:100%; height:100%;
+    border:none; margin:0; padding:0; font:inherit; cursor:pointer; opacity:0;
   }
-  select.layer-type-tag:focus{ outline:1px solid var(--accent-dim); }
+  .layer-type-tag-wrap:focus-within{ outline:1px solid var(--accent-dim); }
   select.layer-type-tag option{ text-transform:none; }
   .icon-btn{
     background:var(--btn-2); border:none; color:var(--text-dim); border-radius:5px;

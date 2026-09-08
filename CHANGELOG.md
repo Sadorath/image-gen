@@ -4,6 +4,26 @@ All notable changes to this project are documented here.
 
 > These version numbers were assigned retroactively by walking back through the project's build history and grouping changes into logical releases. Exact calendar dates for the earlier entries weren't tracked at the time, so only the most recent entries carry a date — the ordering itself (oldest at the bottom, newest at the top) is accurate.
 
+## v0.0.63 — 2026-09-08
+
+- Triangle Grid Hex Pattern actually shows six triangular wedges now, fanned out from each hexagon's center to every vertex, instead of just outlining the hex perimeter — each of the six wedges gets its own independent fill color.
+- Renamed Triangle Grid Box Pattern to **Hex / 3D Cube** (the underlying pattern is unchanged, still the tumbling-blocks illusion) and its three rhombus faces are now each independently colorable.
+- Extended the same multi-color treatment to every pattern with genuinely distinct parts: Pyramid Grid's four wedges, Envelope Grid's flap and body, and Cross-Braced Grid's box and cross-bracing lines can each be given their own color. Every other pattern (Dots, Crosses, Grid, Chevron, Triangle, Scallops, HUD, Checker, Stripes) keeps its existing single flat color, since it has no second part to color differently.
+- Cross-Braced Grid now has two independent Line Width controls — one for the box, one for the cross-bracing X — instead of sharing one.
+- The Line Width control on every wireframe-style pattern (Grid / Graph Paper, Cross-Braced Grid, Triangle Grid, Hex Grid, Sci-Fi HUD Grid, Scallops, Triangle Grid Hex Pattern, Hex / 3D Cube) is now a literal pixel value (1–40px) instead of a 0–100% Fill percentage, so line thickness no longer changes when Tile Size does. Older saved designs and share links keep rendering at the same thickness they always did.
+- The + Add Layer menu (and a layer's type-swap dropdown) is reorganized by visual function instead of alphabetically: **Base Fills** (Solid Fill, Linear/Radial Gradient), **Standard Grids** (Grid / Graph Paper, Cross-Braced Grid, Triangle Grid, Hex Grid, Sci-Fi HUD Grid), **Geometric Patterns** (Dots, Stripes, Crosses, Diagonal Checker, Chevron / Zigzag), **Complex & 3D Grids** (Envelope Grid, Pyramid Grid, Hex / 3D Cube, Triangle Grid Hex Pattern), **Textures & Organic Forms** (Scallops, Grain / Noise), and **Media** (Image Overlay, SVG Shape).
+
+## v0.0.62 — 2026-09-08
+
+- The Layers, Tools, and History floating windows now each open to their own default corner on a first-ever run (before anything has been saved): Layers snaps to the top-right, Tools to the top-left, and History to the bottom-left. In Ultra Tight Compact UI, that first run also starts each window at its own smaller default size (Layers 373×718, Tools 175×504, History 118×202) — once you've moved or resized a window yourself, your choice is always remembered instead. Ultra Compact also lowers the Layers window's minimum width from 400px to 250px, to match.
+- A layer's type-swap dropdown (the small tag next to its name) is now just a compact 20px arrow button instead of a full-width text badge — there wasn't a reason for a menu trigger to be as wide as the type name it opens. Hover it to see the current type in a tooltip; clicking it still opens the exact same dropdown as before.
+
+## v0.0.61 — 2026-09-07
+
+- Added three new grid patterns that share one square-tile-plus-diagonal geometry: **Cross-Braced Grid** (pure wireframe — a stroked square grid with an X through every cell, for a structural cross-bracing/scaffolding look), **Pyramid Grid** (the same square split into four shaded triangular wedges, with a new Shading slider controlling how strongly the four faces are lit for a faceted, top-down 3D pyramid effect), and **Envelope Grid** (only the top wedge — the flap — is driven by a new Flap Opacity slider, while the other three stay a faint envelope body). All three are routed through the same tile-caching (`buildPeriodicTile`) machinery as every other pattern type.
+- The + Add Layer menu's pattern list had grown too long to scan at a glance, so it's now organized into three hover/click pop-out categories — Fills & Gradients, Patterns (further split into Grids & Lines and Tiled Shapes), and Textures & Media — instead of one long flat list.
+- Loosened the min/max range on nearly every slider in the app (blur, brightness, contrast, saturate, hue rotate, shadow offset/blur, tile angle, tile size, fill/line width, gradient/pattern center, Perlin noise controls, image and SVG scale/offset/rotation, shape stroke width, animation cycles/amplitude, and the shared animation Loop Length) for more room to push effects to extremes. Custom-animation keyframe expressions honor the same widened ranges.
+
 ## v0.0.60 — 2026-09-07
 
 - Added two more geometric pattern types, both built on the same hex-cell lattice as Hex Grid: **Triangle Grid Hex Pattern** (hexagon perimeters only, for a plain honeycomb lattice) and **Triangle Grid Box Pattern** (hexagon perimeters plus a Y-shaped spoke through three alternating corners of each hexagon, splitting it into three rhombi for the classic "tumbling blocks" forced-perspective cube illusion). Both get the full pattern toolkit — Tile Angle/Size, Line Width, solid-or-gradient fill, animation, and Randomize — same as every other pattern type.
